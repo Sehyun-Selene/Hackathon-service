@@ -202,7 +202,7 @@ export default function App() {
       <div className="gate">
         <div className="gate-card">
           <h1>🛠️ 해커톤 운영 관리자</h1>
-          <p>본인 이름을 선택하거나 입력해 주세요. (표시용, 계정 아님)</p>
+          <p>본인 이름을 선택하거나 입력해 주세요.</p>
           {knownCoachNames.length > 0 && (
             <div className="gate-companies">
               {knownCoachNames.map((name) => (
