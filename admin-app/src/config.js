@@ -51,7 +51,7 @@ export const MEALS = [
     // Day 2 점심 — 오전에 미리 주문받고 12시에 식사 (시각 확정 시 수정)
     id: 'lunch',
     label: '점심',
-    orderStart: '2026-09-22T09:00:00',
+    orderStart: '2026-09-22T09:30:00',
     orderEnd: '2026-09-22T11:00:00',
     eatAt: '2026-09-22T12:00:00',
   },
