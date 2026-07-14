@@ -16,7 +16,7 @@
 //    → 비워두면('') 이 기기(브라우저)의 localStorage만 사용합니다
 //      (다른 사람 화면과 공유되지 않음 — 로컬 개발/시연용).
 // ---------------------------------------------------------------
-export const API_BASE_URL = '' // 예: 'https://hackathon-torder-api.onrender.com'
+export const API_BASE_URL = 'https://hackathon-service-6uf0.onrender.com'
 
 // ---------------------------------------------------------------
 // 1. 식사별 주문 가능 시간 / 식사(먹는) 시각  (TBD — 현재 임시값)
