@@ -1,0 +1,291 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #ff5a2c;
+  --primary-dark: #e04315;
+  --bg: #f5f4f2;
+  --card: #ffffff;
+  --text: #1c1917;
+  --sub: #78716c;
+  --line: #e7e5e4;
+  --green: #16a34a;
+  --amber: #d97706;
+  --red: #dc2626;
+}
+
+/* 시간대별 다크모드 (config.DARK_MODE_HOURS 기준, App에서 html.dark 토글) */
+html.dark {
+  --bg: #16130f;
+  --card: #231f1a;
+  --text: #f2ede7;
+  --sub: #a89f94;
+  --line: #3b352d;
+}
+html.dark .qty-btn { background: #2c2721; }
+html.dark .diet-badge { background: #2c2721; }
+html.dark .status-step { background: #2c2721; }
+html.dark .status-step.on { background: #1e2a44; color: #9ec1ff; }
+html.dark .guide-banner { background: #3a2c14; }
+html.dark .menu-photo { background: #2c2721; }
+html.dark .setup-chip { background: #231f1a; }
+html.dark .p-tab { background: #231f1a; }
+html.dark .sticky-order-bar { background: #231f1a; }
+html.dark .guide-section { background: #231f1a; }
+html.dark .btn-reason { background: #1e2a44; border-color: #2c3e66; color: #9ec1ff; }
+html.dark .btn-reason { background: #1e2a44; border-color: #2c3e66; color: #9ec1ff; }
+html.dark .zone-box.has-coach { background: #1e2a44; border-color: #2c3e66; }
+
+body {
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 공유 서버 연결 오류 배너 */
+.sync-error {
+  background: #fee2e2; color: #b91c1c; padding: 10px 14px; border-radius: 12px;
+  margin-bottom: 12px; font-size: 13px; font-weight: 600; text-align: center;
+}
+html.dark .sync-error { background: #450a0a; color: #fca5a5; }
+
+.app { max-width: 520px; margin: 0 auto; padding: 12px 12px 40px; }
+.app.has-sticky-bar { padding-bottom: 96px; }
+
+/* ---- 헤더 ---- */
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--primary); color: #fff;
+  border-radius: 16px; padding: 16px; margin-bottom: 12px;
+}
+.header-table { font-size: 24px; font-weight: 800; }
+.header-sub { font-size: 13px; opacity: 0.9; }
+.header-right { text-align: right; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.header-clock { font-size: 14px; font-weight: 600; }
+.header .btn-ghost { color: #fff; border-color: rgba(255,255,255,0.5); }
+
+/* ---- 하단 구분 탭 (음식 주문 / 코치 호출) ---- */
+.p-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.p-tab {
+  flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--card); font-size: 15px; font-weight: 700; cursor: pointer;
+  color: var(--sub); position: relative;
+}
+.p-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.p-tab-dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: 999px;
+  background: var(--red); margin-left: 6px; vertical-align: middle;
+}
+.p-tab.active .p-tab-dot { background: #fff; }
+
+/* ---- 카드 공통 ---- */
+.card {
+  background: var(--card); border-radius: 16px; padding: 16px;
+  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.card-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+.card-head-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.notice-card { text-align: center; margin-top: 60px; }
+.notice-card p { margin-top: 10px; color: var(--sub); line-height: 1.6; }
+
+.btn-ghost {
+  background: transparent; border: 1px solid var(--line); color: var(--sub);
+  border-radius: 10px; padding: 6px 12px; font-size: 13px; cursor: pointer;
+}
+.empty-text { color: var(--sub); font-size: 14px; padding: 8px 0; }
+.sync-footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 4px; }
+
+/* ---- 주문 마감/안내 ---- */
+.closed-box { text-align: center; padding: 20px 8px; }
+.closed-emoji { font-size: 40px; margin-bottom: 8px; }
+.closed-main { font-size: 16px; font-weight: 700; }
+.closed-sub { margin-top: 6px; color: var(--sub); }
+.closed-hint { margin-top: 14px; font-size: 13px; color: var(--sub); }
+
+.badge-open {
+  background: #dcfce7; color: var(--green); font-size: 12px;
+  padding: 3px 8px; border-radius: 999px; vertical-align: middle; margin-left: 4px;
+}
+.countdown { font-size: 13px; color: var(--red); }
+.guide-banner {
+  background: #fff7ed; color: var(--amber); font-size: 13px;
+  padding: 8px 12px; border-radius: 10px; margin: 8px 0 4px;
+}
+.guide-banner.limit { background: #fee2e2; color: var(--red); font-weight: 600; }
+.limit-hint { font-size: 12px; color: var(--red); margin-top: 8px; }
+
+/* ---- 메뉴 ---- */
+.menu-cat { margin-top: 12px; }
+.menu-cat-title { font-size: 14px; color: var(--sub); margin-bottom: 6px; }
+.menu-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--line); gap: 8px;
+}
+.menu-row.soldout .menu-name { color: var(--sub); text-decoration: line-through; }
+.menu-photo {
+  flex: 0 0 auto; width: 44px; height: 44px; border-radius: 10px; overflow: hidden;
+  background: #f5f5f4; display: flex; align-items: center; justify-content: center;
+}
+.menu-photo img { width: 100%; height: 100%; object-fit: cover; }
+.menu-photo-ph { font-size: 20px; opacity: 0.4; }
+.menu-info { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
+.menu-name { font-size: 16px; font-weight: 600; }
+.allergy-note { font-size: 11px; color: var(--amber); width: 100%; }
+.diet-badge {
+  font-size: 11px; background: #f5f5f4; border: 1px solid var(--line);
+  padding: 2px 6px; border-radius: 999px; color: var(--sub);
+}
+.soldout-badge {
+  font-size: 11px; background: #fee2e2; color: var(--red);
+  padding: 2px 8px; border-radius: 999px; font-weight: 700;
+}
+.qty-ctrl { display: flex; align-items: center; gap: 10px; }
+.qty-btn {
+  width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line);
+  background: #fafaf9; font-size: 20px; font-weight: 700; cursor: pointer; color: var(--text);
+}
+.qty-btn:disabled { opacity: 0.35; cursor: default; }
+.qty-num { min-width: 22px; text-align: center; font-size: 17px; font-weight: 700; }
+
+.btn-primary {
+  flex: 1; background: var(--primary); color: #fff; border: none;
+  border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.btn-primary:active { background: var(--primary-dark); }
+.btn-primary:disabled { background: #d6d3d1; cursor: default; }
+.btn-danger-ghost {
+  background: transparent; border: 1px solid var(--red); color: var(--red);
+  border-radius: 12px; padding: 14px 16px; font-size: 15px; cursor: pointer; white-space: nowrap;
+}
+
+/* ---- 하단 고정 주문 요약바 ---- */
+.sticky-order-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 520px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -6px 20px rgba(0,0,0,0.1);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+}
+.sticky-order-summary { flex: 0 0 auto; font-size: 13px; color: var(--sub); white-space: nowrap; }
+.sticky-order-qty { font-size: 18px; font-weight: 800; color: var(--text); margin-right: 2px; }
+.sticky-order-empty { font-size: 13px; color: var(--sub); }
+.sticky-order-actions { flex: 1; display: flex; gap: 8px; min-width: 0; }
+.sticky-order-actions .btn-primary { padding: 13px; font-size: 15px; }
+.sticky-order-actions .btn-danger-ghost { padding: 13px 14px; font-size: 14px; }
+
+/* ---- 주문 내역 ---- */
+.history-meal { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+.history-meal-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.history-meal-head b { font-size: 15px; }
+.history-meta { font-size: 12px; color: var(--sub); }
+.history-list { list-style: none; }
+.history-list li {
+  display: flex; justify-content: space-between; padding: 6px 0;
+  border-bottom: 1px dashed var(--line); font-size: 15px;
+}
+.history-list li:last-child { border-bottom: none; }
+
+/* ---- 코치 호출 ---- */
+.call-quota { font-size: 13px; color: var(--sub); font-weight: 600; }
+.quota-over { color: var(--red); }
+.btn-call {
+  width: 100%; background: #1d4ed8; color: #fff; border: none;
+  border-radius: 12px; padding: 16px; font-size: 17px; font-weight: 800; cursor: pointer;
+}
+.btn-call:disabled { background: #d6d3d1; }
+.call-limit-box { text-align: center; padding: 8px 0; }
+.call-limit-box p:first-child { color: var(--red); margin-bottom: 6px; }
+.call-limit-box .btn-primary { margin-top: 10px; }
+.call-hint { font-size: 13px; color: var(--sub); margin: 8px 0; line-height: 1.5; }
+.call-status-box { padding: 4px 0; }
+.call-status-reason { font-size: 14px; margin-bottom: 10px; }
+.status-steps { display: flex; gap: 6px; }
+.status-step {
+  flex: 1; text-align: center; padding: 10px 4px; border-radius: 10px;
+  background: #f5f5f4; color: var(--sub); font-size: 14px; font-weight: 600;
+}
+.status-step.on { background: #dbeafe; color: #1d4ed8; }
+.reason-box { text-align: center; }
+.reason-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px; }
+.btn-reason {
+  background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8;
+  border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.btn-reason.on { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.no-limit-tag { font-size: 11px; color: var(--sub); font-weight: 500; }
+.other-reason-row { display: flex; gap: 8px; margin: -2px 0 10px; text-align: left; }
+.other-reason-row .setup-input { flex: 1; }
+.btn-primary.sm { flex: 0 0 auto; padding: 12px 16px; font-size: 14px; white-space: nowrap; }
+
+.call-company-note {
+  font-size: 12.5px; color: var(--sub); background: #f5f5f4;
+  padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; line-height: 1.5;
+}
+html.dark .call-company-note { background: #2c2721; }
+
+/* ---- 헤더 버튼 묶음 ---- */
+.header-btns { display: flex; gap: 6px; }
+
+/* ---- 팀 등록(온보딩) 화면 ---- */
+.setup-header { display: block; }
+.setup-intro { font-size: 14px; color: var(--sub); line-height: 1.5; margin-bottom: 16px; }
+.setup-field { margin-bottom: 18px; }
+.setup-label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.setup-chip {
+  border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+  padding: 10px 14px; min-height: 44px; font-size: 14px; font-weight: 600;
+  cursor: pointer; color: var(--sub);
+}
+.setup-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.setup-input {
+  width: 100%; padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px;
+  font-size: 16px; background: var(--card); color: var(--text);
+}
+.stepper { display: flex; align-items: center; gap: 16px; }
+.stepper-num { font-size: 18px; font-weight: 800; min-width: 48px; text-align: center; }
+.custom-allergy-row { display: flex; gap: 8px; margin-top: 10px; }
+.custom-allergy-row .setup-input { flex: 1; }
+.custom-allergy-row .btn-ghost { white-space: nowrap; min-height: 44px; }
+.custom-allergy-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.setup-sub-hint { font-size: 12px; color: var(--sub); line-height: 1.5; margin-bottom: 10px; }
+.allergy-person-block {
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px;
+}
+.allergy-person-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.allergy-person-head b { font-size: 14px; }
+.add-person-btn { width: 100%; text-align: center; min-height: 44px; }
+.custom-chip {
+  background: #fef3c7; color: #92400e; border-radius: 999px; padding: 6px 12px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.setup-error { color: var(--red); font-size: 13px; margin-bottom: 10px; font-weight: 600; }
+.setup-submit { width: 100%; margin-top: 4px; }
+
+/* ---- 이용 안내 섹션 ---- */
+.guide-section { padding: 0; }
+.guide-summary {
+  cursor: pointer; font-size: 15px; font-weight: 700; padding: 16px; list-style: none;
+}
+.guide-summary::-webkit-details-marker { display: none; }
+.guide-summary::after { content: ' ▾'; color: var(--sub); }
+.guide-section[open] .guide-summary::after { content: ' ▴'; }
+.guide-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+.guide-block b { display: block; font-size: 14px; margin-bottom: 6px; }
+.guide-block p { font-size: 13px; color: var(--sub); line-height: 1.5; }
+.guide-block ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.guide-block li { font-size: 13px; color: var(--text); }
+.guide-meal {
+  display: inline-block; min-width: 40px; font-weight: 700; color: var(--primary);
+}
+.guide-eat { color: var(--sub); margin-left: 6px; }

@@ -1,0 +1,13 @@
+# 의존성 (배포 시 자동 설치되므로 올리지 않음)
+node_modules/
+
+# 빌드 산출물 (배포 시 자동 생성)
+dist/
+
+# 로그 · OS 파일
+*.log
+.DS_Store
+Thumbs.db
+
+# 로컬 미리보기 임시
+.vite/

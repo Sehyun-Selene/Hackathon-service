@@ -1,0 +1,13 @@
+{
+  "name": "hackathon-torder-shared-api",
+  "private": true,
+  "version": "1.0.0",
+  "description": "참가자 앱 · 관리자 앱이 공유하는 초경량 KV API (PRD 3.3 키 설계 그대로 저장)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
