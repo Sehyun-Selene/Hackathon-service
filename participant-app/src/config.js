@@ -47,6 +47,15 @@ export const MEALS = [
     orderEnd: '2026-09-21T22:00:00',
     eatAt: '2026-09-22T09:00:00',
   },
+  {
+    // Day 2 점심 — 점심시간(12~13시) 동안 현장에서 메뉴 선정·주문
+    // (다른 식사와 달리 주문 구간 = 식사 시간대. 시각 확정 시 수정)
+    id: 'lunch',
+    label: '점심',
+    orderStart: '2026-09-22T12:00:00',
+    orderEnd: '2026-09-22T13:00:00',
+    eatAt: '2026-09-22T13:00:00',
+  },
 ]
 
 // ---------------------------------------------------------------
@@ -148,6 +157,15 @@ export const MENUS = {
     { id: 'bf-oj', name: '오렌지주스', category: 'drink', badges: [], image: '', allergyNote: '' },
     { id: 'bf-soymilk', name: '두유', category: 'drink', badges: ['🌱 비건'], image: '', allergyNote: '' },
     { id: 'bf-coffee', name: '따뜻한 아메리카노', category: 'drink', badges: [], image: '', allergyNote: '' },
+  ],
+  lunch: [
+    { id: 'ln-bibimbap', name: '비빔밥', category: 'food', badges: ['🌱 비건 가능'], image: '', allergyNote: '' },
+    { id: 'ln-donkatsu', name: '돈까스', category: 'food', badges: ['⚠️ 밀가루·돼지고기'], image: '', allergyNote: '' },
+    { id: 'ln-kimchi-stew', name: '김치찌개', category: 'food', badges: ['⚠️ 돼지고기'], image: '', allergyNote: '' },
+    { id: 'ln-salad', name: '치킨 샐러드', category: 'food', badges: ['⚠️ 닭고기'], image: '', allergyNote: '' },
+    { id: 'ln-cola', name: '콜라', category: 'drink', badges: [], image: '', allergyNote: '' },
+    { id: 'ln-water', name: '생수', category: 'drink', badges: [], image: '', allergyNote: '' },
+    { id: 'ln-coffee', name: '아이스 아메리카노', category: 'drink', badges: [], image: '', allergyNote: '' },
   ],
 }
 
