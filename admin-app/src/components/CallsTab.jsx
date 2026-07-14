@@ -1,29 +1,29 @@
 import { useEffect, useState } from 'react'
-import { CALL_LIMIT_PER_TEAM, getCoachGroupForTeam } from '../config.js'
+import { CALL_LIMIT_PER_TEAM, getAssignedCoachForTeam } from '../config.js'
 import { now, fmtCountdown, fmtClock } from '../lib/time.js'
 
-// 코치 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 코치 조 배정.
-// 우리 조가 담당하는 팀의 호출을 우선 대응하되, 다른 조도 지원 가능.
-// "우리 조만" 필터로 담당 호출을 빠르게 걸러 처리.
+// 코치 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 코치 개인별 배정.
+// 내가 담당하는 팀의 호출을 우선 대응하되, 다른 코치도 지원 가능.
+// "내 담당 팀만" 필터로 담당 호출을 빠르게 걸러 처리.
 export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }) {
   const [, setTick] = useState(0)
-  const [onlyMyGroup, setOnlyMyGroup] = useState(false)
+  const [onlyMine, setOnlyMine] = useState(false)
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000)
     return () => clearInterval(id)
   }, [])
 
   const t = now().getTime()
-  const groupLabelOf = (teamId) => getCoachGroupForTeam(teamId)?.label || '미배정'
+  const assignedNameOf = (teamId) => getAssignedCoachForTeam(teamId)?.name || '미배정'
 
   const all = Object.entries(scan.calls).flatMap(([teamId, data]) =>
-    (data.calls || []).map((c) => ({ ...c, team: teamId, groupLabel: groupLabelOf(teamId) })),
+    (data.calls || []).map((c) => ({ ...c, team: teamId, assignedName: assignedNameOf(teamId) })),
   )
   let active = all.filter((c) => c.status !== 'done')
-  // 우리 조 담당 호출을 먼저 정렬 → 그다음 오래된 순
+  // 내 담당 호출을 먼저 정렬 → 그다음 오래된 순
   active.sort((a, b) => {
-    const am = a.groupLabel === coach.group ? 0 : 1
-    const bm = b.groupLabel === coach.group ? 0 : 1
+    const am = a.assignedName === coach.name ? 0 : 1
+    const bm = b.assignedName === coach.name ? 0 : 1
     if (am !== bm) return am - bm
     return a.createdAt - b.createdAt
   })
@@ -36,7 +36,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }
     : null
   const avgHandleMin = avgHandleMs != null ? Math.max(1, Math.round(avgHandleMs / 60000)) : null
 
-  const shown = onlyMyGroup ? active.filter((c) => c.groupLabel === coach.group) : active
+  const shown = onlyMine ? active.filter((c) => c.assignedName === coach.name) : active
 
   return (
     <div>
@@ -51,26 +51,26 @@ export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }
           <label className="mine-toggle">
             <input
               type="checkbox"
-              checked={onlyMyGroup}
-              onChange={(e) => setOnlyMyGroup(e.target.checked)}
+              checked={onlyMine}
+              onChange={(e) => setOnlyMine(e.target.checked)}
             />
-            우리 조({coach.group})만
+            내 담당 팀만
           </label>
         </div>
         {shown.length === 0 ? (
           <p className="empty-text">
-            {onlyMyGroup ? '우리 조 담당 진행 중 호출이 없습니다.' : '진행 중인 호출이 없습니다. 🎉'}
+            {onlyMine ? '내가 담당하는 진행 중 호출이 없습니다.' : '진행 중인 호출이 없습니다. 🎉'}
           </p>
         ) : (
           <div className="call-list">
             {shown.map((c) => {
               const used = scan.counts[c.team] || 0
-              const mine = c.groupLabel === coach.group
+              const mine = c.assignedName === coach.name
               return (
                 <div key={c.id} className={`call-card ${c.status}${mine ? ' mine-company' : ''}`}>
                   <div className="call-card-main">
                     <span className="call-table">팀 {c.team}</span>
-                    <span className={`call-company${mine ? ' mine' : ''}`}>{c.groupLabel}</span>
+                    <span className={`call-company${mine ? ' mine' : ''}`}>담당 {c.assignedName}</span>
                     <span className="call-reason">{c.reason}</span>
                     <span className="call-elapsed">⏱ {fmtCountdown(t - c.createdAt)} 경과</span>
                     {c.status === 'waiting' && avgHandleMin != null && (
@@ -128,7 +128,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }
             <div key={c.id} className="call-card done">
               <div className="call-card-main">
                 <span className="call-table">팀 {c.team}</span>
-                <span className="call-company">{c.groupLabel}</span>
+                <span className="call-company">담당 {c.assignedName}</span>
                 <span className="call-reason">{c.reason}</span>
                 <span className="call-elapsed">
                   {fmtClock(new Date(c.createdAt))} 호출 → {c.doneAt ? fmtClock(new Date(c.doneAt)) : '-'} 완료
@@ -162,7 +162,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }
                 return (
                   <div key={teamId} className={`count-item${nearLimit ? ' near-limit' : ''}`}>
                     <span>
-                      팀 {teamId} <span className="count-company">{groupLabelOf(teamId)}</span>
+                      팀 {teamId} <span className="count-company">담당 {assignedNameOf(teamId)}</span>
                     </span>
                     <b>
                       {n}회 · 잔여 {Math.max(0, CALL_LIMIT_PER_TEAM - n)}회

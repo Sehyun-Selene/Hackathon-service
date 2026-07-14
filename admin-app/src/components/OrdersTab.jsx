@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { MEALS, MENUS, MENU_BY_ID, MEAL_BY_ID, getCoachGroupForTeam } from '../config.js'
+import { MEALS, MENUS, MENU_BY_ID, MEAL_BY_ID, getAssignedCoachForTeam } from '../config.js'
 
 // 주문 현황 (PRD 5.2): 팀별 내역, 시간대 필터, 메뉴별 합산, 품절 처리,
 // CSV 내보내기, 팀 번호 검색, 인원수 대비 과다 주문 표시, 알러지 현황.
@@ -39,7 +39,7 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
           if (memberCount && foodQty > memberCount) over = true
         })
         return rows.length
-          ? { teamId, rows, over, groupLabel: getCoachGroupForTeam(teamId)?.label, memberCount }
+          ? { teamId, rows, over, assignedName: getAssignedCoachForTeam(teamId)?.name, memberCount }
           : null
       })
       .filter(Boolean)
@@ -62,7 +62,7 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
       // 사람 단위 배열([[...],[...]])이 정상 형태 — 예전 형식(문자열 배열)이 섞여 있어도
       // 화면 전체가 죽지 않도록 방어적으로 감쌈
       const people = (team.allergies || []).map((p) => (Array.isArray(p) ? p : [p]))
-      if (people.length) teamsWith.push({ teamId, groupLabel: getCoachGroupForTeam(teamId)?.label, people })
+      if (people.length) teamsWith.push({ teamId, assignedName: getAssignedCoachForTeam(teamId)?.name, people })
       people.forEach((personList) => {
         personList.forEach((a) => (byAllergy[a] = (byAllergy[a] || 0) + 1))
       })
@@ -72,7 +72,7 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
   }, [scan.teams])
 
   const exportCsv = () => {
-    const rows = [['팀', '담당 조', '인원수', '식사', '카테고리', '메뉴', '수량']]
+    const rows = [['팀', '담당 코치', '인원수', '식사', '카테고리', '메뉴', '수량']]
     Object.entries(scan.orders)
       .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
       .forEach(([teamId, order]) => {
@@ -82,7 +82,7 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
             const menu = MENU_BY_ID[menuId]
             rows.push([
               teamId,
-              getCoachGroupForTeam(teamId)?.label || '',
+              getAssignedCoachForTeam(teamId)?.name || '',
               team.memberCount || '',
               meal.label,
               menu?.category === 'food' ? '음식' : '음료',
@@ -171,7 +171,7 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
                   <div key={t.teamId} className="allergy-team-row">
                     <b>
                       팀 {t.teamId}
-                      {t.groupLabel && <span className="count-company"> {t.groupLabel}</span>}
+                      {t.assignedName && <span className="count-company"> {t.assignedName}</span>}
                     </b>
                     <span>
                       {t.people.map((personList, i) => `${i + 1}인(${personList.join('·')})`).join(', ')}
@@ -237,12 +237,12 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
           </p>
         ) : (
           <div className="table-grid">
-            {visibleRows.map(({ teamId, rows, over, groupLabel, memberCount }) => (
+            {visibleRows.map(({ teamId, rows, over, assignedName, memberCount }) => (
               <div key={teamId} className={`table-card${over ? ' over' : ''}`}>
                 <div className="table-card-head">
                   <b>
                     팀 {teamId}
-                    {groupLabel && <span className="count-company"> {groupLabel}</span>}
+                    {assignedName && <span className="count-company"> {assignedName}</span>}
                     {memberCount && <span className="member-count"> · {memberCount}명</span>}
                   </b>
                   {over && <span className="over-badge">⚠️ 인원 대비 과다</span>}

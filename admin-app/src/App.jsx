@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ADMIN_POLL_MS, COACH_GROUPS } from './config.js'
+import { ADMIN_POLL_MS, COACH_ASSIGNMENTS } from './config.js'
 import {
   storageGet,
   storageGetMany,
@@ -71,7 +71,8 @@ export default function App() {
     }
   })
   const [nameInput, setNameInput] = useState(coach?.name || '')
-  const [groupInput, setGroupInput] = useState(coach?.groupId || '')
+  // 명단이 확정돼 이름이 채워지면 빠른 선택 칩으로 보여줌 (없으면 직접 입력만)
+  const knownCoachNames = COACH_ASSIGNMENTS.map((c) => c.name).filter(Boolean)
 
   const [tab, setTab] = useState('orders')
   const [scan, setScan] = useState(null)
@@ -111,10 +112,10 @@ export default function App() {
   }, [coach, refresh])
 
   // 코치 등록: 로컬 저장 + 공유 코치 로스터에 등록/갱신
-  const enterAsCoach = useCallback(async (name, groupId) => {
+  // name이 COACH_ASSIGNMENTS의 이름과 정확히 일치해야 담당 팀이 자동 연결됨
+  const enterAsCoach = useCallback(async (name) => {
     const id = getCoachId()
-    const group = COACH_GROUPS.find((g) => g.id === groupId)
-    const record = { id, name, groupId, group: group?.label || groupId }
+    const record = { id, name }
     window.localStorage.setItem(MY_COACH_KEY, JSON.stringify(record))
     try {
       const roster = (await storageGet(COACH_ROSTER_KEY)) || { coaches: [] }
@@ -138,7 +139,6 @@ export default function App() {
         if (nextStatus === 'in_progress') {
           call.handledBy = coach.name
           call.handledById = coach.id
-          call.handledByGroup = coach.group
           call.startedAt = now().getTime()
         }
         if (nextStatus === 'done') {
@@ -202,28 +202,30 @@ export default function App() {
       <div className="gate">
         <div className="gate-card">
           <h1>🛠️ 해커톤 운영 관리자</h1>
-          <p>본인 이름과 담당 조를 선택해 주세요. (표시용, 계정 아님)</p>
+          <p>본인 이름을 선택하거나 입력해 주세요. (표시용, 계정 아님)</p>
+          {knownCoachNames.length > 0 && (
+            <div className="gate-companies">
+              {knownCoachNames.map((name) => (
+                <button
+                  key={name}
+                  className={`setup-chip${nameInput === name ? ' on' : ''}`}
+                  onClick={() => setNameInput(name)}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
           <input
             className="gate-input"
-            placeholder="예: 김코치"
+            placeholder="명단에 없으면 이름 직접 입력"
             value={nameInput}
             onChange={(e) => setNameInput(e.target.value)}
           />
-          <div className="gate-companies">
-            {COACH_GROUPS.map((g) => (
-              <button
-                key={g.id}
-                className={`setup-chip${groupInput === g.id ? ' on' : ''}`}
-                onClick={() => setGroupInput(g.id)}
-              >
-                {g.label}
-              </button>
-            ))}
-          </div>
           <button
             className="btn-primary"
-            disabled={!nameInput.trim() || !groupInput}
-            onClick={() => enterAsCoach(nameInput.trim(), groupInput)}
+            disabled={!nameInput.trim()}
+            onClick={() => enterAsCoach(nameInput.trim())}
           >
             입장하기
           </button>
@@ -242,9 +244,7 @@ export default function App() {
       <header className="admin-header">
         <div className="admin-title">
           🛠️ 해커톤 운영 관리자{' '}
-          <span className="admin-name">
-            — {coach.name} · {coach.group}
-          </span>
+          <span className="admin-name">— {coach.name}</span>
         </div>
         <div className="admin-header-right">
           <label className="sound-toggle">

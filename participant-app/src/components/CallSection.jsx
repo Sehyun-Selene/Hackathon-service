@@ -7,11 +7,11 @@ const STATUS_STEPS = ['waiting', 'in_progress', 'done']
 const OTHER_REASON = '기타'
 
 // 코치 호출 (PRD 4.3) — 시간대와 무관하게 항상 노출
-// 팀 번호 기준 코치 배정: 우리 팀 번호를 담당하는 코치 조가 우선 응답
-// (config.COACH_GROUPS — 아직 팀 번호가 배정되지 않았으면 assignedGroup은 null)
+// 팀 번호 기준 코치 개인별 배정: 우리 팀 번호를 담당하는 코치가 우선 응답
+// (config.COACH_ASSIGNMENTS — 아직 팀 번호가 배정되지 않았으면 assignedCoachName은 null)
 // 호출 횟수 제한 예외 여부는 참가자가 정하지 않고, 처리하는 관리자가
 // 호출 하나하나에 대해 직접 판단해 설정함 (관리자 CallsTab 참고)
-export default function CallSection({ callData, callCount, assignedGroup, onCall }) {
+export default function CallSection({ callData, callCount, assignedCoachName, onCall }) {
   const [showReasons, setShowReasons] = useState(false)
   const [showOtherInput, setShowOtherInput] = useState(false)
   const [otherText, setOtherText] = useState('')
@@ -58,9 +58,9 @@ export default function CallSection({ callData, callCount, assignedGroup, onCall
         </span>
       </div>
       <p className="call-company-note">
-        {assignedGroup ? (
+        {assignedCoachName ? (
           <>
-            <b>{assignedGroup}</b> 담당 코치가 응답합니다. (담당 코치가 모두 대응 중이면 다른 조 코치가 지원)
+            <b>{assignedCoachName}</b> 코치가 담당합니다. (그 코치가 바쁘면 다른 코치가 대신 응답할 수 있어요)
           </>
         ) : (
           '담당 코치가 확인 후 응답합니다.'

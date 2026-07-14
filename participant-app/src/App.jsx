@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { PARTICIPANT_POLL_MS, DARK_MODE_HOURS, getCoachGroupForTeam } from './config.js'
+import { PARTICIPANT_POLL_MS, DARK_MODE_HOURS, getAssignedCoachForTeam } from './config.js'
 import {
   storageGet,
   storageGetMany,
@@ -231,7 +231,7 @@ export default function App() {
         <CallSection
           callData={callData}
           callCount={callCount}
-          assignedGroup={getCoachGroupForTeam(team.teamId)?.label || null}
+          assignedCoachName={getAssignedCoachForTeam(team.teamId)?.name || null}
           onCall={sendCall}
         />
       )}

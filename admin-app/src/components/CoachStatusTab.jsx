@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
-import { COACH_GROUPS, getCoachGroupForTeam } from '../config.js'
+import { COACH_ASSIGNMENTS } from '../config.js'
 
-// 코치 현황 (PRD 요청 #5): 위치 지도 대신, 조별 코치 리스트를 한눈에.
+// 코치 현황 (PRD 요청 #5): 위치 지도 대신, 코치 개인별 리스트를 한눈에.
 // 각 코치가 쉬는 중인지 / 어떤 팀 호출을 대응 중인지 표시.
-// 목적: 특정 조 코치가 전원 대응 중이면 다른 조 코치가 지원하도록 판단.
+// 목적: 특정 코치가 바쁘면(대응 중이면) 다른 코치가 그 담당 팀 호출을 대신 볼 수 있게.
 export default function CoachStatusTab({ scan, coach }) {
   // 진행 중(in_progress) 호출에서 담당 코치별로 어떤 팀을 맡고 있는지 매핑
   const busyByCoachId = useMemo(() => {
@@ -19,25 +19,19 @@ export default function CoachStatusTab({ scan, coach }) {
     return map
   }, [scan.calls])
 
-  // 대기 중인 호출을 조별로 집계 (팀 번호로 담당 조 판별)
-  const waitingByGroup = useMemo(() => {
+  // 이 기기 코치의 이름이 COACH_ASSIGNMENTS 명단과 일치하면, 그 코치가
+  // 담당하는 팀 중 대기중인 호출 수를 세어 보여줌 (본인 백로그 확인용)
+  const waitingCountByName = useMemo(() => {
     const map = {}
     Object.entries(scan.calls).forEach(([teamId, data]) => {
-      const groupLabel = getCoachGroupForTeam(teamId)?.label || '미배정'
+      const assigned = COACH_ASSIGNMENTS.find((c) => c.teamNumbers.includes(parseInt(teamId, 10)))
+      if (!assigned?.name) return
       ;(data.calls || []).forEach((c) => {
-        if (c.status === 'waiting') map[groupLabel] = (map[groupLabel] || 0) + 1
+        if (c.status === 'waiting') map[assigned.name] = (map[assigned.name] || 0) + 1
       })
     })
     return map
   }, [scan.calls])
-
-  // 조별 코치 그룹 (등록된 조 순서 + 목록에 없는 조도 뒤에)
-  const groupLabelsInUse = [
-    ...COACH_GROUPS.map((g) => g.label).filter((label) => scan.coaches.some((co) => co.group === label)),
-    ...[...new Set(scan.coaches.map((c) => c.group))].filter(
-      (label) => !COACH_GROUPS.some((g) => g.label === label),
-    ),
-  ]
 
   return (
     <div>
@@ -46,51 +40,34 @@ export default function CoachStatusTab({ scan, coach }) {
         {scan.coaches.length === 0 ? (
           <p className="empty-text">아직 입장한 코치가 없습니다.</p>
         ) : (
-          groupLabelsInUse.map((groupLabel) => {
-            const list = scan.coaches.filter((c) => c.group === groupLabel)
-            const busyCount = list.filter((c) => (busyByCoachId[c.id] || []).length > 0).length
-            const allBusy = busyCount === list.length && list.length > 0
-            const waiting = waitingByGroup[groupLabel] || 0
-            return (
-              <div key={groupLabel} className={`coach-company${allBusy ? ' all-busy' : ''}`}>
-                <div className="coach-company-head">
-                  <b>{groupLabel}</b>
-                  <span className="coach-company-meta">
-                    {list.length}명 중 {busyCount}명 대응 중
-                    {allBusy && ' · 전원 대응 중 ⚠️'}
-                    {waiting > 0 && ` · 대기 호출 ${waiting}건`}
+          <div className="coach-list">
+            {scan.coaches.map((c) => {
+              const busy = busyByCoachId[c.id] || []
+              const isMe = c.id === coach.id
+              const waiting = waitingCountByName[c.name] || 0
+              return (
+                <div key={c.id} className={`coach-item${busy.length ? ' busy' : ' idle'}`}>
+                  <span className="coach-name">
+                    🧑‍🏫 {c.name}
+                    {isMe && <span className="coach-me">나</span>}
+                    {waiting > 0 && <span className="avg-wait">담당 대기 {waiting}건</span>}
                   </span>
+                  {busy.length ? (
+                    <span className="coach-status busy">
+                      🔴 팀 {busy.map((b) => b.teamId).join(', ')} 대응 중
+                    </span>
+                  ) : (
+                    <span className="coach-status idle">🟢 대기 중</span>
+                  )}
                 </div>
-                <div className="coach-list">
-                  {list.map((c) => {
-                    const busy = busyByCoachId[c.id] || []
-                    const isMe = c.id === coach.id
-                    return (
-                      <div key={c.id} className={`coach-item${busy.length ? ' busy' : ' idle'}`}>
-                        <span className="coach-name">
-                          🧑‍🏫 {c.name}
-                          {isMe && <span className="coach-me">나</span>}
-                        </span>
-                        {busy.length ? (
-                          <span className="coach-status busy">
-                            🔴 팀 {busy.map((b) => b.teamId).join(', ')} 대응 중
-                          </span>
-                        ) : (
-                          <span className="coach-status idle">🟢 대기 중</span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })
+              )
+            })}
+          </div>
         )}
       </section>
 
       <p className="coach-note">
-        💡 우리 조 코치가 모두 대응 중이면, 다른 조 코치가 지원할 수 있습니다. 위 현황으로 여유 있는
-        코치를 확인하세요.
+        💡 담당 코치가 바쁘면(🔴), 그 코치 담당 팀의 대기 호출을 다른 코치가 대신 처리할 수 있습니다.
       </p>
     </div>
   )

@@ -17,7 +17,7 @@ const toAllergyBlocks = (allergies) =>
 // 팀 번호 / 인원수 / 알러지(인원별로 구분 입력 — 1명이 여러 개인지,
 // 여러 명이 각각 하나씩인지에 따라 대체 메뉴 준비량이 달라지므로 사람 단위로 관리)
 // ※ 계열사는 더 이상 참가자가 선택하지 않음 — 코치 담당은 팀 번호 기준
-//   배정(config.COACH_GROUPS)으로 대체됨
+//   개인별 배정(config.COACH_ASSIGNMENTS)으로 대체됨
 export default function TeamSetup({ initial, existingLookup, onComplete, onSaving }) {
   const [teamNo, setTeamNo] = useState(initial?.teamId ? String(parseInt(initial.teamId, 10)) : '')
   const [memberCount, setMemberCount] = useState(initial?.memberCount || 4)

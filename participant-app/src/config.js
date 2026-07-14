@@ -59,20 +59,24 @@ export const CALL_LIMIT_PER_TEAM = 5
 export const CALL_REASONS = ['멘토링 요청', '기술 문제', '기타']
 
 // ---------------------------------------------------------------
-// 3. 코치별 담당 팀 번호  (TBD — 팀 편성 확정 후 채우기)
+// 3. 코치 개인별 담당 팀 번호  (TBD — 코치 명단·팀 편성 확정 후 채우기)
 //    참가자는 계열사를 고르지 않고 팀 번호만 입력합니다. 대신 "어느 코치가
-//    어느 팀을 담당하는지"를 이 목록으로 미리 정해둡니다.
-//    - teamNumbers: 그 조가 담당하는 팀 번호(숫자) 배열. 지금은 비어 있어서
-//      아직 아무 팀도 배정 안 된 상태 — 확정되면 숫자만 채우면 됩니다.
-//      예: teamNumbers: [1, 2, 3, 4, 5]
-//    - 코치는 입장 시 이 목록 중 자신이 맡은 조를 선택합니다.
-//    - 조 개수 자체도 자유롭게 늘리거나 줄일 수 있습니다 (지금은 4조 기준).
+//    어느 팀을 담당하는지"를 코치 개인 단위로 미리 정해둡니다.
+//    - name       : 코치 이름. 명단이 아직 미확정이라 지금은 빈 값(TBD).
+//                   확정되면 이름을 채우세요 (예: '김민준').
+//    - teamNumbers: 그 코치가 담당하는 팀 번호(숫자) 배열. 지금은 비어 있어서
+//                   아직 아무 팀도 배정 안 된 상태 — 확정되면 숫자만 채우면 됩니다.
+//                   예: teamNumbers: [1, 2, 3, 4, 5]
+//    - 코치는 입장 시 이름을 직접 입력합니다. 여기 채워둔 이름과 정확히
+//      같은 글자로 입력해야 담당 팀이 자동으로 연결됩니다.
+//    - 코치 인원 자체도 확정 전이라, 배열에 항목을 자유롭게 추가/삭제하면
+//      됩니다 (지금은 자리 4개만 미리 만들어둔 상태).
 // ---------------------------------------------------------------
-export const COACH_GROUPS = [
-  { id: 'group-1', label: '1조', teamNumbers: [] },
-  { id: 'group-2', label: '2조', teamNumbers: [] },
-  { id: 'group-3', label: '3조', teamNumbers: [] },
-  { id: 'group-4', label: '4조', teamNumbers: [] },
+export const COACH_ASSIGNMENTS = [
+  { id: 'coach-1', name: '', teamNumbers: [] },
+  { id: 'coach-2', name: '', teamNumbers: [] },
+  { id: 'coach-3', name: '', teamNumbers: [] },
+  { id: 'coach-4', name: '', teamNumbers: [] },
 ]
 
 // ---------------------------------------------------------------
@@ -154,9 +158,9 @@ export const ALL_MENUS = Object.values(MENUS).flat()
 export const MENU_BY_ID = Object.fromEntries(ALL_MENUS.map((m) => [m.id, m]))
 export const MEAL_BY_ID = Object.fromEntries(MEALS.map((m) => [m.id, m]))
 
-// 팀 번호로 담당 코치 조를 찾음 (COACH_GROUPS.teamNumbers가 비어있으면 null → 미배정)
-export function getCoachGroupForTeam(teamId) {
+// 팀 번호로 담당 코치를 찾음 (teamNumbers가 비어있으면 null → 미배정)
+export function getAssignedCoachForTeam(teamId) {
   const n = parseInt(teamId, 10)
   if (!Number.isFinite(n)) return null
-  return COACH_GROUPS.find((g) => g.teamNumbers.includes(n)) || null
+  return COACH_ASSIGNMENTS.find((c) => c.teamNumbers.includes(n)) || null
 }
