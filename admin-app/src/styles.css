@@ -120,18 +120,30 @@ body {
 .total-item.limit-hit { border-color: var(--red); background: #fef2f2; }
 .total-item.limit-near { border-color: var(--amber); background: #fffbeb; }
 
-.table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
-.table-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
-.table-card.over { border-color: var(--amber); background: #fffbeb; }
-.table-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.over-badge { font-size: 11px; color: var(--amber); font-weight: 700; }
-.table-card ul { list-style: none; }
-.table-card li {
-  display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 14px;
-  border-bottom: 1px dashed var(--line);
+/* 팀별 주문 — 100팀+ 스캔·배달 편하도록 한 줄 압축 */
+.team-rows { display: flex; flex-direction: column; }
+.team-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px 4px;
+  border-bottom: 1px solid var(--line);
 }
-.table-card li:last-child { border-bottom: none; }
-.table-card li b { margin-left: auto; }
+.team-row:last-child { border-bottom: none; }
+.team-row.delivered { opacity: 0.55; }
+.team-row.delivered .team-row-items { text-decoration: line-through; }
+.team-row-body { flex: 1; min-width: 0; }
+.team-row-head { display: flex; align-items: baseline; gap: 6px; }
+.team-row-head b { font-size: 15px; }
+.team-row-items {
+  display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 3px; font-size: 13px; color: var(--text);
+}
+.team-row-items .ti { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.team-row-items .ti b { color: var(--primary-dark); }
+.deliver-check {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 700; color: var(--green); cursor: pointer; white-space: nowrap;
+}
+.deliver-check input { width: 20px; height: 20px; }
+.deliver-progress { font-size: 13px; font-weight: 700; color: var(--green); }
+.deliver-hint { font-size: 12px; color: var(--sub); margin-bottom: 8px; }
 .meal-tag {
   font-size: 11px; background: #e0e7ff; color: #4338ca; border-radius: 999px; padding: 1px 7px;
 }
@@ -258,7 +270,7 @@ body {
   .toolbar-actions { justify-content: space-between; }
   .toolbar-actions .btn-secondary, .toolbar-actions .btn-ghost { flex: 1; text-align: center; }
   /* 그리드는 한 줄에 하나씩 */
-  .totals-grid, .table-grid, .count-grid, .coach-list { grid-template-columns: 1fr; }
+  .totals-grid, .count-grid, .coach-list { grid-template-columns: 1fr; }
   .stat-cards { grid-template-columns: repeat(2, 1fr); }
   /* 호출 카드: 정보와 버튼을 세로로 */
   .call-card { flex-direction: column; align-items: stretch; }

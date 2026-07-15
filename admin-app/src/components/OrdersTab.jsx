@@ -2,14 +2,15 @@ import { useMemo, useState } from 'react'
 import { MEALS, MENUS, MENU_BY_ID, MEAL_BY_ID, getAssignedCoachForTeam } from '../config.js'
 
 // 주문 현황 (PRD 5.2): 팀별 내역, 시간대 필터, 메뉴별 합산, 품절 처리,
-// CSV 내보내기, 팀 번호 검색, 인원수 대비 과다 주문 표시, 알러지 현황.
-export default function OrdersTab({ scan, onToggleSoldout }) {
+// CSV 내보내기, 팀 번호 검색, 알러지 현황, 배달 체크(끼니별), 인쇄용 체크리스트.
+export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) {
   const [mealFilter, setMealFilter] = useState('all')
   const [showSoldoutPanel, setShowSoldoutPanel] = useState(false)
   const [showAllergyPanel, setShowAllergyPanel] = useState(false)
   const [teamQuery, setTeamQuery] = useState('')
 
   const filteredMealIds = mealFilter === 'all' ? MEALS.map((m) => m.id) : [mealFilter]
+  const singleMeal = mealFilter !== 'all' // 배달 체크는 끼니 단위로만 의미 있음
 
   const totals = useMemo(() => {
     const acc = {}
@@ -23,23 +24,23 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
     return acc
   }, [scan.orders, mealFilter])
 
+  // 팀별 주문 행 (선택 끼니 기준). items: [{mealId, menuId, qty}]
   const teamRows = useMemo(() => {
     return Object.entries(scan.orders)
       .map(([teamId, order]) => {
-        const rows = []
-        const memberCount = scan.teams[teamId]?.memberCount
-        let over = false
+        const items = []
         filteredMealIds.forEach((mealId) => {
-          let foodQty = 0
           ;(order.meals?.[mealId]?.items || []).forEach(({ menuId, qty }) => {
-            const menu = MENU_BY_ID[menuId]
-            rows.push({ mealId, menuId, qty })
-            if (menu?.category === 'food') foodQty += qty
+            items.push({ mealId, menuId, qty })
           })
-          if (memberCount && foodQty > memberCount) over = true
         })
-        return rows.length
-          ? { teamId, rows, over, assignedName: getAssignedCoachForTeam(teamId)?.name, memberCount }
+        return items.length
+          ? {
+              teamId,
+              items,
+              assignedName: getAssignedCoachForTeam(teamId)?.name,
+              memberCount: scan.teams[teamId]?.memberCount,
+            }
           : null
       })
       .filter(Boolean)
@@ -52,17 +53,17 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
     ? teamRows.filter((r) => parseInt(r.teamId, 10) === queryNum)
     : teamRows
 
-  // 알러지 현황: 항목별 "명" 수 집계 + 팀별 인원 단위 목록
-  // team.allergies = [[사람1의 알러지...], [사람2의 알러지...]] — 사람 단위로 구분되어 있어
-  // "몇 명이 어떤 조합으로 겹치는지"를 그대로 보여줄 수 있음 (대체 메뉴 준비 개수 판단용)
+  const isDelivered = (teamId) => singleMeal && !!scan.delivered?.[teamId]?.[mealFilter]
+  const deliveredCount = singleMeal ? teamRows.filter((r) => isDelivered(r.teamId)).length : 0
+
+  // 알러지 현황 (사람 단위)
   const allergyInfo = useMemo(() => {
-    const byAllergy = {} // 항목 → 해당 항목을 가진 "인원 수" (팀 수 아님)
+    const byAllergy = {}
     const teamsWith = []
     Object.entries(scan.teams).forEach(([teamId, team]) => {
-      // 사람 단위 배열([[...],[...]])이 정상 형태 — 예전 형식(문자열 배열)이 섞여 있어도
-      // 화면 전체가 죽지 않도록 방어적으로 감쌈
       const people = (team.allergies || []).map((p) => (Array.isArray(p) ? p : [p]))
-      if (people.length) teamsWith.push({ teamId, assignedName: getAssignedCoachForTeam(teamId)?.name, people })
+      if (people.length)
+        teamsWith.push({ teamId, assignedName: getAssignedCoachForTeam(teamId)?.name, people })
       people.forEach((personList) => {
         personList.forEach((a) => (byAllergy[a] = (byAllergy[a] || 0) + 1))
       })
@@ -103,6 +104,48 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
     URL.revokeObjectURL(a.href)
   }
 
+  // (C) 인쇄용 배달 체크리스트 — 현재 끼니 필터 기준, 팀번호순, 종이 체크칸 포함
+  const printChecklist = () => {
+    const label = mealFilter === 'all' ? '전체' : MEAL_BY_ID[mealFilter].label
+    const rowsHtml = teamRows
+      .map((r) => {
+        const items = r.items
+          .map((it) => {
+            const name = MENU_BY_ID[it.menuId]?.name || it.menuId
+            const tag = mealFilter === 'all' ? `[${MEAL_BY_ID[it.mealId]?.label}] ` : ''
+            return `${tag}${name} ${it.qty}`
+          })
+          .join(', ')
+        const coach = r.assignedName ? ` (${r.assignedName})` : ''
+        return `<tr><td class="c">☐</td><td class="t">팀 ${r.teamId}${coach}</td><td>${items}</td></tr>`
+      })
+      .join('')
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>배달 체크리스트 — ${label}</title>
+<style>
+  body { font-family: 'Malgun Gothic', system-ui, sans-serif; padding: 16px; color:#111; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color:#666; font-size:12px; margin-bottom:12px; }
+  table { width:100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border:1px solid #999; padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#eee; }
+  td.c { width:28px; text-align:center; font-size:16px; }
+  td.t { white-space:nowrap; font-weight:700; }
+  @media print { .noprint { display:none; } }
+</style></head><body>
+<h1>배달 체크리스트 — ${label}</h1>
+<div class="sub">총 ${teamRows.length}팀 · 배달 시 왼쪽 칸에 체크</div>
+<button class="noprint" onclick="window.print()" style="margin-bottom:12px;padding:8px 14px;">🖨 인쇄</button>
+<table><thead><tr><th>완료</th><th>팀</th><th>주문 내역</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+</body></html>`
+    const w = window.open('', '_blank')
+    if (!w) {
+      alert('팝업이 차단되어 인쇄 창을 열 수 없습니다. 브라우저에서 팝업을 허용해 주세요.')
+      return
+    }
+    w.document.write(html)
+    w.document.close()
+  }
+
   return (
     <div>
       <div className="toolbar">
@@ -138,6 +181,9 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
           </button>
           <button className="btn-ghost" onClick={() => setShowSoldoutPanel((v) => !v)}>
             🚫 품절 {showSoldoutPanel ? '닫기' : '관리'}
+          </button>
+          <button className="btn-ghost" onClick={printChecklist}>
+            🖨 체크리스트
           </button>
           <button className="btn-secondary" onClick={exportCsv}>
             ⬇️ CSV
@@ -226,9 +272,23 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
       </section>
 
       <section className="panel">
-        <h3>
-          팀별 주문 ({visibleRows.length}팀{hasQuery && ` — "${queryNum}번" 검색 중`})
-        </h3>
+        <div className="panel-head-row">
+          <h3>
+            팀별 주문 ({visibleRows.length}팀{hasQuery && ` — "${queryNum}번" 검색 중`})
+          </h3>
+          {singleMeal && teamRows.length > 0 && (
+            <span className="deliver-progress">
+              배달 {deliveredCount}/{teamRows.length}팀 완료
+            </span>
+          )}
+        </div>
+
+        {!singleMeal && teamRows.length > 0 && (
+          <p className="deliver-hint">
+            끼니(저녁/야식/아침/점심)를 선택하면 팀별 <b>배달 완료 체크</b>를 쓸 수 있어요.
+          </p>
+        )}
+
         {visibleRows.length === 0 ? (
           <p className="empty-text">
             {hasQuery
@@ -236,28 +296,41 @@ export default function OrdersTab({ scan, onToggleSoldout }) {
               : '아직 주문이 없습니다.'}
           </p>
         ) : (
-          <div className="table-grid">
-            {visibleRows.map(({ teamId, rows, over, assignedName, memberCount }) => (
-              <div key={teamId} className={`table-card${over ? ' over' : ''}`}>
-                <div className="table-card-head">
-                  <b>
-                    팀 {teamId}
-                    {assignedName && <span className="count-company"> {assignedName}</span>}
-                    {memberCount && <span className="member-count"> · {memberCount}명</span>}
-                  </b>
-                  {over && <span className="over-badge">⚠️ 인원 대비 과다</span>}
+          <div className="team-rows">
+            {visibleRows.map((r) => {
+              const done = isDelivered(r.teamId)
+              return (
+                <div key={r.teamId} className={`team-row${done ? ' delivered' : ''}`}>
+                  <div className="team-row-body">
+                    <div className="team-row-head">
+                      <b>팀 {r.teamId}</b>
+                      {r.assignedName && <span className="count-company">{r.assignedName}</span>}
+                      {r.memberCount && <span className="member-count">{r.memberCount}명</span>}
+                    </div>
+                    <div className="team-row-items">
+                      {r.items.map((it, i) => (
+                        <span key={i} className="ti">
+                          {mealFilter === 'all' && (
+                            <span className="meal-tag">{MEAL_BY_ID[it.mealId]?.label}</span>
+                          )}
+                          {MENU_BY_ID[it.menuId]?.name || it.menuId} <b>{it.qty}</b>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {singleMeal && (
+                    <label className="deliver-check">
+                      <input
+                        type="checkbox"
+                        checked={done}
+                        onChange={(e) => onToggleDelivered(r.teamId, mealFilter, e.target.checked)}
+                      />
+                      배달완료
+                    </label>
+                  )}
                 </div>
-                <ul>
-                  {rows.map((r, i) => (
-                    <li key={i}>
-                      <span className="meal-tag">{MEAL_BY_ID[r.mealId]?.label}</span>
-                      {MENU_BY_ID[r.menuId]?.name || r.menuId}
-                      <b>{r.qty}</b>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>

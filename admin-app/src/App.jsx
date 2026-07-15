@@ -28,29 +28,45 @@ const TAB_DEFS = [
   { id: 'stats', label: '📊 호출 통계' },
 ]
 
-// 등록된 팀 전체 + 주문/호출/카운트 + 코치 로스터 + 품절 상태를 한 번에 스캔
+// 배달 완료 상태 키 (팀별 분리 — 여러 러너가 동시에 체크해도 충돌 최소화)
+// delivered:{teamId} → { [mealId]: true }
+const deliveredKey = (teamId) => `delivered:${teamId}`
+
+// 등록된 팀 전체 + 주문/호출/카운트 + 코치 로스터 + 품절 + 배달상태를 한 번에 스캔
 async function scanAll() {
   const roster = (await storageGet(TEAM_ROSTER_KEY)) || { ids: [] }
   const ids = roster.ids || []
-  const [teamVals, orderVals, callVals, countVals] = await Promise.all([
+  const [teamVals, orderVals, callVals, countVals, deliveredVals] = await Promise.all([
     storageGetMany(ids.map((id) => teamKey(id))),
     storageGetMany(ids.map((id) => orderKey(id))),
     storageGetMany(ids.map((id) => callKey(id))),
     storageGetMany(ids.map((id) => callCountKey(id))),
+    storageGetMany(ids.map((id) => deliveredKey(id))),
   ])
   const teams = {}
   const orders = {}
   const calls = {}
   const counts = {}
+  const delivered = {}
   ids.forEach((id, i) => {
     if (teamVals[i]) teams[id] = teamVals[i]
     if (orderVals[i]) orders[id] = orderVals[i]
     if (callVals[i]) calls[id] = callVals[i]
     counts[id] = typeof countVals[i] === 'number' ? countVals[i] : 0
+    if (deliveredVals[i]) delivered[id] = deliveredVals[i]
   })
   const soldout = (await storageGet(SOLDOUT_KEY)) || {}
   const coachRoster = (await storageGet(COACH_ROSTER_KEY)) || { coaches: [] }
-  return { teams, orders, calls, counts, soldout, coaches: coachRoster.coaches || [], at: now().getTime() }
+  return {
+    teams,
+    orders,
+    calls,
+    counts,
+    delivered,
+    soldout,
+    coaches: coachRoster.coaches || [],
+    at: now().getTime(),
+  }
 }
 
 function getCoachId() {
@@ -181,6 +197,23 @@ export default function App() {
     [refresh],
   )
 
+  // 배달 완료 토글 (팀별 delivered:{teamId} 레코드에 끼니별로 기록)
+  const toggleDelivered = useCallback(
+    async (teamId, mealId, next) => {
+      try {
+        const data = (await storageGet(deliveredKey(teamId))) || {}
+        if (next) data[mealId] = true
+        else delete data[mealId]
+        await storageSet(deliveredKey(teamId), data)
+      } catch {
+        alert('네트워크 오류로 배달 상태가 저장되지 않았습니다.\n잠시 후 다시 시도해주세요.')
+        return
+      }
+      await refresh()
+    },
+    [refresh],
+  )
+
   const toggleSoldout = useCallback(
     async (menuId) => {
       try {
@@ -290,7 +323,11 @@ export default function App() {
         {!scan ? (
           <p className="empty-text">데이터 불러오는 중…</p>
         ) : tab === 'orders' ? (
-          <OrdersTab scan={scan} onToggleSoldout={toggleSoldout} />
+          <OrdersTab
+            scan={scan}
+            onToggleSoldout={toggleSoldout}
+            onToggleDelivered={toggleDelivered}
+          />
         ) : tab === 'calls' ? (
           <CallsTab
             scan={scan}
