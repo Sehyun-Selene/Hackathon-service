@@ -6,16 +6,11 @@ import { fmtCountdown } from '../lib/time.js'
 export default function StatsTab({ scan }) {
   const stats = useMemo(() => {
     // --- 주문 통계 ---
-    const byMeal = {} // mealId → { orders: 주문 팀 수, qty: 총 수량 }
-    const byMenu = {} // menuId → 누적 수량
-    MEALS.forEach((m) => (byMeal[m.id] = { teams: 0, qty: 0 }))
+    const byMenu = {} // menuId → 누적 수량 (케이터링 발주 기준 수치)
     Object.entries(scan.orders).forEach(([, order]) => {
       MEALS.forEach((meal) => {
         const items = order.meals?.[meal.id]?.items || []
-        if (!items.length) return
-        byMeal[meal.id].teams += 1
         items.forEach(({ menuId, qty }) => {
-          byMeal[meal.id].qty += qty
           byMenu[menuId] = (byMenu[menuId] || 0) + qty
         })
       })
@@ -43,22 +38,13 @@ export default function StatsTab({ scan }) {
       .filter(([, n]) => n >= CALL_LIMIT_PER_TEAM - 1)
       .sort(([, a], [, b]) => b - a)
 
-    return { byMeal, byMenu, allCalls, byReason, avgHandleMs, byCoach, nearLimitTeams }
+    return { byMenu, allCalls, byReason, avgHandleMs, byCoach, nearLimitTeams }
   }, [scan])
 
   return (
     <div>
       <section className="panel">
         <h3>📦 주문 통계</h3>
-        <div className="stat-cards">
-          {MEALS.map((m) => (
-            <div key={m.id} className="stat-card">
-              <div className="stat-label">{m.label}</div>
-              <div className="stat-value">{stats.byMeal[m.id].qty}개</div>
-              <div className="stat-sub">{stats.byMeal[m.id].teams}팀 주문</div>
-            </div>
-          ))}
-        </div>
         <h4 className="stat-h4">메뉴별 누적 주문량</h4>
         {Object.keys(stats.byMenu).length === 0 ? (
           <p className="empty-text">데이터 없음</p>
