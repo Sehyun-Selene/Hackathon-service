@@ -43,7 +43,7 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
           ) : (
             <p className="closed-main">모든 식사 주문이 마감되었습니다</p>
           )}
-          <p className="closed-hint">코치 호출은 언제든 가능합니다 👇</p>
+          <p className="closed-hint">코치 호출은 언제든 가능합니다</p>
         </div>
       </section>
     )
