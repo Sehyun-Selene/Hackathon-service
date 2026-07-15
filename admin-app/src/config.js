@@ -114,7 +114,8 @@ export const ALLERGY_OPTIONS = [
 // ---------------------------------------------------------------
 // 5. 규모 · 운영 상수
 // ---------------------------------------------------------------
-export const TOTAL_TEAMS = 125 // 최대 참가팀 수 (팀 번호 01~125)
+export const TOTAL_TEAMS = 125 // TBD: 최종 참가팀 수 (팀 번호 01~125)
+export const DELIVERY_TEAM_RANGE_SIZE = 25 // TBD: 관리자 배부 화면의 팀 번호 구간 크기
 export const MAX_MEMBER_COUNT = 10 // 인원수 입력 상한
 export const PARTICIPANT_POLL_MS = 5000 // 참가자 화면 폴링 주기
 export const ADMIN_POLL_MS = 3000 // 관리자 화면 폴링 주기 (호출 알림 포함)

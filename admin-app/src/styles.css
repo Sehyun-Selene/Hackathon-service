@@ -100,8 +100,54 @@ body {
   font-size: 14px; min-height: 44px; width: 140px; background: var(--card);
 }
 .table-search:focus { outline: 2px solid var(--primary); border-color: var(--primary); }
-.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.toolbar { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 12px; }
 .filter-group, .toolbar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.workflow-step {
+  border: 1px solid #bfdbfe; border-radius: 12px; padding: 12px;
+  background: #f8fbff;
+}
+.workflow-step-head { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; }
+.workflow-step-head b { font-size: 15px; }
+.step-number {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; flex: 0 0 24px; border-radius: 999px;
+  background: var(--primary); color: #fff; font-size: 12px; font-weight: 800;
+}
+.workflow-step-head .step-number, .workflow-heading .step-number { color: #fff; }
+.workflow-heading { display: inline-flex; align-items: center; gap: 7px; }
+.toolbar-actions {
+  width: 100%; display: grid; grid-template-columns: minmax(76px, 1fr) auto auto auto auto;
+  gap: 6px; flex-wrap: nowrap;
+}
+.toolbar-actions .table-search { width: 100%; min-width: 0; }
+.toolbar-tool { min-height: 40px; padding: 8px 10px; white-space: nowrap; font-size: 12px; }
+.toolbar-tool.active { border-color: var(--primary); background: #eff6ff; color: var(--primary-dark); }
+
+/* 알러지·품절 관리 하단 패널 */
+.bottom-sheet-backdrop {
+  position: fixed; inset: 0; z-index: 1200; display: flex; align-items: flex-end;
+  justify-content: center; background: rgba(15, 23, 42, 0.42); animation: sheet-fade-in 160ms ease-out;
+}
+.bottom-sheet {
+  width: min(680px, calc(100% - 24px)); max-height: min(82dvh, 720px);
+  display: flex; flex-direction: column; padding: 8px 18px max(18px, env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0; background: var(--card);
+  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.2); animation: sheet-slide-up 220ms ease-out;
+}
+.sheet-handle { width: 42px; height: 4px; margin: 0 auto 10px; border-radius: 999px; background: #cbd5e1; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sheet-head h3 { margin: 0; font-size: 18px; }
+.sheet-close {
+  min-width: 48px; min-height: 40px; border: 0; border-radius: 10px;
+  background: #f1f5f9; color: var(--sub); font-weight: 700; cursor: pointer;
+}
+.sheet-description { margin: 4px 0 12px; color: var(--sub); font-size: 12px; }
+.sheet-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 2px; }
+@keyframes sheet-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheet-slide-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .chip {
   border: 1px solid var(--line); background: var(--card); border-radius: 999px;
   padding: 11px 16px; min-height: 44px; font-size: 14px; cursor: pointer; color: var(--sub); font-weight: 600;
@@ -147,6 +193,27 @@ body {
 .deliver-check input { width: 20px; height: 20px; }
 .deliver-progress { font-size: 13px; font-weight: 700; color: var(--green); }
 .deliver-hint { font-size: 12px; color: var(--sub); margin-bottom: 8px; }
+.delivery-range-bar {
+  margin-bottom: 12px; padding: 12px; border: 1px solid #bfdbfe;
+  border-radius: 12px; background: #f8fbff;
+}
+.delivery-range-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 8px; font-size: 14px;
+}
+.delivery-range-head .pending-count { color: var(--red); font-size: 13px; font-weight: 700; }
+.delivery-ranges { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
+.delivery-ranges .chip { flex: 0 0 auto; }
+.completed-deliveries { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.completed-toggle {
+  width: 100%; min-height: 44px; border: 0; border-radius: 10px;
+  background: #f1f5f9; color: var(--sub); font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.completed-deliveries .team-rows { margin-top: 8px; }
+.delivery-team-panel {
+  border: 1px solid #bfdbfe; background: #f8fbff;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.06);
+}
 .meal-tag {
   font-size: 11px; background: #e0e7ff; color: #4338ca; border-radius: 999px; padding: 1px 7px;
 }
@@ -225,14 +292,18 @@ body {
 .coach-note { font-size: 13px; color: var(--sub); line-height: 1.5; padding: 4px 2px; }
 
 /* ---- 알러지 현황 ---- */
-.allergy-summary-hint { font-size: 12px; color: var(--sub); line-height: 1.5; margin-bottom: 10px; }
 .allergy-panel .allergy-tag { border-color: #fcd34d; background: #fffbeb; }
 .allergy-teams { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
 .allergy-team-row {
   display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px;
   border: 1px solid var(--line); border-radius: 10px; font-size: 14px;
 }
-.allergy-team-row span { color: var(--amber); font-weight: 600; text-align: right; }
+.allergy-person-groups { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
+.allergy-person-chip {
+  border-radius: 999px; padding: 4px 8px; background: #fffbeb;
+  color: var(--amber); font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.allergy-person-chip b { color: #92400e; }
 
 /* ---- 공통 소품 ---- */
 .count-company { font-size: 12px; color: var(--sub); font-weight: 500; }
@@ -269,9 +340,11 @@ body {
   .admin-title { font-size: 16px; }
   .admin-name { display: block; margin-top: 2px; }
   .admin-header-right { width: 100%; justify-content: space-between; }
-  .toolbar { flex-direction: column; align-items: stretch; }
-  .toolbar-actions { justify-content: space-between; }
-  .toolbar-actions .btn-secondary, .toolbar-actions .btn-ghost { flex: 1; text-align: center; }
+  .workflow-step, .delivery-range-bar { padding: 10px; }
+  .toolbar-actions { grid-template-columns: minmax(68px, 1fr) auto auto auto auto; gap: 4px; }
+  .toolbar-actions .btn-secondary, .toolbar-actions .btn-ghost { text-align: center; }
+  .toolbar-tool { padding: 7px 6px; font-size: 11px; }
+  .bottom-sheet { width: 100%; max-height: 86dvh; padding-left: 14px; padding-right: 14px; }
   /* 그리드는 한 줄에 하나씩 */
   .totals-grid, .count-grid, .coach-list { grid-template-columns: 1fr; }
   .stat-cards { grid-template-columns: repeat(2, 1fr); }
@@ -279,6 +352,7 @@ body {
   .call-card { flex-direction: column; align-items: stretch; }
   .call-card-actions { justify-content: flex-end; }
   .call-card-actions .btn-primary, .call-card-actions .btn-secondary { width: auto; }
-  .table-search { width: 100%; }
+  .table-search { width: 100%; padding: 8px 10px; font-size: 12px; min-height: 40px; }
+  .delivery-range-bar { margin-left: -2px; margin-right: -2px; }
   .bar-name { min-width: 84px; font-size: 13px; }
 }

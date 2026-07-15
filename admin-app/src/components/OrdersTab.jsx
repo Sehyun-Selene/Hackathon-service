@@ -1,5 +1,57 @@
-import { useMemo, useState } from 'react'
-import { MEALS, MENUS, MENU_BY_ID, MEAL_BY_ID, getAssignedCoachForTeam } from '../config.js'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  MEALS,
+  MENUS,
+  MENU_BY_ID,
+  MEAL_BY_ID,
+  TOTAL_TEAMS,
+  DELIVERY_TEAM_RANGE_SIZE,
+  getAssignedCoachForTeam,
+} from '../config.js'
+import { getOpenMeal, now } from '../lib/time.js'
+
+function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelivered }) {
+  return (
+    <div className="team-rows">
+      {rows.map((row) => {
+        const done = isDelivered(row.teamId)
+        return (
+          <div key={row.teamId} className={`team-row${done ? ' delivered' : ''}`}>
+            <div className="team-row-body">
+              <div className="team-row-head">
+                <b>팀 {row.teamId}</b>
+                {row.assignedName && <span className="count-company">{row.assignedName}</span>}
+                {row.memberCount && <span className="member-count">{row.memberCount}명</span>}
+              </div>
+              <div className="team-row-items">
+                {row.items.map((item, index) => (
+                  <span key={index} className="ti">
+                    {mealFilter === 'all' && (
+                      <span className="meal-tag">{MEAL_BY_ID[item.mealId]?.label}</span>
+                    )}
+                    {MENU_BY_ID[item.menuId]?.name || item.menuId} <b>{item.qty}</b>
+                  </span>
+                ))}
+              </div>
+            </div>
+            {singleMeal && (
+              <label className="deliver-check">
+                <input
+                  type="checkbox"
+                  checked={done}
+                  onChange={(event) =>
+                    onToggleDelivered(row.teamId, mealFilter, event.target.checked)
+                  }
+                />
+                완료
+              </label>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 // 주문 현황 (PRD 5.2): 팀별 내역, 시간대 필터, 메뉴별 합산, 품절 처리,
 // CSV 내보내기, 팀 번호 검색, 알러지 현황, 배달 체크(끼니별), 인쇄용 체크리스트.
@@ -8,9 +60,32 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   const [showSoldoutPanel, setShowSoldoutPanel] = useState(false)
   const [showAllergyPanel, setShowAllergyPanel] = useState(false)
   const [teamQuery, setTeamQuery] = useState('')
+  const [teamRange, setTeamRange] = useState('all')
+  const [showDelivered, setShowDelivered] = useState(false)
+
+  const closeUtilityPanels = () => {
+    setShowAllergyPanel(false)
+    setShowSoldoutPanel(false)
+  }
+
+  useEffect(() => {
+    if (!showAllergyPanel && !showSoldoutPanel) return undefined
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') closeUtilityPanels()
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [showAllergyPanel, showSoldoutPanel])
 
   const filteredMealIds = mealFilter === 'all' ? MEALS.map((m) => m.id) : [mealFilter]
   const singleMeal = mealFilter !== 'all' // 배달 체크는 끼니 단위로만 의미 있음
+  const openOrderMeal = getOpenMeal(now().getTime())
+  const soldoutMeal = openOrderMeal
 
   // total = 총 주문 수량, remaining = 아직 배달 안 된 수량 (배달 완료 팀은 차감)
   // 배달 진행에 따라 remaining이 실시간으로 줄어듦 → 개수 검증용
@@ -58,27 +133,49 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
 
   const queryNum = parseInt(teamQuery, 10)
   const hasQuery = teamQuery.trim() !== '' && Number.isFinite(queryNum)
-  const visibleRows = hasQuery
-    ? teamRows.filter((r) => parseInt(r.teamId, 10) === queryNum)
-    : teamRows
-
   const isDelivered = (teamId) => singleMeal && !!scan.delivered?.[teamId]?.[mealFilter]
   const deliveredCount = singleMeal ? teamRows.filter((r) => isDelivered(r.teamId)).length : 0
 
-  // 알러지 현황 (사람 단위)
+  const rangeOptions = Array.from(
+    { length: Math.ceil(TOTAL_TEAMS / DELIVERY_TEAM_RANGE_SIZE) },
+    (_, index) => {
+      const start = index * DELIVERY_TEAM_RANGE_SIZE + 1
+      const end = Math.min(start + DELIVERY_TEAM_RANGE_SIZE - 1, TOTAL_TEAMS)
+      return { id: `${start}-${end}`, start, end, label: `${start}~${end}` }
+    },
+  )
+  const selectedRange = rangeOptions.find((range) => range.id === teamRange)
+  const rangedRows = selectedRange
+    ? teamRows.filter((row) => {
+        const teamNumber = parseInt(row.teamId, 10)
+        return teamNumber >= selectedRange.start && teamNumber <= selectedRange.end
+      })
+    : teamRows
+  const pendingRows = singleMeal ? rangedRows.filter((row) => !isDelivered(row.teamId)) : rangedRows
+  const completedRows = singleMeal ? rangedRows.filter((row) => isDelivered(row.teamId)) : []
+  const visibleRows = hasQuery
+    ? teamRows.filter((row) => parseInt(row.teamId, 10) === queryNum)
+    : pendingRows
+
+  // 알러지 현황: 같은 알러지 조합을 가진 사람끼리 팀 안에서 묶어 표시
   const allergyInfo = useMemo(() => {
-    const byAllergy = {}
     const teamsWith = []
     Object.entries(scan.teams).forEach(([teamId, team]) => {
       const people = (team.allergies || []).map((p) => (Array.isArray(p) ? p : [p]))
-      if (people.length)
-        teamsWith.push({ teamId, assignedName: getAssignedCoachForTeam(teamId)?.name, people })
+      if (!people.length) return
+      const groupCounts = {}
       people.forEach((personList) => {
-        personList.forEach((a) => (byAllergy[a] = (byAllergy[a] || 0) + 1))
+        const allergies = [...personList].filter(Boolean).sort().join('·')
+        if (allergies) groupCounts[allergies] = (groupCounts[allergies] || 0) + 1
+      })
+      teamsWith.push({
+        teamId,
+        assignedName: getAssignedCoachForTeam(teamId)?.name,
+        groups: Object.entries(groupCounts).map(([allergies, count]) => ({ allergies, count })),
       })
     })
     teamsWith.sort((a, b) => a.teamId.localeCompare(b.teamId, undefined, { numeric: true }))
-    return { byAllergy, teamsWith }
+    return { teamsWith }
   }, [scan.teams])
 
   const exportCsv = () => {
@@ -116,7 +213,8 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   // (C) 인쇄용 배달 체크리스트 — 현재 끼니 필터 기준, 팀번호순, 종이 체크칸 포함
   const printChecklist = () => {
     const label = mealFilter === 'all' ? '전체' : MEAL_BY_ID[mealFilter].label
-    const rowsHtml = teamRows
+    const rangeLabel = selectedRange ? `${selectedRange.label}번` : '전체 팀'
+    const rowsHtml = rangedRows
       .map((r) => {
         const items = r.items
           .map((it) => {
@@ -141,8 +239,8 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   td.t { white-space:nowrap; font-weight:700; }
   @media print { .noprint { display:none; } }
 </style></head><body>
-<h1>배달 체크리스트 — ${label}</h1>
-<div class="sub">총 ${teamRows.length}팀 · 배달 시 왼쪽 칸에 체크</div>
+<h1>배달 체크리스트 — ${label} · ${rangeLabel}</h1>
+<div class="sub">총 ${rangedRows.length}팀 · 배달 시 왼쪽 칸에 체크</div>
 <button class="noprint" onclick="window.print()" style="margin-bottom:12px;padding:8px 14px;">🖨 인쇄</button>
 <table><thead><tr><th>완료</th><th>팀</th><th>주문 내역</th></tr></thead><tbody>${rowsHtml}</tbody></table>
 </body></html>`
@@ -158,118 +256,185 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   return (
     <div>
       <div className="toolbar">
-        <div className="filter-group">
-          <button
-            className={`chip${mealFilter === 'all' ? ' on' : ''}`}
-            onClick={() => setMealFilter('all')}
-          >
-            전체
-          </button>
-          {MEALS.map((m) => (
+        <section className="workflow-step workflow-meal-step">
+          <div className="workflow-step-head">
+            <span className="step-number">1</span>
+            <b>식사 선택</b>
+          </div>
+          <div className="filter-group">
             <button
-              key={m.id}
-              className={`chip${mealFilter === m.id ? ' on' : ''}`}
-              onClick={() => setMealFilter(m.id)}
+              className={`chip${mealFilter === 'all' ? ' on' : ''}`}
+              onClick={() => setMealFilter('all')}
             >
-              {m.label}
+              전체
             </button>
-          ))}
-        </div>
+            {MEALS.map((m) => (
+              <button
+                key={m.id}
+                className={`chip${mealFilter === m.id ? ' on' : ''}`}
+                onClick={() => setMealFilter(m.id)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </section>
         <div className="toolbar-actions">
           <input
             className="table-search"
             type="search"
             inputMode="numeric"
-            placeholder="🔍 팀 번호"
+            placeholder="팀번호"
             value={teamQuery}
             onChange={(e) => setTeamQuery(e.target.value)}
             aria-label="팀 번호 검색"
           />
-          <button className="btn-ghost" onClick={() => setShowAllergyPanel((v) => !v)}>
-            🥗 알러지 {showAllergyPanel ? '닫기' : `(${allergyInfo.teamsWith.length}팀)`}
+          <button
+            className={`btn-ghost toolbar-tool${showAllergyPanel ? ' active' : ''}`}
+            onClick={() => {
+              setShowAllergyPanel((current) => !current)
+              setShowSoldoutPanel(false)
+            }}
+          >
+            알러지 {allergyInfo.teamsWith.length}
           </button>
-          <button className="btn-ghost" onClick={() => setShowSoldoutPanel((v) => !v)}>
-            🚫 품절 {showSoldoutPanel ? '닫기' : '관리'}
+          <button
+            className={`btn-ghost toolbar-tool${showSoldoutPanel ? ' active' : ''}`}
+            onClick={() => {
+              setShowSoldoutPanel((current) => !current)
+              setShowAllergyPanel(false)
+            }}
+          >
+            품절 관리
           </button>
-          <button className="btn-ghost" onClick={printChecklist}>
-            🖨 체크리스트
+          <button className="btn-ghost toolbar-tool" onClick={printChecklist}>
+            체크리스트
           </button>
-          <button className="btn-secondary" onClick={exportCsv}>
-            ⬇️ CSV
+          <button className="btn-secondary toolbar-tool" onClick={exportCsv}>
+            CSV
           </button>
         </div>
       </div>
 
+      {singleMeal && (
+        <section className="delivery-range-bar" aria-label="배부할 팀 번호 구간">
+          <div className="delivery-range-head">
+            <div className="workflow-step-head">
+              <span className="step-number">2</span>
+              <b>배부 구간</b>
+            </div>
+            <span className="pending-count">미배부 {pendingRows.length}팀</span>
+          </div>
+          <div className="filter-group delivery-ranges">
+            <button
+              className={`chip${teamRange === 'all' ? ' on' : ''}`}
+              onClick={() => setTeamRange('all')}
+            >
+              전체
+            </button>
+            {rangeOptions.map((range) => (
+              <button
+                key={range.id}
+                className={`chip${teamRange === range.id ? ' on' : ''}`}
+                onClick={() => setTeamRange(range.id)}
+              >
+                {range.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {showAllergyPanel && (
-        <section className="panel allergy-panel">
-          <h3>🥗 알러지 현황 (대체 메뉴 준비 참고)</h3>
-          {allergyInfo.teamsWith.length === 0 ? (
-            <p className="empty-text">알러지를 등록한 인원이 없습니다.</p>
-          ) : (
-            <>
-              <p className="allergy-summary-hint">
-                항목별 숫자는 <b>인원 수</b> 기준입니다 (한 사람이 여러 개 가진 경우 아래 팀별 목록에서
-                묶여서 표시됩니다).
-              </p>
-              <div className="totals-grid">
-                {Object.entries(allergyInfo.byAllergy)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([a, n]) => (
-                    <div key={a} className="total-item allergy-tag">
-                      <span>{a}</span>
-                      <b>{n}명</b>
-                    </div>
-                  ))}
-              </div>
-              <div className="allergy-teams">
+        <div className="bottom-sheet-backdrop" onClick={closeUtilityPanels}>
+          <section
+            className="bottom-sheet allergy-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="allergy-sheet-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="sheet-handle" aria-hidden="true" />
+            <div className="sheet-head">
+              <h3 id="allergy-sheet-title">알러지 현황</h3>
+              <button className="sheet-close" onClick={closeUtilityPanels}>닫기</button>
+            </div>
+            <p className="sheet-description">팀별 대체 메뉴 준비에 참고하세요.</p>
+            <div className="sheet-body">
+              {allergyInfo.teamsWith.length === 0 ? (
+                <p className="empty-text">알러지를 등록한 인원이 없습니다.</p>
+              ) : (
+                <div className="allergy-teams">
                 {allergyInfo.teamsWith.map((t) => (
                   <div key={t.teamId} className="allergy-team-row">
                     <b>
                       팀 {t.teamId}
                       {t.assignedName && <span className="count-company"> {t.assignedName}</span>}
                     </b>
-                    <span>
-                      {t.people.map((personList, i) => `${i + 1}인(${personList.join('·')})`).join(', ')}
-                    </span>
+                    <div className="allergy-person-groups">
+                      {t.groups.map((group) => (
+                        <span key={group.allergies} className="allergy-person-chip">
+                          {group.allergies} <b>{group.count}인</b>
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 ))}
-              </div>
-            </>
-          )}
-        </section>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       )}
 
       {showSoldoutPanel && (
-        <section className="panel">
-          <h3>품절 처리 (누르면 토글 — 참가자 화면에서 즉시 주문 불가)</h3>
-          {MEALS.map((meal) => (
-            <div key={meal.id} className="soldout-row">
-              <b>{meal.label}</b>
-              <div className="soldout-chips">
-                {MENUS[meal.id].map((m) => (
-                  <button
-                    key={m.id}
-                    className={`chip${scan.soldout[m.id] ? ' soldout-on' : ''}`}
-                    onClick={() => onToggleSoldout(m.id)}
-                  >
-                    {scan.soldout[m.id] ? '🚫 ' : ''}
-                    {m.name}
-                  </button>
-                ))}
-              </div>
+        <div className="bottom-sheet-backdrop" onClick={closeUtilityPanels}>
+          <section
+            className="bottom-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="soldout-sheet-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="sheet-handle" aria-hidden="true" />
+            <div className="sheet-head">
+              <h3 id="soldout-sheet-title">
+                품절 관리{soldoutMeal ? ` · ${soldoutMeal.label}` : ''}
+              </h3>
+              <button className="sheet-close" onClick={closeUtilityPanels}>닫기</button>
             </div>
-          ))}
-        </section>
+            <p className="sheet-description">
+              {soldoutMeal
+                ? '메뉴를 누르면 참가자 화면에서 즉시 주문할 수 없게 됩니다.'
+                : '현재 주문 가능한 식사가 없습니다.'}
+            </p>
+            <div className="sheet-body">
+              {soldoutMeal ? (
+                <div className="soldout-row soldout-row-current">
+                  <b>{soldoutMeal.label}</b>
+                  <div className="soldout-chips">
+                    {MENUS[soldoutMeal.id].map((m) => (
+                      <button
+                        key={m.id}
+                        className={`chip${scan.soldout[m.id] ? ' soldout-on' : ''}`}
+                        onClick={() => onToggleSoldout(m.id)}
+                      >
+                        {scan.soldout[m.id] ? '🚫 ' : ''}
+                        {m.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="empty-text">주문 가능 시간이 되면 해당 식사의 메뉴가 표시됩니다.</p>
+              )}
+            </div>
+          </section>
+        </div>
       )}
 
       <section className="panel">
         <h3>메뉴별 합산 수량 {mealFilter !== 'all' && `— ${MEAL_BY_ID[mealFilter].label}`}</h3>
-        {anyDelivered && (
-          <p className="allergy-summary-hint">
-            큰 숫자 = <b>아직 배달 안 된 수량</b> (배달 완료 체크한 팀은 빠짐) · 회색 = 총 주문. 배달할수록
-            0으로 줄어듭니다.
-          </p>
-        )}
         {Object.keys(totals.total).length === 0 ? (
           <p className="empty-text">아직 주문이 없습니다.</p>
         ) : (
@@ -295,10 +460,12 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
         )}
       </section>
 
-      <section className="panel">
+      <section className="panel delivery-team-panel">
         <div className="panel-head-row">
-          <h3>
-            팀별 주문 ({visibleRows.length}팀{hasQuery && ` — "${queryNum}번" 검색 중`})
+          <h3 className="workflow-heading">
+            {singleMeal && !hasQuery && <span className="step-number">3</span>}
+            {singleMeal && !hasQuery ? '미배부 팀' : '팀별 주문'} ({visibleRows.length}팀
+            {hasQuery && ` — "${queryNum}번" 검색 중`})
           </h3>
           {singleMeal && teamRows.length > 0 && (
             <span className="deliver-progress">
@@ -309,7 +476,7 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
 
         {!singleMeal && teamRows.length > 0 && (
           <p className="deliver-hint">
-            끼니(저녁/야식/아침/점심)를 선택하면 팀별 <b>배달 완료 체크</b>를 쓸 수 있어요.
+            끼니(저녁/야식/아침/점심)를 선택하면 팀별 <b>완료 체크</b>를 쓸 수 있어요.
           </p>
         )}
 
@@ -317,44 +484,38 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
           <p className="empty-text">
             {hasQuery
               ? `팀 ${String(queryNum).padStart(2, '0')}의 주문 내역이 없습니다.`
-              : '아직 주문이 없습니다.'}
+              : singleMeal
+                ? '선택한 구간의 배부가 모두 완료됐습니다.'
+                : '아직 주문이 없습니다.'}
           </p>
         ) : (
-          <div className="team-rows">
-            {visibleRows.map((r) => {
-              const done = isDelivered(r.teamId)
-              return (
-                <div key={r.teamId} className={`team-row${done ? ' delivered' : ''}`}>
-                  <div className="team-row-body">
-                    <div className="team-row-head">
-                      <b>팀 {r.teamId}</b>
-                      {r.assignedName && <span className="count-company">{r.assignedName}</span>}
-                      {r.memberCount && <span className="member-count">{r.memberCount}명</span>}
-                    </div>
-                    <div className="team-row-items">
-                      {r.items.map((it, i) => (
-                        <span key={i} className="ti">
-                          {mealFilter === 'all' && (
-                            <span className="meal-tag">{MEAL_BY_ID[it.mealId]?.label}</span>
-                          )}
-                          {MENU_BY_ID[it.menuId]?.name || it.menuId} <b>{it.qty}</b>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {singleMeal && (
-                    <label className="deliver-check">
-                      <input
-                        type="checkbox"
-                        checked={done}
-                        onChange={(e) => onToggleDelivered(r.teamId, mealFilter, e.target.checked)}
-                      />
-                      배달완료
-                    </label>
-                  )}
-                </div>
-              )
-            })}
+          <TeamRowList
+            rows={visibleRows}
+            mealFilter={mealFilter}
+            singleMeal={singleMeal}
+            isDelivered={isDelivered}
+            onToggleDelivered={onToggleDelivered}
+          />
+        )}
+
+        {singleMeal && !hasQuery && completedRows.length > 0 && (
+          <div className="completed-deliveries">
+            <button
+              className="completed-toggle"
+              onClick={() => setShowDelivered((current) => !current)}
+              aria-expanded={showDelivered}
+            >
+              배부 완료 팀 {completedRows.length}팀 {showDelivered ? '접기' : '보기'}
+            </button>
+            {showDelivered && (
+              <TeamRowList
+                rows={completedRows}
+                mealFilter={mealFilter}
+                singleMeal={singleMeal}
+                isDelivered={isDelivered}
+                onToggleDelivered={onToggleDelivered}
+              />
+            )}
           </div>
         )}
       </section>
