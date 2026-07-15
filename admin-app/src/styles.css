@@ -117,6 +117,9 @@ body {
   display: flex; justify-content: space-between; align-items: center;
   border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px;
 }
+.total-of { font-size: 12px; color: var(--sub); font-weight: 500; }
+.total-item.done { opacity: 0.5; }
+.total-item.done b { color: var(--green); }
 .total-item.limit-hit { border-color: var(--red); background: #fef2f2; }
 .total-item.limit-near { border-color: var(--amber); background: #fffbeb; }
 

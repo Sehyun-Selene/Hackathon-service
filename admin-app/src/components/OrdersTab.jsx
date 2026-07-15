@@ -12,17 +12,26 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   const filteredMealIds = mealFilter === 'all' ? MEALS.map((m) => m.id) : [mealFilter]
   const singleMeal = mealFilter !== 'all' // 배달 체크는 끼니 단위로만 의미 있음
 
+  // total = 총 주문 수량, remaining = 아직 배달 안 된 수량 (배달 완료 팀은 차감)
+  // 배달 진행에 따라 remaining이 실시간으로 줄어듦 → 개수 검증용
   const totals = useMemo(() => {
-    const acc = {}
-    Object.values(scan.orders).forEach((order) => {
+    const total = {}
+    const remaining = {}
+    Object.entries(scan.orders).forEach(([teamId, order]) => {
       filteredMealIds.forEach((mealId) => {
+        const deliveredThis = !!scan.delivered?.[teamId]?.[mealId]
         ;(order.meals?.[mealId]?.items || []).forEach(({ menuId, qty }) => {
-          acc[menuId] = (acc[menuId] || 0) + qty
+          total[menuId] = (total[menuId] || 0) + qty
+          if (!deliveredThis) remaining[menuId] = (remaining[menuId] || 0) + qty
         })
       })
     })
-    return acc
-  }, [scan.orders, mealFilter])
+    Object.keys(total).forEach((k) => {
+      if (!(k in remaining)) remaining[k] = 0
+    })
+    return { total, remaining }
+  }, [scan.orders, scan.delivered, mealFilter])
+  const anyDelivered = Object.keys(totals.total).some((k) => totals.remaining[k] !== totals.total[k])
 
   // 팀별 주문 행 (선택 끼니 기준). items: [{mealId, menuId, qty}]
   const teamRows = useMemo(() => {
@@ -255,18 +264,33 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
 
       <section className="panel">
         <h3>메뉴별 합산 수량 {mealFilter !== 'all' && `— ${MEAL_BY_ID[mealFilter].label}`}</h3>
-        {Object.keys(totals).length === 0 ? (
+        {anyDelivered && (
+          <p className="allergy-summary-hint">
+            큰 숫자 = <b>아직 배달 안 된 수량</b> (배달 완료 체크한 팀은 빠짐) · 회색 = 총 주문. 배달할수록
+            0으로 줄어듭니다.
+          </p>
+        )}
+        {Object.keys(totals.total).length === 0 ? (
           <p className="empty-text">아직 주문이 없습니다.</p>
         ) : (
           <div className="totals-grid">
-            {Object.entries(totals)
+            {Object.entries(totals.total)
               .sort(([, a], [, b]) => b - a)
-              .map(([menuId, qty]) => (
-                <div key={menuId} className="total-item">
-                  <span>{MENU_BY_ID[menuId]?.name || menuId}</span>
-                  <b>{qty}개</b>
-                </div>
-              ))}
+              .map(([menuId, total]) => {
+                const remain = totals.remaining[menuId]
+                const allDone = anyDelivered && remain === 0
+                return (
+                  <div key={menuId} className={`total-item${allDone ? ' done' : ''}`}>
+                    <span>{MENU_BY_ID[menuId]?.name || menuId}</span>
+                    <b>
+                      {remain}개
+                      {anyDelivered && remain !== total && (
+                        <span className="total-of"> / 총 {total}</span>
+                      )}
+                    </b>
+                  </div>
+                )
+              })}
           </div>
         )}
       </section>
