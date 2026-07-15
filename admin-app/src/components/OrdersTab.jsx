@@ -8,7 +8,18 @@ import {
   DELIVERY_TEAM_RANGE_SIZE,
   getAssignedCoachForTeam,
 } from '../config.js'
-import { getOpenMeal, now } from '../lib/time.js'
+import { getNextMeal, getOpenMeal, getVisibleMeals, now } from '../lib/time.js'
+
+function getDefaultMealId() {
+  const currentTime = now().getTime()
+  const openMeal = getOpenMeal(currentTime)
+  if (openMeal) return openMeal.id
+
+  const visibleMeals = getVisibleMeals(currentTime)
+  if (visibleMeals.length) return visibleMeals[visibleMeals.length - 1].id
+
+  return getNextMeal(currentTime)?.id || MEALS[MEALS.length - 1].id
+}
 
 function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelivered }) {
   return (
@@ -56,7 +67,7 @@ function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelive
 // 주문 현황 (PRD 5.2): 팀별 내역, 시간대 필터, 메뉴별 합산, 품절 처리,
 // CSV 내보내기, 팀 번호 검색, 알러지 현황, 배달 체크(끼니별), 인쇄용 체크리스트.
 export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) {
-  const [mealFilter, setMealFilter] = useState('all')
+  const [mealFilter, setMealFilter] = useState(getDefaultMealId)
   const [showSoldoutPanel, setShowSoldoutPanel] = useState(false)
   const [showAllergyPanel, setShowAllergyPanel] = useState(false)
   const [teamQuery, setTeamQuery] = useState('')
@@ -262,12 +273,6 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
             <b>식사 선택</b>
           </div>
           <div className="filter-group">
-            <button
-              className={`chip${mealFilter === 'all' ? ' on' : ''}`}
-              onClick={() => setMealFilter('all')}
-            >
-              전체
-            </button>
             {MEALS.map((m) => (
               <button
                 key={m.id}
