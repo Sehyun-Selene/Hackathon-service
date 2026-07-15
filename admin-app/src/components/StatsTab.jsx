@@ -1,22 +1,12 @@
 import { useMemo } from 'react'
-import { MEALS, MENU_BY_ID, CALL_LIMIT_PER_TEAM, CALL_REASONS } from '../config.js'
+import { CALL_LIMIT_PER_TEAM, CALL_REASONS } from '../config.js'
 import { fmtCountdown } from '../lib/time.js'
 
-// 주문/호출 이력 통계 대시보드 (PRD 5.5)
+// 호출 이력 통계 대시보드 (PRD 5.5)
+// 주문 쪽 통계는 "주문 현황" 탭(끼니 필터 + 메뉴별 합산 + 팀별 주문)이 그대로
+// 커버하므로 여기서는 다루지 않고, 주문현황엔 없는 호출 통계만 제공.
 export default function StatsTab({ scan }) {
   const stats = useMemo(() => {
-    // --- 주문 통계 ---
-    const byMenu = {} // menuId → 누적 수량 (케이터링 발주 기준 수치)
-    Object.entries(scan.orders).forEach(([, order]) => {
-      MEALS.forEach((meal) => {
-        const items = order.meals?.[meal.id]?.items || []
-        items.forEach(({ menuId, qty }) => {
-          byMenu[menuId] = (byMenu[menuId] || 0) + qty
-        })
-      })
-    })
-
-    // --- 호출 통계 ---
     const allCalls = Object.entries(scan.calls).flatMap(([table, data]) =>
       (data.calls || []).map((c) => ({ ...c, table })),
     )
@@ -38,36 +28,11 @@ export default function StatsTab({ scan }) {
       .filter(([, n]) => n >= CALL_LIMIT_PER_TEAM - 1)
       .sort(([, a], [, b]) => b - a)
 
-    return { byMenu, allCalls, byReason, avgHandleMs, byCoach, nearLimitTeams }
+    return { allCalls, byReason, avgHandleMs, byCoach, nearLimitTeams }
   }, [scan])
 
   return (
     <div>
-      <section className="panel">
-        <h3>📦 주문 통계</h3>
-        <h4 className="stat-h4">메뉴별 누적 주문량</h4>
-        {Object.keys(stats.byMenu).length === 0 ? (
-          <p className="empty-text">데이터 없음</p>
-        ) : (
-          <div className="bar-list">
-            {Object.entries(stats.byMenu)
-              .sort(([, a], [, b]) => b - a)
-              .map(([menuId, qty]) => {
-                const max = Math.max(...Object.values(stats.byMenu))
-                return (
-                  <div key={menuId} className="bar-row">
-                    <span className="bar-name">{MENU_BY_ID[menuId]?.name || menuId}</span>
-                    <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${(qty / max) * 100}%` }} />
-                    </div>
-                    <b>{qty}</b>
-                  </div>
-                )
-              })}
-          </div>
-        )}
-      </section>
-
       <section className="panel">
         <h3>🙋 호출 통계</h3>
         <div className="stat-cards">

@@ -25,7 +25,7 @@ const TAB_DEFS = [
   { id: 'orders', label: '📋 주문 현황' },
   { id: 'calls', label: '🔔 호출 알림' },
   { id: 'coaches', label: '🧑‍🏫 코치 현황' },
-  { id: 'stats', label: '📊 통계' },
+  { id: 'stats', label: '📊 호출 통계' },
 ]
 
 // 등록된 팀 전체 + 주문/호출/카운트 + 코치 로스터 + 품절 상태를 한 번에 스캔
