@@ -169,7 +169,7 @@ html.dark .folder-tab { background: #2c2721; }
   display: flex; align-items: center; justify-content: center;
 }
 .board-header-text { flex: 1; min-width: 0; }
-.board-header-title {
+.board-header-title, .call-title {
   font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   font-size: 24px; font-weight: 800;
 }
@@ -506,7 +506,7 @@ html.dark .call-company-note { background: #2c2721; }
   .folder-body { padding: 14px; }
   .board-header { gap: 7px; }
   .board-header-icon { width: 48px; height: 48px; }
-  .board-header-title { font-size: 21px; }
+  .board-header-title, .call-title { font-size: 21px; }
   .board-header-sub { font-size: 11.5px; }
   .board-header-actions { gap: 4px; }
   .board-refresh-btn { width: 32px; height: 32px; }

@@ -52,7 +52,7 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
   return (
     <section className="call-section">
       <div className="card-head-row">
-        <h3 className="card-title">🙋 코치 호출</h3>
+        <h3 className="card-title call-title">🙋 코치 호출</h3>
         <span className={`call-quota${limitReached ? ' quota-over' : ''}`}>
           사용 {callCount}회 / 남은 횟수 {remaining}회
         </span>
