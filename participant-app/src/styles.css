@@ -53,7 +53,7 @@ html.dark .sync-error { background: #450a0a; color: #fca5a5; }
 
 /* ---- 폴더 탭 오른쪽 팀 프로필 ---- */
 .team-profile-btn {
-  min-height: 37px; display: flex; align-items: center; gap: 5px;
+  min-height: 40px; display: flex; align-items: center; gap: 5px;
   padding: 3px 8px 3px 4px; border: 1px solid #fdba91; border-radius: 999px;
   background: linear-gradient(180deg, #fff 0%, #fff8f3 100%); color: var(--text);
   box-shadow: 0 2px 7px rgba(239, 109, 47, 0.14); font-family: inherit;
@@ -79,14 +79,14 @@ html.dark .team-profile-btn { background: #2c2721; border-color: #7c3f20; }
   flex: 0 0 auto;
   border: 1px solid var(--line); border-bottom: none;
   background: #ece9e4; color: var(--sub);
-  border-radius: 14px 14px 0 0; padding: 11px 16px 12px;
-  font-size: 15px; font-weight: 700; cursor: pointer; position: relative;
+  border-radius: 14px 14px 0 0; padding: 12px 17px 13px;
+  font-size: 16px; font-weight: 700; cursor: pointer; position: relative;
   margin-bottom: -1px; /* 본문 시트 상단 테두리와 겹쳐 이어붙게 */
   transition: background 0.15s, color 0.15s;
 }
 html.dark .folder-tab { background: #2c2721; }
 .folder-tab + .folder-tab { margin-left: -12px; } /* 두 탭이 겹쳐 보이게 */
-.folder-tab:not(.active) { z-index: 1; padding-top: 9px; padding-bottom: 10px; }
+.folder-tab:not(.active) { z-index: 1; padding-top: 11px; padding-bottom: 12px; }
 .folder-tab.active {
   background: var(--card); color: var(--primary); z-index: 3;
   box-shadow: 0 -3px 8px rgba(0,0,0,0.05);
@@ -173,10 +173,15 @@ html.dark .folder-tab { background: #2c2721; }
   font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   font-size: 24px; font-weight: 800;
 }
-.board-header-sub { font-size: 13px; color: var(--sub); margin-top: 2px; }
-.board-header-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-.board-countdown { text-align: right; font-size: 11px; color: var(--sub); }
-.board-countdown b { display: block; font-size: 13px; color: var(--red); }
+.board-header-sub {
+  margin-top: 2px; color: var(--sub); font-size: 12px;
+  letter-spacing: -0.15px; white-space: nowrap;
+}
+.board-header-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.board-countdown {
+  min-width: 82px; text-align: right; font-size: 10px; color: var(--sub); white-space: nowrap;
+}
+.board-countdown b { display: block; font-size: 12px; color: var(--red); }
 .board-refresh-btn {
   width: 34px; height: 34px; flex: 0 0 auto; display: flex; align-items: center;
   justify-content: center; border: 1px solid var(--line); border-radius: 11px;
@@ -491,17 +496,18 @@ html.dark .call-company-note { background: #2c2721; }
 
 @media (max-width: 400px) {
   .folder-tabs { padding-left: 2px; }
-  .folder-tab { padding: 10px 11px 11px; font-size: 13px; }
+  .folder-tab { padding: 11px 12px 12px; font-size: 14px; }
   .folder-tab + .folder-tab { margin-left: -8px; }
   .folder-team { gap: 3px; padding-left: 4px; padding-right: 0; }
-  .team-profile-btn { min-height: 33px; gap: 3px; padding: 2px 6px 2px 3px; }
+  .team-profile-btn { min-height: 36px; gap: 3px; padding: 2px 6px 2px 3px; }
   .team-profile-avatar { width: 24px; height: 24px; font-size: 12px; }
   .team-profile-label { font-size: 11px; }
   .team-profile-chevron { font-size: 15px; }
   .folder-body { padding: 14px; }
-  .board-header { gap: 9px; }
+  .board-header { gap: 7px; }
   .board-header-icon { width: 48px; height: 48px; }
   .board-header-title { font-size: 21px; }
+  .board-header-sub { font-size: 11.5px; }
   .board-header-actions { gap: 4px; }
   .board-refresh-btn { width: 32px; height: 32px; }
 }
