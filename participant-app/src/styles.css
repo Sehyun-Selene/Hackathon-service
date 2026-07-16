@@ -30,8 +30,8 @@ html.dark .menu-photo { background: #2c2721; }
 html.dark .setup-chip { background: #231f1a; }
 html.dark .sticky-order-bar { background: #231f1a; }
 html.dark .guide-section { background: #231f1a; }
-html.dark .btn-reason { background: #1e2a44; border-color: #2c3e66; color: #9ec1ff; }
-html.dark .btn-reason { background: #1e2a44; border-color: #2c3e66; color: #9ec1ff; }
+html.dark .btn-reason { background: #3a2c14; border-color: #7c3f20; color: #ffb38a; }
+html.dark .btn-reason.on { background: var(--primary); border-color: var(--primary); color: #fff; }
 html.dark .zone-box.has-coach { background: #1e2a44; border-color: #2c3e66; }
 
 body {
@@ -168,7 +168,10 @@ html.dark .folder-tab { background: #2c2721; }
   display: flex; align-items: center; justify-content: center;
 }
 .board-header-text { flex: 1; min-width: 0; }
-.board-header-title { font-size: 24px; font-weight: 800; }
+.board-header-title {
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-size: 24px; font-weight: 800;
+}
 .board-header-sub { font-size: 13px; color: var(--sub); margin-top: 2px; }
 .board-countdown { text-align: right; font-size: 11px; color: var(--sub); }
 .board-countdown b { display: block; font-size: 13px; color: var(--red); }
@@ -321,9 +324,10 @@ html.dark .card-stepper { background: #2c2721; }
 .call-quota { font-size: 13px; color: var(--sub); font-weight: 600; }
 .quota-over { color: var(--red); }
 .btn-call {
-  width: 100%; background: #1d4ed8; color: #fff; border: none;
+  width: 100%; background: var(--primary); color: #fff; border: none;
   border-radius: 12px; padding: 16px; font-size: 17px; font-weight: 800; cursor: pointer;
 }
+.btn-call:active { background: var(--primary-dark); }
 .btn-call:disabled { background: #d6d3d1; }
 .call-limit-box { text-align: center; padding: 8px 0; }
 .call-limit-box p:first-child { color: var(--red); margin-bottom: 6px; }
@@ -340,10 +344,10 @@ html.dark .card-stepper { background: #2c2721; }
 .reason-box { text-align: center; }
 .reason-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px; }
 .btn-reason {
-  background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8;
+  background: #fff3ec; border: 1px solid #fdba91; color: var(--primary-dark);
   border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer;
 }
-.btn-reason.on { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.btn-reason.on { background: var(--primary); border-color: var(--primary); color: #fff; }
 .no-limit-tag { font-size: 11px; color: var(--sub); font-weight: 500; }
 .other-reason-row { display: flex; gap: 8px; margin: -2px 0 10px; text-align: left; }
 .other-reason-row .setup-input { flex: 1; }
@@ -360,7 +364,10 @@ html.dark .call-company-note { background: #2c2721; }
   display: block; background: var(--primary); color: #fff;
   border-radius: 16px; padding: 18px 16px; margin-bottom: 12px;
 }
-.setup-header .header-table { font-size: 24px; font-weight: 800; }
+.setup-header .header-table {
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-size: 24px; font-weight: 800;
+}
 .setup-header .header-sub { margin-top: 2px; font-size: 13px; opacity: 0.9; }
 .setup-intro { font-size: 14px; color: var(--sub); line-height: 1.5; margin-bottom: 16px; }
 .setup-field { margin-bottom: 18px; }
@@ -382,7 +389,6 @@ html.dark .call-company-note { background: #2c2721; }
 .custom-allergy-row .setup-input { flex: 1; }
 .custom-allergy-row .btn-ghost { white-space: nowrap; min-height: 44px; }
 .custom-allergy-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.setup-sub-hint { font-size: 12px; color: var(--sub); line-height: 1.5; margin-bottom: 10px; }
 .allergy-person-block {
   border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px;
 }
@@ -407,6 +413,11 @@ html.dark .call-company-note { background: #2c2721; }
 .guide-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 14px; }
 .guide-block b { display: block; font-size: 14px; margin-bottom: 6px; }
 .guide-block p { font-size: 13px; color: var(--sub); line-height: 1.5; }
+.guide-call-limit {
+  display: flex; align-items: baseline; gap: 5px; margin-top: 4px;
+}
+.guide-call-limit span { font-size: 13px; color: var(--sub); }
+.guide-call-limit strong { font-size: 20px; line-height: 1; color: var(--text); font-weight: 800; }
 .guide-block ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
 .guide-block li { font-size: 13px; color: var(--text); }
 .guide-meal {

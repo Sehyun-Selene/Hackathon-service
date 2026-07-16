@@ -84,7 +84,6 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
       <header className="header setup-header">
         <div>
           <div className="header-table">팀 등록</div>
-          <div className="header-sub">해커톤 음식 주문 · 코치 호출</div>
         </div>
       </header>
 
@@ -92,7 +91,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
 
       <section className="card">
         <p className="setup-intro">
-          팀 번호를 입력하면 주문을 시작할 수 있어요. (같은 팀원은 같은 팀 번호를 선택하세요)
+          팀 번호를 입력하면 주문을 시작할 수 있어요.
         </p>
 
         <div className="setup-field">
@@ -135,11 +134,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">알러지 (있는 팀원만 한 명씩 추가해 주세요)</label>
-          <p className="setup-sub-hint">
-            같은 사람이 여러 개 있으면 한 블록에 함께 선택하고, 다른 사람 것이면 블록을 나눠주세요.
-            (대체 메뉴를 몇 개·어떤 조합으로 준비할지 정확히 파악하기 위함입니다)
-          </p>
+          <label className="setup-label">알러지가 있다면 알려주세요!</label>
 
           {allergyBlocks.length === 0 && (
             <p className="empty-text">알러지가 있는 팀원이 없으면 비워두셔도 됩니다.</p>

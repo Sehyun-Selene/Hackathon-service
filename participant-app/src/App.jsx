@@ -16,17 +16,9 @@ import TeamSetup from './components/TeamSetup.jsx'
 import MenuBoard from './components/MenuBoard.jsx'
 import CallSection from './components/CallSection.jsx'
 
-const MY_TEAM_KEY = 'torder-my-team' // 이 기기가 속한 팀 정보(로컬 캐시)
-
 export default function App() {
-  // 이 기기의 팀 정보 (온보딩에서 설정, 로컬에 캐시)
-  const [team, setTeam] = useState(() => {
-    try {
-      return JSON.parse(window.localStorage.getItem(MY_TEAM_KEY) || 'null')
-    } catch {
-      return null
-    }
-  })
+  // 새로고침하거나 다시 접속하면 항상 빈 팀 등록 화면부터 시작합니다.
+  const [team, setTeam] = useState(null)
   const [editingTeam, setEditingTeam] = useState(false)
 
   // 화면 하단 탭: 'order'(음식 주문) | 'call'(코치 호출)
@@ -85,9 +77,11 @@ export default function App() {
       roster.ids.push(t.teamId)
       await storageSet(TEAM_ROSTER_KEY, roster)
     }
-    window.localStorage.setItem(MY_TEAM_KEY, JSON.stringify(record))
     setTeam(record)
     setEditingTeam(false)
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    })
   }, [])
 
   const lookupTeam = useCallback(async (id) => {

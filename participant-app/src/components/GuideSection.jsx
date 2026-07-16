@@ -26,16 +26,19 @@ export default function GuideSection({ defaultOpen = false }) {
         </div>
         <div className="guide-block">
           <b>🙋 코치 호출</b>
-          <p>
-            도움이 필요하면 코치를 호출하세요. 팀당 <b>{CALL_LIMIT_PER_TEAM}회</b>까지 가능하며,
-            우리 팀 번호를 담당하는 코치가 찾아옵니다.
+          <p>도움이 필요하면 코치를 호출하세요.</p>
+          <p className="guide-call-limit">
+            <span>팀당</span>
+            <strong>{CALL_LIMIT_PER_TEAM}회</strong>
+            <span>까지 가능합니다.</span>
           </p>
         </div>
         <div className="guide-block">
           <b>🥗 알러지</b>
           <p>
-            팀 등록 시 입력한 알러지 정보를 운영진이 확인해 대체 메뉴를 준비합니다. 메뉴 옆
-            알러지 표시도 함께 확인해 주세요.
+            팀 등록 시 입력한 알러지 정보를 운영진이 확인해 대체 메뉴를 준비합니다.
+            <br />
+            메뉴 옆 알러지 표시도 함께 확인해 주세요.
           </p>
         </div>
       </div>
