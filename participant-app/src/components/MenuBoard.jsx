@@ -7,13 +7,22 @@ const CATEGORY_TAB = { food: '음식', drink: '음료' }
 
 // 현재 시각이 주문 가능 시간대면 메뉴판, 아니면 "다음 주문 가능 시간" 안내 (PRD 4.2)
 // 음식은 팀 인원수(memberCount)만큼만 담을 수 있음 (PRD 요청 #3). 음료는 제한 없음.
-export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, memberCount, onSave }) {
+export default function MenuBoard({
+  openMeal,
+  nextMeal,
+  soldout,
+  savedOrder,
+  memberCount,
+  onRefresh,
+  onSave,
+}) {
   const [draft, setDraft] = useState({})
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
   const [cat, setCat] = useState('food') // 카테고리 탭: 음식/음료
   const [showCart, setShowCart] = useState(false) // 하단 장바구니 시트
+  const [refreshing, setRefreshing] = useState(false)
 
   const savedItems = useMemo(() => {
     if (!openMeal) return {}
@@ -29,6 +38,16 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
     setDraft({})
     setDirty(false)
   }, [openMeal?.id])
+
+  const refreshBoard = async () => {
+    if (!onRefresh || refreshing) return
+    setRefreshing(true)
+    try {
+      await onRefresh()
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   if (!openMeal) {
     return (
@@ -141,9 +160,19 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
           <div className="board-header-title">{openMeal.label} 주문</div>
           <div className="board-header-sub">먹고 싶은 메뉴를 담아주세요</div>
         </div>
-        <div className="board-countdown">
-          <span className="board-countdown-label">마감까지</span>
-          <b>{fmtCountdown(remain)}</b>
+        <div className="board-header-actions">
+          <div className="board-countdown">
+            <span className="board-countdown-label">마감까지</span>
+            <b>{fmtCountdown(remain)}</b>
+          </div>
+          <button
+            className={`board-refresh-btn${refreshing ? ' refreshing' : ''}`}
+            onClick={refreshBoard}
+            disabled={refreshing}
+            aria-label="주문 정보 새로고침"
+          >
+            <span aria-hidden="true">⟳</span>
+          </button>
         </div>
       </div>
 

@@ -15,11 +15,13 @@ import { now, fmtClock, getOpenMeal, getNextMeal } from './lib/time.js'
 import TeamSetup from './components/TeamSetup.jsx'
 import MenuBoard from './components/MenuBoard.jsx'
 import CallSection from './components/CallSection.jsx'
+import TeamInfoSheet from './components/TeamInfoSheet.jsx'
 
 export default function App() {
   // 새로고침하거나 다시 접속하면 항상 빈 팀 등록 화면부터 시작합니다.
   const [team, setTeam] = useState(null)
   const [editingTeam, setEditingTeam] = useState(false)
+  const [showTeamInfo, setShowTeamInfo] = useState(false)
 
   // 화면 하단 탭: 'order'(음식 주문) | 'call'(코치 호출)
   const [tab, setTab] = useState('order')
@@ -90,6 +92,15 @@ export default function App() {
     } catch {
       return null
     }
+  }, [])
+
+  const closeTeamInfo = useCallback(() => setShowTeamInfo(false), [])
+  const editTeamInfo = useCallback(() => {
+    setShowTeamInfo(false)
+    setEditingTeam(true)
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    })
   }, [])
 
   // ---- 쓰기 동작 (통신 실패 시 throw → 호출한 컴포넌트가 잡아서 알림) ----
@@ -191,12 +202,15 @@ export default function App() {
             {hasActiveCall && <span className="p-tab-dot" />}
           </button>
           <div className="folder-team">
-            <span className="team-badge">팀 {team.teamId}</span>
-            <button className="icon-btn" onClick={() => setEditingTeam(true)} aria-label="팀 정보 수정">
-              ✏️
-            </button>
-            <button className="icon-btn" onClick={refresh} aria-label="새로고침">
-              ⟳
+            <button
+              className="team-profile-btn"
+              onClick={() => setShowTeamInfo(true)}
+              aria-haspopup="dialog"
+              aria-label={`팀 ${team.teamId} 정보 보기`}
+            >
+              <span className="team-profile-avatar" aria-hidden="true">👥</span>
+              <span className="team-profile-label">팀 {team.teamId}</span>
+              <span className="team-profile-chevron" aria-hidden="true">›</span>
             </button>
           </div>
         </div>
@@ -208,6 +222,7 @@ export default function App() {
               soldout={soldout}
               savedOrder={savedOrder}
               memberCount={team.memberCount}
+              onRefresh={refresh}
               onSave={saveOrder}
             />
           ) : (
@@ -223,6 +238,10 @@ export default function App() {
 
       {lastSync && (
         <div className="sync-footer">마지막 동기화 {fmtClock(lastSync)} · 자동 갱신 중</div>
+      )}
+
+      {showTeamInfo && (
+        <TeamInfoSheet team={team} onClose={closeTeamInfo} onEdit={editTeamInfo} />
       )}
     </div>
   )
