@@ -85,6 +85,10 @@ html.dark .folder-tab { background: #2c2721; }
   background: var(--card); color: var(--primary); z-index: 3;
   box-shadow: 0 -3px 8px rgba(0,0,0,0.05);
 }
+.folder-tab.active::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -3px;
+  height: 4px; background: var(--card);
+}
 .folder-team {
   display: flex; align-items: center; gap: 4px; margin-left: auto;
   padding: 0 2px 5px 8px; white-space: nowrap;
@@ -96,7 +100,7 @@ html.dark .folder-tab { background: #2c2721; }
 .folder-team .icon-btn { width: 30px; height: 30px; border-radius: 10px; font-size: 13px; }
 .folder-body {
   background: var(--card); border: 1px solid var(--line);
-  border-radius: 6px 16px 16px 16px; padding: 16px; position: relative; z-index: 2;
+  border-radius: 16px; padding: 16px; position: relative; z-index: 2;
 }
 .p-tab-dot {
   display: inline-block; width: 8px; height: 8px; border-radius: 999px;
@@ -352,7 +356,12 @@ html.dark .card-stepper { background: #2c2721; }
 html.dark .call-company-note { background: #2c2721; }
 
 /* ---- 팀 등록(온보딩) 화면 ---- */
-.setup-header { display: block; }
+.setup-header {
+  display: block; background: var(--primary); color: #fff;
+  border-radius: 16px; padding: 18px 16px; margin-bottom: 12px;
+}
+.setup-header .header-table { font-size: 24px; font-weight: 800; }
+.setup-header .header-sub { margin-top: 2px; font-size: 13px; opacity: 0.9; }
 .setup-intro { font-size: 14px; color: var(--sub); line-height: 1.5; margin-bottom: 16px; }
 .setup-field { margin-bottom: 18px; }
 .setup-label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
