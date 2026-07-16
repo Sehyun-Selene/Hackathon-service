@@ -279,7 +279,10 @@ html.dark .food-card-soldout { background: rgba(0,0,0,0.6); }
   font-size: 11px; background: #f5f5f4; border: 1px solid var(--line);
   padding: 2px 6px; border-radius: 999px; color: var(--sub);
 }
-.allergy-note { font-size: 11px; color: var(--amber); width: 100%; }
+.allergy-note {
+  width: 100%; min-width: 0; font-size: 11px; line-height: 1.35;
+  color: var(--amber); overflow-wrap: anywhere;
+}
 .food-card-action { flex: 0 0 auto; }
 
 /* 흰 동그라미 + 버튼 */
@@ -323,7 +326,7 @@ html.dark .card-stepper { background: #2c2721; }
   background: var(--primary); color: #fff; border-radius: 999px;
   min-width: 22px; padding: 1px 7px; text-align: center; font-size: 13px; font-weight: 800;
 }
-.cart-bar-more { font-size: 13px; opacity: 0.85; }
+.cart-bar-more { font-size: 23px; line-height: 1; opacity: 0.85; }
 
 /* ---- 장바구니 하단 시트 ---- */
 .sheet-overlay {
@@ -478,6 +481,13 @@ html.dark .call-company-note { background: #2c2721; }
   display: inline-block; min-width: 40px; font-weight: 700; color: var(--primary);
 }
 .guide-eat { color: var(--sub); margin-left: 6px; }
+
+@media (max-width: 520px) {
+  .food-card.picked .food-card-body {
+    flex-direction: column; align-items: stretch; gap: 8px;
+  }
+  .food-card.picked .food-card-action, .food-card.picked .card-stepper { width: 100%; }
+}
 
 @media (max-width: 400px) {
   .folder-tabs { padding-left: 2px; }

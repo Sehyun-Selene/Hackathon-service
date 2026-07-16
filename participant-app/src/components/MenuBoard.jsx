@@ -261,14 +261,14 @@ export default function MenuBoard({
       <button
         className="cart-bar"
         onClick={() => setShowCart(true)}
-        aria-label="장바구니 보기"
+        aria-label="담은 메뉴 보기"
       >
         <span className="cart-bar-left">
           <span className="cart-bar-icon">🛒</span>
-          장바구니 보기
+          담은 메뉴 보기
           <span className="cart-bar-count">{totalQty}</span>
         </span>
-        <span className="cart-bar-more">담은 메뉴 보기 ›</span>
+        <span className="cart-bar-more" aria-hidden="true">›</span>
       </button>
 
       {/* 장바구니 하단 시트 */}
