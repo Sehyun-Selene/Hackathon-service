@@ -32,7 +32,7 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
 
   if (!openMeal) {
     return (
-      <section className="card">
+      <section className="menu-board">
         <h3 className="card-title">🍽️ 음식 주문</h3>
         <div className="closed-box">
           <div className="closed-emoji">⏰</div>

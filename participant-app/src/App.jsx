@@ -171,63 +171,61 @@ export default function App() {
 
   return (
     <div className={`app${tab === 'order' && openMeal ? ' has-sticky-bar' : ''}`}>
-      <header className="header">
-        <div>
-          <div className="header-table">팀 {team.teamId}</div>
-          <div className="header-sub">{team.memberCount}명</div>
-        </div>
-        <div className="header-right">
-          <div className="header-clock">{fmtClock(now())}</div>
-          <div className="header-btns">
-            <button className="btn-ghost" onClick={() => setEditingTeam(true)}>
-              팀 정보
-            </button>
-            <button className="btn-ghost" onClick={refresh}>
-              ⟳
-            </button>
-          </div>
-        </div>
-      </header>
-
       {syncError && (
         <div className="sync-error">
           ⚠️ 서버 연결 오류 — 최신 정보가 아닐 수 있습니다. 자동으로 재시도 중입니다.
         </div>
       )}
 
-      <nav className="p-tabs">
-        <button
-          className={`p-tab${tab === 'order' ? ' active' : ''}`}
-          onClick={() => setTab('order')}
-        >
-          🍽️ 음식 주문
-        </button>
-        <button
-          className={`p-tab${tab === 'call' ? ' active' : ''}`}
-          onClick={() => setTab('call')}
-        >
-          🙋 코치 호출
-          {hasActiveCall && <span className="p-tab-dot" />}
-        </button>
-      </nav>
-
-      {tab === 'order' ? (
-        <MenuBoard
-          openMeal={openMeal}
-          nextMeal={nextMeal}
-          soldout={soldout}
-          savedOrder={savedOrder}
-          memberCount={team.memberCount}
-          onSave={saveOrder}
-        />
-      ) : (
-        <CallSection
-          callData={callData}
-          callCount={callCount}
-          assignedCoachName={getAssignedCoachForTeam(team.teamId)?.name || null}
-          onCall={sendCall}
-        />
-      )}
+      <div className="folder">
+        <div className="folder-tabs" role="tablist">
+          <button
+            role="tab"
+            aria-selected={tab === 'order'}
+            className={`folder-tab${tab === 'order' ? ' active' : ''}`}
+            onClick={() => setTab('order')}
+          >
+            🍽️ 음식 주문
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'call'}
+            className={`folder-tab${tab === 'call' ? ' active' : ''}`}
+            onClick={() => setTab('call')}
+          >
+            🙋 코치 호출
+            {hasActiveCall && <span className="p-tab-dot" />}
+          </button>
+          <div className="folder-team">
+            <span className="team-badge">팀 {team.teamId}</span>
+            <button className="icon-btn" onClick={() => setEditingTeam(true)} aria-label="팀 정보 수정">
+              ✏️
+            </button>
+            <button className="icon-btn" onClick={refresh} aria-label="새로고침">
+              ⟳
+            </button>
+          </div>
+        </div>
+        <div className="folder-body">
+          {tab === 'order' ? (
+            <MenuBoard
+              openMeal={openMeal}
+              nextMeal={nextMeal}
+              soldout={soldout}
+              savedOrder={savedOrder}
+              memberCount={team.memberCount}
+              onSave={saveOrder}
+            />
+          ) : (
+            <CallSection
+              callData={callData}
+              callCount={callCount}
+              assignedCoachName={getAssignedCoachForTeam(team.teamId)?.name || null}
+              onCall={sendCall}
+            />
+          )}
+        </div>
+      </div>
 
       {lastSync && (
         <div className="sync-footer">마지막 동기화 {fmtClock(lastSync)} · 자동 갱신 중</div>

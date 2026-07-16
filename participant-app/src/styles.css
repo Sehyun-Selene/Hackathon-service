@@ -1,8 +1,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --primary: #ff5a2c;
-  --primary-dark: #e04315;
+  --primary: #fe8648;
+  --primary-dark: #ef6d2f;
   --bg: #f5f4f2;
   --card: #ffffff;
   --text: #1c1917;
@@ -28,7 +28,6 @@ html.dark .status-step.on { background: #1e2a44; color: #9ec1ff; }
 html.dark .guide-banner { background: #3a2c14; }
 html.dark .menu-photo { background: #2c2721; }
 html.dark .setup-chip { background: #231f1a; }
-html.dark .p-tab { background: #231f1a; }
 html.dark .sticky-order-bar { background: #231f1a; }
 html.dark .guide-section { background: #231f1a; }
 html.dark .btn-reason { background: #1e2a44; border-color: #2c3e66; color: #9ec1ff; }
@@ -52,31 +51,57 @@ html.dark .sync-error { background: #450a0a; color: #fca5a5; }
 .app { max-width: 520px; margin: 0 auto; padding: 12px 12px 40px; }
 .app.has-sticky-bar { padding-bottom: 96px; }
 
-/* ---- 헤더 ---- */
-.header {
-  display: flex; justify-content: space-between; align-items: center;
-  background: var(--primary); color: #fff;
-  border-radius: 16px; padding: 16px; margin-bottom: 12px;
+/* ---- 폴더 탭 오른쪽 팀 정보 ---- */
+.team-badge {
+  font-size: 15px; font-weight: 800; color: var(--text);
+  background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px;
 }
-.header-table { font-size: 24px; font-weight: 800; }
-.header-sub { font-size: 13px; opacity: 0.9; }
-.header-right { text-align: right; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
-.header-clock { font-size: 14px; font-weight: 600; }
-.header .btn-ghost { color: #fff; border-color: rgba(255,255,255,0.5); }
+.icon-btn {
+  background: var(--card); border: 1px solid var(--line); color: var(--sub);
+  width: 34px; height: 34px; border-radius: 999px; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; flex: 0 0 auto;
+}
+.icon-btn:active { background: var(--line); }
 
-/* ---- 하단 구분 탭 (음식 주문 / 코치 호출) ---- */
-.p-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
-.p-tab {
-  flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
-  background: var(--card); font-size: 15px; font-weight: 700; cursor: pointer;
-  color: var(--sub); position: relative;
+/* ---- 폴더(서류철) 탭 ---- */
+.folder { position: relative; }
+.folder-tabs {
+  display: flex; align-items: flex-end; min-width: 0;
+  padding-left: 6px; position: relative; z-index: 2;
 }
-.p-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.folder-tab {
+  flex: 0 0 auto;
+  border: 1px solid var(--line); border-bottom: none;
+  background: #ece9e4; color: var(--sub);
+  border-radius: 14px 14px 0 0; padding: 11px 16px 12px;
+  font-size: 15px; font-weight: 700; cursor: pointer; position: relative;
+  margin-bottom: -1px; /* 본문 시트 상단 테두리와 겹쳐 이어붙게 */
+  transition: background 0.15s, color 0.15s;
+}
+html.dark .folder-tab { background: #2c2721; }
+.folder-tab + .folder-tab { margin-left: -12px; } /* 두 탭이 겹쳐 보이게 */
+.folder-tab:not(.active) { z-index: 1; padding-top: 9px; padding-bottom: 10px; }
+.folder-tab.active {
+  background: var(--card); color: var(--primary); z-index: 3;
+  box-shadow: 0 -3px 8px rgba(0,0,0,0.05);
+}
+.folder-team {
+  display: flex; align-items: center; gap: 4px; margin-left: auto;
+  padding: 0 2px 5px 8px; white-space: nowrap;
+}
+.folder-team .team-badge {
+  margin: 0; padding: 5px 9px; border-radius: 10px;
+  background: transparent; font-size: 12px;
+}
+.folder-team .icon-btn { width: 30px; height: 30px; border-radius: 10px; font-size: 13px; }
+.folder-body {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 6px 16px 16px 16px; padding: 16px; position: relative; z-index: 2;
+}
 .p-tab-dot {
-  display: inline-block; width: 9px; height: 9px; border-radius: 999px;
-  background: var(--red); margin-left: 6px; vertical-align: middle;
+  display: inline-block; width: 8px; height: 8px; border-radius: 999px;
+  background: var(--red); margin-left: 5px; vertical-align: middle;
 }
-.p-tab.active .p-tab-dot { background: #fff; }
 
 /* ---- 카드 공통 ---- */
 .card {
@@ -130,18 +155,17 @@ html.dark .sync-error { background: #450a0a; color: #fca5a5; }
 .menu-board { margin-bottom: 12px; }
 
 .board-header {
-  display: flex; align-items: center; gap: 12px;
-  background: var(--card); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  display: flex; align-items: center; gap: 14px;
+  padding: 2px 2px 16px; margin-bottom: 4px;
 }
 .board-header-icon {
-  flex: 0 0 auto; width: 46px; height: 46px; border-radius: 14px;
-  background: var(--primary); color: #fff; font-size: 22px;
+  flex: 0 0 auto; width: 52px; height: 52px; border-radius: 16px;
+  background: var(--primary); color: #fff; font-size: 24px;
   display: flex; align-items: center; justify-content: center;
 }
 .board-header-text { flex: 1; min-width: 0; }
-.board-header-title { font-size: 19px; font-weight: 800; }
-.board-header-sub { font-size: 12px; color: var(--sub); margin-top: 1px; }
+.board-header-title { font-size: 24px; font-weight: 800; }
+.board-header-sub { font-size: 13px; color: var(--sub); margin-top: 2px; }
 .board-countdown { text-align: right; font-size: 11px; color: var(--sub); }
 .board-countdown b { display: block; font-size: 13px; color: var(--red); }
 
@@ -162,8 +186,8 @@ html.dark .sync-error { background: #450a0a; color: #fca5a5; }
 .food-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .food-card {
   background: var(--card); border-radius: 16px; overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; flex-direction: column;
-  border: 2px solid transparent;
+  display: flex; flex-direction: column;
+  border: 1.5px solid var(--line);
 }
 .food-card.picked { border-color: var(--primary); }
 .food-card-photo {
@@ -327,9 +351,6 @@ html.dark .card-stepper { background: #2c2721; }
 }
 html.dark .call-company-note { background: #2c2721; }
 
-/* ---- 헤더 버튼 묶음 ---- */
-.header-btns { display: flex; gap: 6px; }
-
 /* ---- 팀 등록(온보딩) 화면 ---- */
 .setup-header { display: block; }
 .setup-intro { font-size: 14px; color: var(--sub); line-height: 1.5; margin-bottom: 16px; }
@@ -383,3 +404,13 @@ html.dark .call-company-note { background: #2c2721; }
   display: inline-block; min-width: 40px; font-weight: 700; color: var(--primary);
 }
 .guide-eat { color: var(--sub); margin-left: 6px; }
+
+@media (max-width: 400px) {
+  .folder-tabs { padding-left: 2px; }
+  .folder-tab { padding: 10px 11px 11px; font-size: 13px; }
+  .folder-tab + .folder-tab { margin-left: -8px; }
+  .folder-team { gap: 3px; padding-left: 4px; padding-right: 0; }
+  .folder-team .team-badge { padding: 4px 6px; font-size: 11px; }
+  .folder-team .icon-btn { width: 28px; height: 28px; }
+  .folder-body { padding: 14px; }
+}
