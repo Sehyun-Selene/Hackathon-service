@@ -13,6 +13,7 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
   const [cat, setCat] = useState('food') // 카테고리 탭: 음식/음료
+  const [showCart, setShowCart] = useState(false) // 하단 장바구니 시트
 
   const savedItems = useMemo(() => {
     if (!openMeal) return {}
@@ -81,6 +82,9 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
   }
 
   const totalQty = Object.values(draft).reduce((a, b) => a + b, 0)
+  const cartItems = Object.entries(draft)
+    .filter(([, q]) => q > 0)
+    .map(([menuId, qty]) => ({ menuId, qty }))
 
   const submit = async () => {
     setSaving(true)
@@ -97,6 +101,7 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
     setDirty(false)
     setSaving(false)
     setSavedFlash(true)
+    setShowCart(false)
     setTimeout(() => setSavedFlash(false), 2000)
   }
 
@@ -155,12 +160,6 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
         ))}
       </div>
 
-      <p className={`food-guide${foodLimitReached ? ' limit' : ''}`}>
-        {activeCat === 'food'
-          ? `음식 ${foodQty}/${memberCount}개 담음 · 팀 인원수만큼 담을 수 있어요`
-          : '음료는 수량 제한이 없어요'}
-      </p>
-
       {/* 사진 카드 2열 그리드 */}
       <div className="food-grid">
         {catMenus.map((m) => {
@@ -175,17 +174,19 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
                 {isSoldout && <span className="food-card-soldout">품절</span>}
               </div>
               <div className="food-card-body">
-                <div className="food-card-name">{m.name}</div>
-                {(m.badges.length > 0 || m.allergyNote) && (
-                  <div className="food-badges">
-                    {m.badges.map((b) => (
-                      <span key={b} className="diet-badge">
-                        {b}
-                      </span>
-                    ))}
-                    {m.allergyNote && <span className="allergy-note">{m.allergyNote}</span>}
-                  </div>
-                )}
+                <div className="food-card-info">
+                  <div className="food-card-name">{m.name}</div>
+                  {(m.badges.length > 0 || m.allergyNote) && (
+                    <div className="food-badges">
+                      {m.badges.map((b) => (
+                        <span key={b} className="diet-badge">
+                          {b}
+                        </span>
+                      ))}
+                      {m.allergyNote && <span className="allergy-note">{m.allergyNote}</span>}
+                    </div>
+                  )}
+                </div>
                 <div className="food-card-action">
                   {qty === 0 ? (
                     <button
@@ -194,7 +195,7 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
                       onClick={() => setQty(m.id, +1)}
                       aria-label={`${m.name} 담기`}
                     >
-                      {isSoldout ? '품절' : '＋ 담기'}
+                      ＋
                     </button>
                   ) : (
                     <div className="card-stepper">
@@ -227,23 +228,78 @@ export default function MenuBoard({ openMeal, nextMeal, soldout, savedOrder, mem
         <p className="limit-hint">음식은 팀 인원수({memberCount}명)만큼 담았어요. 바꾸려면 담은 걸 빼고 다시 담으세요.</p>
       )}
 
-      {/* 하단 고정 장바구니 바 (티오더식) */}
-      <div className="cart-bar">
-        <div className="cart-bar-left">
+      {/* 하단 고정 바 — 누르면 장바구니 시트 열림 (티오더식) */}
+      <button
+        className="cart-bar"
+        onClick={() => setShowCart(true)}
+        aria-label="장바구니 보기"
+      >
+        <span className="cart-bar-left">
           <span className="cart-bar-icon">🛒</span>
-          <span className="cart-bar-count">{totalQty}</span>개 담음
+          장바구니 보기
+          <span className="cart-bar-count">{totalQty}</span>
+        </span>
+        <span className="cart-bar-more">담은 메뉴 보기 ›</span>
+      </button>
+
+      {/* 장바구니 하단 시트 */}
+      {showCart && (
+        <div className="sheet-overlay" onClick={() => setShowCart(false)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div className="sheet-head">
+              <h3>🛒 장바구니 ({totalQty})</h3>
+              <button className="sheet-close" onClick={() => setShowCart(false)} aria-label="닫기">
+                ✕
+              </button>
+            </div>
+            <div className="sheet-body">
+              {cartItems.length === 0 ? (
+                <p className="empty-text">담은 메뉴가 없어요. 메뉴를 담아주세요.</p>
+              ) : (
+                cartItems.map(({ menuId, qty }) => (
+                  <div key={menuId} className="cart-item">
+                    <span className="cart-item-name">{MENU_BY_ID[menuId]?.name || menuId}</span>
+                    <div className="card-stepper">
+                      <button
+                        className="qty-btn"
+                        onClick={() => setQty(menuId, -1)}
+                        aria-label="수량 줄이기"
+                      >
+                        −
+                      </button>
+                      <span className="qty-num">{qty}</span>
+                      <button
+                        className="qty-btn"
+                        disabled={
+                          MENU_BY_ID[menuId]?.category === 'food' && foodLimitReached
+                        }
+                        onClick={() => setQty(menuId, +1)}
+                        aria-label="수량 늘리기"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+              {foodLimitReached && (
+                <p className="limit-hint">음식은 팀 인원수({memberCount}명)만큼 담았어요.</p>
+              )}
+            </div>
+            <div className="sheet-foot">
+              {canCancel && (
+                <button className="cart-clear-dark" onClick={cancelAll} disabled={saving}>
+                  비우기
+                </button>
+              )}
+              <button className="cart-submit" onClick={submit} disabled={saving || !dirty}>
+                {saving ? '저장 중…' : savedFlash ? '✓ 저장 완료!' : hasSaved ? `주문 수정 (${totalQty})` : `주문하기 (${totalQty})`}
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="cart-bar-actions">
-          {canCancel && (
-            <button className="cart-clear" onClick={cancelAll} disabled={saving}>
-              비우기
-            </button>
-          )}
-          <button className="cart-submit" onClick={submit} disabled={saving || !dirty}>
-            {saving ? '저장 중…' : savedFlash ? '✓ 저장 완료!' : hasSaved ? '주문 수정' : '주문하기'}
-          </button>
-        </div>
-      </div>
+      )}
     </section>
   )
 }

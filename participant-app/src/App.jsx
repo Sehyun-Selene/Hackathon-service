@@ -11,11 +11,9 @@ import {
   TEAM_ROSTER_KEY,
   SOLDOUT_KEY,
 } from './lib/storage.js'
-import { now, fmtClock, getOpenMeal, getNextMeal, getVisibleMeals } from './lib/time.js'
+import { now, fmtClock, getOpenMeal, getNextMeal } from './lib/time.js'
 import TeamSetup from './components/TeamSetup.jsx'
-import GuideSection from './components/GuideSection.jsx'
 import MenuBoard from './components/MenuBoard.jsx'
-import OrderHistory from './components/OrderHistory.jsx'
 import CallSection from './components/CallSection.jsx'
 
 const MY_TEAM_KEY = 'torder-my-team' // 이 기기가 속한 팀 정보(로컬 캐시)
@@ -169,7 +167,6 @@ export default function App() {
   const t = now().getTime()
   const openMeal = getOpenMeal(t)
   const nextMeal = getNextMeal(t)
-  const visibleMeals = getVisibleMeals(t)
   const hasActiveCall = (callData?.calls || []).some((c) => c.status !== 'done')
 
   return (
@@ -215,18 +212,14 @@ export default function App() {
       </nav>
 
       {tab === 'order' ? (
-        <>
-          <GuideSection />
-          <MenuBoard
-            openMeal={openMeal}
-            nextMeal={nextMeal}
-            soldout={soldout}
-            savedOrder={savedOrder}
-            memberCount={team.memberCount}
-            onSave={saveOrder}
-          />
-          <OrderHistory visibleMeals={visibleMeals} openMeal={openMeal} savedOrder={savedOrder} />
-        </>
+        <MenuBoard
+          openMeal={openMeal}
+          nextMeal={nextMeal}
+          soldout={soldout}
+          savedOrder={savedOrder}
+          memberCount={team.memberCount}
+          onSave={saveOrder}
+        />
       ) : (
         <CallSection
           callData={callData}
