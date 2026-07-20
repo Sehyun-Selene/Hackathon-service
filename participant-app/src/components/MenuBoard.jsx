@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { MENUS, MENU_BY_ID } from '../config.js'
 import { now, fmtClock, fmtCountdown, mealTimes } from '../lib/time.js'
+import { useSheetDrag } from '../lib/useSheetDrag.js'
 
 const CATEGORY_LABEL = { food: '🍜 음식', drink: '🥤 음료' }
 const CATEGORY_TAB = { food: '음식', drink: '음료' }
@@ -23,6 +24,7 @@ export default function MenuBoard({
   const [cat, setCat] = useState('food') // 카테고리 탭: 음식/음료
   const [showCart, setShowCart] = useState(false) // 하단 장바구니 시트
   const [refreshing, setRefreshing] = useState(false)
+  const cartDrag = useSheetDrag(() => setShowCart(false))
 
   const savedItems = useMemo(() => {
     if (!openMeal) return {}
@@ -274,8 +276,8 @@ export default function MenuBoard({
       {/* 장바구니 하단 시트 */}
       {showCart && (
         <div className="sheet-overlay" onClick={() => setShowCart(false)}>
-          <div className="sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet-handle" />
+          <div className="sheet" onClick={(e) => e.stopPropagation()} style={cartDrag.sheetStyle}>
+            <div className="sheet-handle" {...cartDrag.handleHandlers} />
             <div className="sheet-head">
               <h3>🛒 장바구니 ({totalQty})</h3>
               <button className="sheet-close" onClick={() => setShowCart(false)} aria-label="닫기">

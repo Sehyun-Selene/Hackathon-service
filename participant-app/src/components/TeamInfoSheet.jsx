@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
+import { useSheetDrag } from '../lib/useSheetDrag.js'
 
 export default function TeamInfoSheet({ team, onClose, onEdit }) {
   const allergyGroups = (team.allergies || []).filter(
     (group) => Array.isArray(group) && group.length > 0,
   )
+  const drag = useSheetDrag(onClose)
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
@@ -26,8 +28,9 @@ export default function TeamInfoSheet({ team, onClose, onEdit }) {
         aria-modal="true"
         aria-labelledby="team-sheet-title"
         onClick={(event) => event.stopPropagation()}
+        style={drag.sheetStyle}
       >
-        <div className="team-sheet-handle" aria-hidden="true" />
+        <div className="team-sheet-handle" aria-hidden="true" {...drag.handleHandlers} />
         <div className="team-sheet-head">
           <h2 id="team-sheet-title">팀 정보</h2>
           <button className="team-sheet-close" onClick={onClose}>닫기</button>

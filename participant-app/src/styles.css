@@ -206,6 +206,7 @@ html.dark .folder-tab { background: #2c2721; }
 }
 .team-sheet-handle {
   width: 42px; height: 4px; margin: 0 auto 12px; border-radius: 999px; background: var(--line);
+  touch-action: none; cursor: grab; padding: 10px 24px; margin-top: -10px; margin-bottom: 2px;
 }
 .team-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .team-sheet-head h2 { font-size: 20px; }
@@ -346,7 +347,10 @@ html.dark .card-stepper { background: #2c2721; }
 }
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
-.sheet-handle { width: 40px; height: 4px; border-radius: 999px; background: var(--line); margin: 4px auto 10px; }
+.sheet-handle {
+  width: 40px; height: 4px; border-radius: 999px; background: var(--line); margin: 4px auto 10px;
+  touch-action: none; cursor: grab; padding: 10px 24px; margin-top: -6px; margin-bottom: 4px;
+}
 .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .sheet-head h3 { font-size: 17px; font-weight: 800; }
 .sheet-close {
