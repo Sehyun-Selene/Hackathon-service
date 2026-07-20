@@ -134,7 +134,10 @@ body {
   border-radius: 20px 20px 0 0; background: var(--card);
   box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.2); animation: sheet-slide-up 220ms ease-out;
 }
-.sheet-handle { width: 42px; height: 4px; margin: 0 auto 10px; border-radius: 999px; background: #cbd5e1; }
+.sheet-handle {
+  width: 42px; height: 4px; margin: 0 auto 10px; border-radius: 999px; background: #cbd5e1;
+  touch-action: none; cursor: grab; padding: 10px 24px; margin-top: -6px; margin-bottom: 4px;
+}
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .sheet-head h3 { margin: 0; font-size: 18px; }
 .sheet-close {
@@ -169,7 +172,7 @@ body {
 .total-item.limit-hit { border-color: var(--red); background: #fef2f2; }
 .total-item.limit-near { border-color: var(--amber); background: #fffbeb; }
 
-/* 팀별 주문 — 100팀+ 스캔·배달 편하도록 한 줄 압축 */
+/* 팀별 주문 — 100팀+ 스캔·배부 편하도록 한 줄 압축 */
 .team-rows { display: flex; flex-direction: column; }
 .team-row {
   display: flex; align-items: center; gap: 10px; padding: 9px 4px;

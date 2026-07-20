@@ -9,6 +9,7 @@ import {
   getAssignedCoachForTeam,
 } from '../config.js'
 import { getNextMeal, getOpenMeal, getVisibleMeals, now } from '../lib/time.js'
+import { useSheetDrag } from '../lib/useSheetDrag.js'
 
 function getDefaultMealId() {
   const currentTime = now().getTime()
@@ -65,7 +66,7 @@ function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelive
 }
 
 // 주문 현황 (PRD 5.2): 팀별 내역, 시간대 필터, 메뉴별 합산, 품절 처리,
-// CSV 내보내기, 팀 번호 검색, 알러지 현황, 배달 체크(끼니별), 인쇄용 체크리스트.
+// CSV 내보내기, 팀 번호 검색, 알러지 현황, 배부 체크(끼니별), 인쇄용 체크리스트.
 export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) {
   const [mealFilter, setMealFilter] = useState(getDefaultMealId)
   const [showSoldoutPanel, setShowSoldoutPanel] = useState(false)
@@ -78,6 +79,9 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
     setShowAllergyPanel(false)
     setShowSoldoutPanel(false)
   }
+
+  const allergyDrag = useSheetDrag(closeUtilityPanels)
+  const soldoutDrag = useSheetDrag(closeUtilityPanels)
 
   useEffect(() => {
     if (!showAllergyPanel && !showSoldoutPanel) return undefined
@@ -94,12 +98,12 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   }, [showAllergyPanel, showSoldoutPanel])
 
   const filteredMealIds = mealFilter === 'all' ? MEALS.map((m) => m.id) : [mealFilter]
-  const singleMeal = mealFilter !== 'all' // 배달 체크는 끼니 단위로만 의미 있음
+  const singleMeal = mealFilter !== 'all' // 배부 체크는 끼니 단위로만 의미 있음
   const openOrderMeal = getOpenMeal(now().getTime())
   const soldoutMeal = openOrderMeal
 
-  // total = 총 주문 수량, remaining = 아직 배달 안 된 수량 (배달 완료 팀은 차감)
-  // 배달 진행에 따라 remaining이 실시간으로 줄어듦 → 개수 검증용
+  // total = 총 주문 수량, remaining = 아직 배부 안 된 수량 (배부 완료 팀은 차감)
+  // 배부 진행에 따라 remaining이 실시간으로 줄어듦 → 개수 검증용
   const totals = useMemo(() => {
     const total = {}
     const remaining = {}
@@ -221,7 +225,7 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
     URL.revokeObjectURL(a.href)
   }
 
-  // (C) 인쇄용 배달 체크리스트 — 현재 끼니 필터 기준, 팀번호순, 종이 체크칸 포함
+  // (C) 인쇄용 배부 체크리스트 — 현재 끼니 필터 기준, 팀번호순, 종이 체크칸 포함
   const printChecklist = () => {
     const label = mealFilter === 'all' ? '전체' : MEAL_BY_ID[mealFilter].label
     const rangeLabel = selectedRange ? `${selectedRange.label}번` : '전체 팀'
@@ -238,7 +242,7 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
         return `<tr><td class="c">☐</td><td class="t">팀 ${r.teamId}${coach}</td><td>${items}</td></tr>`
       })
       .join('')
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>배달 체크리스트 — ${label}</title>
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>배부 체크리스트 — ${label}</title>
 <style>
   body { font-family: 'Malgun Gothic', system-ui, sans-serif; padding: 16px; color:#111; }
   h1 { font-size: 18px; margin: 0 0 4px; }
@@ -250,8 +254,8 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   td.t { white-space:nowrap; font-weight:700; }
   @media print { .noprint { display:none; } }
 </style></head><body>
-<h1>배달 체크리스트 — ${label} · ${rangeLabel}</h1>
-<div class="sub">총 ${rangedRows.length}팀 · 배달 시 왼쪽 칸에 체크</div>
+<h1>배부 체크리스트 — ${label} · ${rangeLabel}</h1>
+<div class="sub">총 ${rangedRows.length}팀 · 배부 시 왼쪽 칸에 체크</div>
 <button class="noprint" onclick="window.print()" style="margin-bottom:12px;padding:8px 14px;">🖨 인쇄</button>
 <table><thead><tr><th>완료</th><th>팀</th><th>주문 내역</th></tr></thead><tbody>${rowsHtml}</tbody></table>
 </body></html>`
@@ -358,8 +362,9 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
             aria-modal="true"
             aria-labelledby="allergy-sheet-title"
             onClick={(event) => event.stopPropagation()}
+            style={allergyDrag.sheetStyle}
           >
-            <div className="sheet-handle" aria-hidden="true" />
+            <div className="sheet-handle" aria-hidden="true" {...allergyDrag.handleHandlers} />
             <div className="sheet-head">
               <h3 id="allergy-sheet-title">알러지 현황</h3>
               <button className="sheet-close" onClick={closeUtilityPanels}>닫기</button>
@@ -400,8 +405,9 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
             aria-modal="true"
             aria-labelledby="soldout-sheet-title"
             onClick={(event) => event.stopPropagation()}
+            style={soldoutDrag.sheetStyle}
           >
-            <div className="sheet-handle" aria-hidden="true" />
+            <div className="sheet-handle" aria-hidden="true" {...soldoutDrag.handleHandlers} />
             <div className="sheet-head">
               <h3 id="soldout-sheet-title">
                 품절 관리{soldoutMeal ? ` · ${soldoutMeal.label}` : ''}
@@ -474,7 +480,7 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
           </h3>
           {singleMeal && teamRows.length > 0 && (
             <span className="deliver-progress">
-              배달 {deliveredCount}/{teamRows.length}팀 완료
+              배부 {deliveredCount}/{teamRows.length}팀 완료
             </span>
           )}
         </div>

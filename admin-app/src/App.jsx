@@ -28,11 +28,11 @@ const TAB_DEFS = [
   { id: 'stats', label: '📊 호출 통계' },
 ]
 
-// 배달 완료 상태 키 (팀별 분리 — 여러 러너가 동시에 체크해도 충돌 최소화)
+// 배부 완료 상태 키 (팀별 분리 — 여러 러너가 동시에 체크해도 충돌 최소화)
 // delivered:{teamId} → { [mealId]: true }
 const deliveredKey = (teamId) => `delivered:${teamId}`
 
-// 등록된 팀 전체 + 주문/호출/카운트 + 코치 로스터 + 품절 + 배달상태를 한 번에 스캔
+// 등록된 팀 전체 + 주문/호출/카운트 + 코치 로스터 + 품절 + 배부상태를 한 번에 스캔
 async function scanAll() {
   const roster = (await storageGet(TEAM_ROSTER_KEY)) || { ids: [] }
   const ids = roster.ids || []
@@ -197,7 +197,7 @@ export default function App() {
     [refresh],
   )
 
-  // 배달 완료 토글 (팀별 delivered:{teamId} 레코드에 끼니별로 기록)
+  // 배부 완료 토글 (팀별 delivered:{teamId} 레코드에 끼니별로 기록)
   const toggleDelivered = useCallback(
     async (teamId, mealId, next) => {
       try {
@@ -206,7 +206,7 @@ export default function App() {
         else delete data[mealId]
         await storageSet(deliveredKey(teamId), data)
       } catch {
-        alert('네트워크 오류로 배달 상태가 저장되지 않았습니다.\n잠시 후 다시 시도해주세요.')
+        alert('네트워크 오류로 배부 상태가 저장되지 않았습니다.\n잠시 후 다시 시도해주세요.')
         return
       }
       await refresh()
