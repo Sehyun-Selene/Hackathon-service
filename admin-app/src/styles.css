@@ -205,6 +205,13 @@ body {
   font-size: 14px; min-height: 44px; width: 140px; background: #fbfbfc;
 }
 .table-search:focus { outline: none; border-color: var(--primary); background: #fff; }
+.table-search-wrap { position: relative; display: block; min-width: 0; }
+.table-search-icon {
+  position: absolute; left: 12px; top: 50%; z-index: 1; width: 16px; height: 16px;
+  color: var(--sub); pointer-events: none; transform: translateY(-50%);
+}
+.table-search-wrap .table-search { padding-left: 36px; }
+.table-search-wrap:focus-within .table-search-icon { color: var(--primary); }
 .toolbar { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 14px; }
 .filter-group, .toolbar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .workflow-step {
@@ -224,6 +231,7 @@ body {
   gap: 6px; flex-wrap: nowrap;
 }
 .toolbar-actions .table-search { width: 100%; min-width: 0; }
+.toolbar-actions .table-search-wrap { width: 100%; min-width: 0; }
 .toolbar-tool { min-height: 40px; padding: 8px 10px; white-space: nowrap; font-size: 12px; }
 .toolbar-tool.active { border-color: var(--primary); background: var(--violet-soft); color: var(--primary-dark); }
 
@@ -473,6 +481,9 @@ body {
   .call-card { flex-direction: column; align-items: stretch; }
   .call-card-actions { justify-content: flex-end; }
   .call-card-actions .btn-primary, .call-card-actions .btn-secondary { width: auto; }
-  .table-search { width: 100%; padding: 8px 10px; font-size: 12px; min-height: 40px; }
+  .table-search-wrap .table-search {
+    width: 100%; padding: 8px 4px 8px 24px; font-size: 11px; min-height: 40px;
+  }
+  .table-search-icon { left: 7px; width: 13px; height: 13px; }
   .bar-name { min-width: 84px; font-size: 13px; }
 }

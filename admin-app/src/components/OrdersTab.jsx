@@ -312,15 +312,28 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
           </div>
         </section>
         <div className="toolbar-actions">
-          <input
-            className="table-search"
-            type="search"
-            inputMode="numeric"
-            placeholder="팀번호"
-            value={teamQuery}
-            onChange={(e) => setTeamQuery(e.target.value)}
-            aria-label="팀 번호 검색"
-          />
+          <label className="table-search-wrap">
+            <svg
+              className="table-search-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-4-4" />
+            </svg>
+            <input
+              className="table-search"
+              type="search"
+              inputMode="numeric"
+              placeholder="팀번호"
+              value={teamQuery}
+              onChange={(e) => setTeamQuery(e.target.value)}
+              aria-label="팀 번호 검색"
+            />
+          </label>
           <button
             className={`btn-ghost toolbar-tool${showAllergyPanel ? ' active' : ''}`}
             onClick={() => {

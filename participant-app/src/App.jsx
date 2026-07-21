@@ -24,7 +24,10 @@ export default function App() {
   const [showTeamInfo, setShowTeamInfo] = useState(false)
 
   // 화면 하단 탭: 'order'(음식 주문) | 'call'(캠프지기 호출)
-  const [tab, setTab] = useState('order')
+  // 현재 주문 가능한 식사가 있을 때만 음식 주문 탭으로 랜딩
+  const [tab, setTab] = useState(() =>
+    getOpenMeals(now().getTime()).length > 0 ? 'order' : 'call',
+  )
 
   // 1초 틱: 카운트다운/시간대 전환용
   const [, setTick] = useState(0)
@@ -81,6 +84,7 @@ export default function App() {
     }
     setTeam(record)
     setEditingTeam(false)
+    setTab(getOpenMeals(now().getTime()).length > 0 ? 'order' : 'call')
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     })
