@@ -296,7 +296,7 @@ export default function MenuBoard({
 
       {mealLimitReached(activeMeal.id) && (
         <p className="limit-hint">
-          {activeMeal.label}은 팀 인원수({memberCount}명)만큼 담았어요. 바꾸려면 담은 걸 빼고 다시 담으세요.
+          {activeMeal.label}은 팀 인원수({memberCount}명)만큼 담았어요.
         </p>
       )}
 
