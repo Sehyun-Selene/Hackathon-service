@@ -179,3 +179,25 @@ export function getAssignedCoachForTeam(teamId) {
   if (!Number.isFinite(n)) return null
   return COACH_ASSIGNMENTS.find((c) => c.teamNumbers.includes(n)) || null
 }
+
+// teamNumbers 배열을 "1~25번" / "1~10, 30~32번" 같은 범위 문자열로 압축
+// (연속 구간은 a~b로 묶음, 비어있으면 null → "미배정" 표시용)
+export function formatTeamRange(teamNumbers) {
+  const nums = [...(teamNumbers || [])].filter((n) => Number.isFinite(n)).sort((a, b) => a - b)
+  if (!nums.length) return null
+  const parts = []
+  let start = nums[0]
+  let prev = nums[0]
+  for (let i = 1; i <= nums.length; i++) {
+    if (i < nums.length && nums[i] === prev + 1) {
+      prev = nums[i]
+      continue
+    }
+    parts.push(start === prev ? `${start}` : `${start}~${prev}`)
+    if (i < nums.length) {
+      start = nums[i]
+      prev = nums[i]
+    }
+  }
+  return `${parts.join(', ')}번`
+}

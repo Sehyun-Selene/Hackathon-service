@@ -22,10 +22,10 @@ import StatsTab from './components/StatsTab.jsx'
 const MY_COACH_KEY = 'torder-coach' // 이 기기의 캠프지기 정보(로컬)
 
 const TAB_DEFS = [
-  { id: 'orders', label: '📋 주문 현황' },
-  { id: 'calls', label: '🔔 호출 알림' },
-  { id: 'coaches', label: '🧑‍🏫 캠프지기 현황' },
-  { id: 'stats', label: '📊 호출 통계' },
+  { id: 'orders', icon: '📋', label: '주문 현황' },
+  { id: 'calls', icon: '🔔', label: '호출 알림' },
+  { id: 'coaches', icon: '🧑‍🏫', label: '캠프지기 현황' },
+  { id: 'stats', icon: '📊', label: '호출 통계' },
 ]
 
 // 배부 완료 상태 키 (팀별 분리 — 여러 러너가 동시에 체크해도 충돌 최소화)
@@ -91,6 +91,7 @@ export default function App() {
   const knownCoachNames = COACH_ASSIGNMENTS.map((c) => c.name).filter(Boolean)
 
   const [tab, setTab] = useState('orders')
+  const [menuOpen, setMenuOpen] = useState(false) // 모바일 좌상단 메뉴 팝업
   const [scan, setScan] = useState(null)
   const [soundOn, setSoundOn] = useState(true)
   const [syncError, setSyncError] = useState(false)
@@ -267,80 +268,145 @@ export default function App() {
     )
   }
 
+  // 아직 아무도 안 잡은 대기 호출 수 — 지금 몇 팀이 사람을 기다리는지(=투입 필요량) 지표.
+  // 처리중(in_progress)은 이미 담당자가 붙은 상태라 합치지 않고 대기만 카운트.
   const waitingCount = scan
-    ? Object.values(scan.calls).flatMap((c) => (c.calls || []).filter((x) => x.status !== 'done'))
+    ? Object.values(scan.calls).flatMap((c) => (c.calls || []).filter((x) => x.status === 'waiting'))
         .length
     : 0
 
+  // 상단 KPI 스트립용 요약값 — 항상 의미 있는 4개
+  const kpis = scan
+    ? [
+        { label: '대기 중 호출', value: waitingCount, tone: waitingCount > 0 ? 'alert' : undefined },
+        { label: '주문한 팀', value: Object.keys(scan.orders).length },
+        { label: '등록한 팀', value: Object.keys(scan.teams).length },
+        { label: '입장한 캠프지기', value: scan.coaches.length },
+      ]
+    : []
+
+  const activeTab = TAB_DEFS.find((t) => t.id === tab)
+  const selectTab = (id) => {
+    setTab(id)
+    setMenuOpen(false)
+  }
+
   return (
     <div className="admin">
-      <header className="admin-header">
-        <div className="admin-title">
-          🛠️ 해커톤 운영 관리자{' '}
-          <span className="admin-name">— {coach.name}</span>
-        </div>
-        <div className="admin-header-right">
-          <label className="sound-toggle">
-            <input
-              type="checkbox"
-              checked={soundOn}
-              onChange={(e) => {
-                initAudio()
-                setSoundOn(e.target.checked)
-              }}
-            />
-            🔔 알림음
-          </label>
-          {scan && <span className="sync-time">동기화 {fmtClock(new Date(scan.at))}</span>}
-          <button className="btn-ghost" onClick={refresh}>
-            ⟳ 새로고침
-          </button>
-        </div>
-      </header>
-
-      {syncError && (
-        <div className="sync-error">
-          ⚠️ 공유 서버 연결 오류 — 최신 데이터가 아닐 수 있습니다. 자동으로 재시도 중입니다.
-        </div>
-      )}
-
-      <nav className="tabs">
-        {TAB_DEFS.map((td) => (
+      <aside className="sidebar">
+        <div className="brand-row">
           <button
-            key={td.id}
-            className={`tab-btn${tab === td.id ? ' active' : ''}`}
-            onClick={() => setTab(td.id)}
+            className="menu-toggle"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="메뉴 열기"
+            aria-expanded={menuOpen}
           >
-            {td.label}
-            {td.id === 'calls' && waitingCount > 0 && (
-              <span className="tab-badge">{waitingCount}</span>
-            )}
+            ☰
           </button>
-        ))}
-      </nav>
+          <div className="brand">
+            <span className="brand-mark" aria-hidden="true">🍽️</span>
+            <span className="brand-text">
+              관리자 <b>페이지</b>
+            </span>
+          </div>
+        </div>
+        <nav className={`side-nav${menuOpen ? ' open' : ''}`}>
+          <div className="drawer-head">
+            <div className="brand">
+              <span className="brand-mark" aria-hidden="true">🍽️</span>
+              <span className="brand-text">
+                관리자 <b>페이지</b>
+              </span>
+            </div>
+            <button className="drawer-close" onClick={() => setMenuOpen(false)} aria-label="메뉴 닫기">
+              ✕
+            </button>
+          </div>
+          {TAB_DEFS.map((td) => (
+            <button
+              key={td.id}
+              className={`nav-item${tab === td.id ? ' active' : ''}`}
+              onClick={() => selectTab(td.id)}
+            >
+              <span className="nav-icon" aria-hidden="true">{td.icon}</span>
+              <span className="nav-label">{td.label}</span>
+              {td.id === 'calls' && waitingCount > 0 && (
+                <span className="nav-badge">{waitingCount}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+        {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
+        <div className="side-foot">
+          <span className="side-coach">🧑‍🏫 {coach.name}</span>
+        </div>
+      </aside>
 
-      <main className="admin-main">
-        {!scan ? (
-          <p className="empty-text">데이터 불러오는 중…</p>
-        ) : tab === 'orders' ? (
-          <OrdersTab
-            scan={scan}
-            onToggleSoldout={toggleSoldout}
-            onToggleDelivered={toggleDelivered}
-          />
-        ) : tab === 'calls' ? (
-          <CallsTab
-            scan={scan}
-            coach={coach}
-            onUpdateStatus={updateCallStatus}
-            onToggleCounts={toggleCallCounts}
-          />
-        ) : tab === 'coaches' ? (
-          <CoachStatusTab scan={scan} coach={coach} />
-        ) : (
-          <StatsTab scan={scan} />
+      <div className="main">
+        <header className="topbar">
+          <div className="topbar-title">
+            <span className="topbar-icon" aria-hidden="true">{activeTab?.icon}</span>
+            <h1>{activeTab?.label}</h1>
+          </div>
+          <div className="topbar-actions">
+            <label className="sound-toggle">
+              <input
+                type="checkbox"
+                checked={soundOn}
+                onChange={(e) => {
+                  initAudio()
+                  setSoundOn(e.target.checked)
+                }}
+              />
+              알림음
+            </label>
+            {scan && <span className="sync-time">동기화 {fmtClock(new Date(scan.at))}</span>}
+            <button className="btn-ghost" onClick={refresh}>
+              ⟳ 새로고침
+            </button>
+          </div>
+        </header>
+
+        {syncError && (
+          <div className="sync-error">
+            ⚠️ 공유 서버 연결 오류 — 최신 데이터가 아닐 수 있습니다. 자동으로 재시도 중입니다.
+          </div>
         )}
-      </main>
+
+        {kpis.length > 0 && (
+          <div className="kpi-strip">
+            {kpis.map((k) => (
+              <div key={k.label} className={`kpi-card${k.tone ? ` ${k.tone}` : ''}`}>
+                <div className="kpi-label">{k.label}</div>
+                <div className="kpi-value">{k.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <main className="content">
+          {!scan ? (
+            <div className="loading-card">데이터 불러오는 중…</div>
+          ) : tab === 'orders' ? (
+            <OrdersTab
+              scan={scan}
+              onToggleSoldout={toggleSoldout}
+              onToggleDelivered={toggleDelivered}
+            />
+          ) : tab === 'calls' ? (
+            <CallsTab
+              scan={scan}
+              coach={coach}
+              onUpdateStatus={updateCallStatus}
+              onToggleCounts={toggleCallCounts}
+            />
+          ) : tab === 'coaches' ? (
+            <CoachStatusTab scan={scan} coach={coach} />
+          ) : (
+            <StatsTab scan={scan} />
+          )}
+        </main>
+      </div>
     </div>
   )
 }

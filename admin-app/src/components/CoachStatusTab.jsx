@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { COACH_ASSIGNMENTS } from '../config.js'
+import { COACH_ASSIGNMENTS, formatTeamRange } from '../config.js'
 
 // 캠프지기 현황 (PRD 요청 #5): 위치 지도 대신, 캠프지기 개인별 리스트를 한눈에.
 // 각 캠프지기가 쉬는 중인지 / 어떤 팀 호출을 대응 중인지 표시.
@@ -45,10 +45,13 @@ export default function CoachStatusTab({ scan, coach }) {
               const busy = busyByCoachId[c.id] || []
               const isMe = c.id === coach.id
               const waiting = waitingCountByName[c.name] || 0
+              const assigned = COACH_ASSIGNMENTS.find((a) => a.name === c.name)
+              const range = formatTeamRange(assigned?.teamNumbers)
               return (
                 <div key={c.id} className={`coach-item${busy.length ? ' busy' : ' idle'}`}>
                   <span className="coach-name">
                     🧑‍🏫 {c.name}
+                    <span className="coach-range">{range ? `팀 ${range}` : '담당 미배정'}</span>
                     {isMe && <span className="coach-me">나</span>}
                     {waiting > 0 && <span className="avg-wait">담당 대기 {waiting}건</span>}
                   </span>
