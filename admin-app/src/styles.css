@@ -33,7 +33,7 @@ body {
 }
 
 /* ---- 레이아웃 ----
-   관리자도 코치가 폰으로 쓰므로 모바일 폭(중앙 정렬 컬럼)이 기본.
+   관리자도 캠프지기가 폰으로 쓰므로 모바일 폭(중앙 정렬 컬럼)이 기본.
    넓은 화면에서도 이 폭을 넘지 않고 가운데에 세로로 쌓임. */
 .admin { max-width: 560px; margin: 0 auto; padding: 12px 12px 40px; }
 .admin-header {
@@ -135,8 +135,11 @@ body {
   box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.2); animation: sheet-slide-up 220ms ease-out;
 }
 .sheet-handle {
-  width: 42px; height: 4px; margin: 0 auto 10px; border-radius: 999px; background: #cbd5e1;
-  touch-action: none; cursor: grab; padding: 10px 24px; margin-top: -6px; margin-bottom: 4px;
+  position: relative; width: 42px; height: 4px; margin: 0 auto 10px;
+  border-radius: 999px; background: #cbd5e1; touch-action: none; cursor: grab;
+}
+.sheet-handle::before {
+  content: ''; position: absolute; left: -30px; right: -30px; top: -12px; bottom: -12px;
 }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .sheet-head h3 { margin: 0; font-size: 18px; }
@@ -274,7 +277,7 @@ body {
 }
 .setup-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
 
-/* ---- 코치 현황 ---- */
+/* ---- 캠프지기 현황 ---- */
 .coach-company { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
 .coach-company.all-busy { border-color: var(--red); background: #fef2f2; }
 .coach-company-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -307,6 +310,19 @@ body {
   color: var(--amber); font-size: 12px; font-weight: 600; white-space: nowrap;
 }
 .allergy-person-chip b { color: #92400e; }
+/* 메뉴 알러지 성분과 겹치는 인원 요약 (대체 메뉴 준비 수량 기준) */
+.allergy-menu-summary {
+  border: 1px solid #fcd34d; background: #fffbeb; border-radius: 12px;
+  padding: 10px 12px; margin-bottom: 10px;
+}
+.allergy-menu-total { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.allergy-menu-total b { color: #92400e; }
+.allergy-menu-rows { display: flex; flex-wrap: wrap; gap: 5px; }
+.allergy-menu-note {
+  font-size: 12px; color: var(--sub); background: #f8fafc;
+  border: 1px dashed var(--line); border-radius: 10px; padding: 9px 12px;
+  margin-bottom: 10px; line-height: 1.5;
+}
 
 /* ---- 공통 소품 ---- */
 .count-company { font-size: 12px; color: var(--sub); font-weight: 500; }

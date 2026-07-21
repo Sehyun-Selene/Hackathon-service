@@ -19,12 +19,12 @@ import CallsTab from './components/CallsTab.jsx'
 import CoachStatusTab from './components/CoachStatusTab.jsx'
 import StatsTab from './components/StatsTab.jsx'
 
-const MY_COACH_KEY = 'torder-coach' // 이 기기의 코치 정보(로컬)
+const MY_COACH_KEY = 'torder-coach' // 이 기기의 캠프지기 정보(로컬)
 
 const TAB_DEFS = [
   { id: 'orders', label: '📋 주문 현황' },
   { id: 'calls', label: '🔔 호출 알림' },
-  { id: 'coaches', label: '🧑‍🏫 코치 현황' },
+  { id: 'coaches', label: '🧑‍🏫 캠프지기 현황' },
   { id: 'stats', label: '📊 호출 통계' },
 ]
 
@@ -32,7 +32,7 @@ const TAB_DEFS = [
 // delivered:{teamId} → { [mealId]: true }
 const deliveredKey = (teamId) => `delivered:${teamId}`
 
-// 등록된 팀 전체 + 주문/호출/카운트 + 코치 로스터 + 품절 + 배부상태를 한 번에 스캔
+// 등록된 팀 전체 + 주문/호출/카운트 + 캠프지기 로스터 + 품절 + 배부상태를 한 번에 스캔
 async function scanAll() {
   const roster = (await storageGet(TEAM_ROSTER_KEY)) || { ids: [] }
   const ids = roster.ids || []
@@ -127,7 +127,7 @@ export default function App() {
     return () => clearInterval(id)
   }, [coach, refresh])
 
-  // 코치 등록: 로컬 저장 + 공유 코치 로스터에 등록/갱신
+  // 캠프지기 등록: 로컬 저장 + 공유 캠프지기 로스터에 등록/갱신
   // name이 COACH_ASSIGNMENTS의 이름과 정확히 일치해야 담당 팀이 자동 연결됨
   const enterAsCoach = useCallback(async (name) => {
     const id = getCoachId()
@@ -144,7 +144,7 @@ export default function App() {
     setCoach(record)
   }, [])
 
-  // 호출 상태 변경: 대기중 → 처리중(담당 코치 기록) → 완료
+  // 호출 상태 변경: 대기중 → 처리중(담당 캠프지기 기록) → 완료
   const updateCallStatus = useCallback(
     async (teamId, callId, nextStatus) => {
       try {
@@ -173,7 +173,7 @@ export default function App() {
   )
 
   // 호출별 "팀 횟수 제한 포함 여부"를 관리자가 직접 판단해 조정.
-  // 예: 테이블 흔들림 같은 시설 문제는 담당 코치가 처리하면서 제외로 바꿀 수 있음.
+  // 예: 테이블 흔들림 같은 시설 문제는 담당 캠프지기가 처리하면서 제외로 바꿀 수 있음.
   // 팀의 누적 횟수(call-count)를 그 자리에서 가감함.
   const toggleCallCounts = useCallback(
     async (teamId, callId, nextCounts) => {

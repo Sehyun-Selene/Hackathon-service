@@ -11,7 +11,7 @@ import {
   TEAM_ROSTER_KEY,
   SOLDOUT_KEY,
 } from './lib/storage.js'
-import { now, fmtClock, getOpenMeal, getNextMeal } from './lib/time.js'
+import { now, fmtClock, getOpenMeals, getNextMeals } from './lib/time.js'
 import TeamSetup from './components/TeamSetup.jsx'
 import MenuBoard from './components/MenuBoard.jsx'
 import CallSection from './components/CallSection.jsx'
@@ -23,7 +23,7 @@ export default function App() {
   const [editingTeam, setEditingTeam] = useState(false)
   const [showTeamInfo, setShowTeamInfo] = useState(false)
 
-  // 화면 하단 탭: 'order'(음식 주문) | 'call'(코치 호출)
+  // 화면 하단 탭: 'order'(음식 주문) | 'call'(캠프지기 호출)
   const [tab, setTab] = useState('order')
 
   // 1초 틱: 카운트다운/시간대 전환용
@@ -104,25 +104,30 @@ export default function App() {
   }, [])
 
   // ---- 쓰기 동작 (통신 실패 시 throw → 호출한 컴포넌트가 잡아서 알림) ----
-  const saveOrder = useCallback(
-    async (mealId, items) => {
+  // 열려 있는 식사들의 주문을 한 번에 저장 (저녁·야식·아침 통합 주문 대응)
+  // mealsMap: { mealId: items[] }
+  const saveOrders = useCallback(
+    async (mealsMap) => {
       const current = (await storageGet(orderKey(teamId))) || { team: teamId, meals: {} }
       current.team = teamId
       current.meals = current.meals || {}
-      current.meals[mealId] = { items, updatedAt: now().getTime() }
+      const at = now().getTime()
+      Object.entries(mealsMap).forEach(([mealId, items]) => {
+        current.meals[mealId] = { items, updatedAt: at }
+      })
       await storageSet(orderKey(teamId), current)
       await refresh().catch(() => {})
     },
     [teamId, refresh],
   )
 
+  // 캠프지기 호출 — 사유 선택 없음
   const sendCall = useCallback(
-    async (reason) => {
+    async () => {
       const current = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
       current.calls = current.calls || []
       current.calls.push({
         id: `${teamId}-${now().getTime()}-${Math.floor(Math.random() * 1e6)}`,
-        reason,
         status: 'waiting',
         createdAt: now().getTime(),
         // 기본은 횟수에 포함됨. 관리자가 처리하며 제외로 바꿀 수 있음(관리자 CallsTab)
@@ -170,12 +175,12 @@ export default function App() {
   }
 
   const t = now().getTime()
-  const openMeal = getOpenMeal(t)
-  const nextMeal = getNextMeal(t)
+  const openMeals = getOpenMeals(t)
+  const nextMeals = getNextMeals(t)
   const hasActiveCall = (callData?.calls || []).some((c) => c.status !== 'done')
 
   return (
-    <div className={`app${tab === 'order' && openMeal ? ' has-sticky-bar' : ''}`}>
+    <div className={`app${tab === 'order' && openMeals.length ? ' has-sticky-bar' : ''}`}>
       {syncError && (
         <div className="sync-error">
           ⚠️ 서버 연결 오류 — 최신 정보가 아닐 수 있습니다. 자동으로 재시도 중입니다.
@@ -198,7 +203,7 @@ export default function App() {
             className={`folder-tab${tab === 'call' ? ' active' : ''}`}
             onClick={() => setTab('call')}
           >
-            🙋 코치 호출
+            🙋 캠프지기 호출
             {hasActiveCall && <span className="p-tab-dot" />}
           </button>
           <div className="folder-team">
@@ -217,13 +222,13 @@ export default function App() {
         <div className="folder-body">
           {tab === 'order' ? (
             <MenuBoard
-              openMeal={openMeal}
-              nextMeal={nextMeal}
+              openMeals={openMeals}
+              nextMeals={nextMeals}
               soldout={soldout}
               savedOrder={savedOrder}
               memberCount={team.memberCount}
               onRefresh={refresh}
-              onSave={saveOrder}
+              onSave={saveOrders}
             />
           ) : (
             <CallSection

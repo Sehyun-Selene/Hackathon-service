@@ -58,21 +58,31 @@ export function mealTimes(meal) {
   }
 }
 
-// 현재 주문 가능한 식사 (주문 가능 시간대가 겹치지 않는다고 가정)
-export function getOpenMeal(t) {
-  return MEALS.find((m) => {
+// 현재 주문 가능한 식사들 — 여러 식사가 같은 주문 구간을 공유할 수 있음
+// (예: 저녁·야식·아침을 16~17시에 한 번에 주문)
+export function getOpenMeals(t) {
+  return MEALS.filter((m) => {
     const { start, end } = mealTimes(m)
     return t >= start && t < end
-  }) || null
+  })
 }
 
-// 다음 주문 가능 식사 (아직 시작 전인 것 중 가장 빠른 것)
+// 하위 호환: 열려 있는 첫 식사 하나 (없으면 null)
+export function getOpenMeal(t) {
+  return getOpenMeals(t)[0] || null
+}
+
+// 다음 주문 구간의 식사들 — 가장 빨리 시작하는 orderStart를 공유하는 식사 전부
+export function getNextMeals(t) {
+  const upcoming = MEALS.filter((m) => mealTimes(m).start > t)
+  if (!upcoming.length) return []
+  const first = Math.min(...upcoming.map((m) => mealTimes(m).start))
+  return upcoming.filter((m) => mealTimes(m).start === first)
+}
+
+// 하위 호환: 다음 주문 가능 식사 하나 (없으면 null)
 export function getNextMeal(t) {
-  return (
-    MEALS.filter((m) => mealTimes(m).start > t).sort(
-      (a, b) => mealTimes(a).start - mealTimes(b).start,
-    )[0] || null
-  )
+  return getNextMeals(t)[0] || null
 }
 
 // 주문 내역이 화면에 노출되는 식사들: orderStart <= now < eatAt (겹침 허용)

@@ -1,45 +1,56 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MENUS, MENU_BY_ID } from '../config.js'
+import { MENUS, MENU_BY_ID, MEAL_BY_ID } from '../config.js'
 import { now, fmtClock, fmtCountdown, mealTimes } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 
-const CATEGORY_LABEL = { food: '🍜 음식', drink: '🥤 음료' }
-const CATEGORY_TAB = { food: '음식', drink: '음료' }
-
-// 현재 시각이 주문 가능 시간대면 메뉴판, 아니면 "다음 주문 가능 시간" 안내 (PRD 4.2)
-// 음식은 팀 인원수(memberCount)만큼만 담을 수 있음 (PRD 요청 #3). 음료는 제한 없음.
+// 현재 시각이 주문 가능 시간대면 메뉴판, 아니면 "다음 주문 가능 시간" 안내.
+// 여러 식사가 같은 주문 구간을 공유하면(저녁·야식·아침) 식사 탭으로 전환하며
+// 한 장바구니에 담아 한 번에 주문합니다.
+// 각 식사(끼니)마다 팀 인원수(memberCount)만큼만 담을 수 있습니다.
 export default function MenuBoard({
-  openMeal,
-  nextMeal,
+  openMeals,
+  nextMeals,
   soldout,
   savedOrder,
   memberCount,
   onRefresh,
   onSave,
 }) {
+  // draft: { mealId: { menuId: qty } }
   const [draft, setDraft] = useState({})
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
-  const [cat, setCat] = useState('food') // 카테고리 탭: 음식/음료
+  const [activeMealId, setActiveMealId] = useState(openMeals[0]?.id || null)
   const [showCart, setShowCart] = useState(false) // 하단 장바구니 시트
   const [refreshing, setRefreshing] = useState(false)
   const cartDrag = useSheetDrag(() => setShowCart(false))
 
-  const savedItems = useMemo(() => {
-    if (!openMeal) return {}
-    const items = savedOrder?.meals?.[openMeal.id]?.items || []
-    return Object.fromEntries(items.map((it) => [it.menuId, it.qty]))
-  }, [savedOrder, openMeal])
+  // openMeals는 매 렌더마다 새 배열 → id 목록 문자열로 변화 감지
+  const mealsKey = openMeals.map((m) => m.id).join(',')
+
+  const savedByMeal = useMemo(() => {
+    const map = {}
+    openMeals.forEach((m) => {
+      const items = savedOrder?.meals?.[m.id]?.items || []
+      map[m.id] = Object.fromEntries(items.map((it) => [it.menuId, it.qty]))
+    })
+    return map
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedOrder, mealsKey])
 
   useEffect(() => {
-    if (!dirty) setDraft(savedItems)
-  }, [savedItems, dirty, openMeal?.id])
+    if (!dirty) setDraft(savedByMeal)
+  }, [savedByMeal, dirty])
 
   useEffect(() => {
     setDraft({})
     setDirty(false)
-  }, [openMeal?.id])
+    setActiveMealId((cur) =>
+      openMeals.some((m) => m.id === cur) ? cur : openMeals[0]?.id || null,
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mealsKey])
 
   const refreshBoard = async () => {
     if (!onRefresh || refreshing) return
@@ -51,69 +62,81 @@ export default function MenuBoard({
     }
   }
 
-  if (!openMeal) {
+  if (openMeals.length === 0) {
     return (
       <section className="menu-board">
         <h3 className="card-title">🍽️ 음식 주문</h3>
         <div className="closed-box">
           <div className="closed-emoji">⏰</div>
-          {nextMeal ? (
+          {nextMeals.length > 0 ? (
             <>
               <p className="closed-main">지금은 주문 가능 시간이 아닙니다</p>
               <p className="closed-sub">
-                다음 주문: <b>{nextMeal.label}</b> — {fmtClock(new Date(nextMeal.orderStart))}부터
+                다음 주문: <b>{nextMeals.map((m) => m.label).join('·')}</b> —{' '}
+                {fmtClock(new Date(nextMeals[0].orderStart))}부터
               </p>
             </>
           ) : (
-            <p className="closed-main">모든 식사 주문이 마감되었습니다</p>
+            <>
+              <p className="closed-main">모든 주문이 마감되었습니다</p>
+              <p className="closed-sub">이후 식사·간식은 주문 없이 제공됩니다</p>
+            </>
           )}
-          <p className="closed-hint">코치 호출은 언제든 가능합니다</p>
+          <p className="closed-hint">캠프지기 호출은 언제든 가능합니다</p>
         </div>
       </section>
     )
   }
 
-  const { end } = mealTimes(openMeal)
+  const activeMeal = openMeals.find((m) => m.id === activeMealId) || openMeals[0]
+  const { end } = mealTimes(activeMeal)
   const remain = end - now().getTime()
-  const menus = MENUS[openMeal.id] || []
+  const menus = MENUS[activeMeal.id] || []
+  const multiMeal = openMeals.length > 1
 
-  // 음식 담은 총 수량 (인원수 제한 대상)
-  const foodQty = Object.entries(draft).reduce(
-    (sum, [id, qty]) => (MENU_BY_ID[id]?.category === 'food' ? sum + qty : sum),
-    0,
-  )
-  const foodLimitReached = foodQty >= memberCount
+  // 식사별 담은 수량 (끼니마다 인원수만큼 제한)
+  const mealQty = (mealId) =>
+    Object.values(draft[mealId] || {}).reduce((s, q) => s + q, 0)
+  const mealLimitReached = (mealId) => mealQty(mealId) >= memberCount
 
-  const setQty = (menuId, delta) => {
+  const setQty = (mealId, menuId, delta) => {
     setDraft((d) => {
-      const cur = d[menuId] || 0
-      // 음식 증가 시 인원수 초과 차단 — 최신 draft(d)로 다시 합산해
+      const mealDraft = d[mealId] || {}
+      const cur = mealDraft[menuId] || 0
+      // 증가 시 인원수 초과 차단 — 최신 draft(d)로 다시 합산해
       // 연타(빠른 클릭)에도 한도를 정확히 지킴
-      if (delta > 0 && MENU_BY_ID[menuId]?.category === 'food') {
-        const curFood = Object.entries(d).reduce(
-          (s, [id, q]) => (MENU_BY_ID[id]?.category === 'food' ? s + q : s),
-          0,
-        )
-        if (curFood >= memberCount) return d
+      if (delta > 0) {
+        const curTotal = Object.values(mealDraft).reduce((s, q) => s + q, 0)
+        if (curTotal >= memberCount) return d
       }
       const next = Math.max(0, cur + delta)
-      return { ...d, [menuId]: next }
+      return { ...d, [mealId]: { ...mealDraft, [menuId]: next } }
     })
     setDirty(true)
   }
 
-  const totalQty = Object.values(draft).reduce((a, b) => a + b, 0)
-  const cartItems = Object.entries(draft)
-    .filter(([, q]) => q > 0)
-    .map(([menuId, qty]) => ({ menuId, qty }))
+  const totalQty = openMeals.reduce((s, m) => s + mealQty(m.id), 0)
+  // 장바구니: 식사별 그룹
+  const cartGroups = openMeals
+    .map((m) => ({
+      meal: m,
+      items: Object.entries(draft[m.id] || {})
+        .filter(([, q]) => q > 0)
+        .map(([menuId, qty]) => ({ menuId, qty })),
+    }))
+    .filter((g) => g.items.length > 0)
 
   const submit = async () => {
     setSaving(true)
-    const items = Object.entries(draft)
-      .filter(([, qty]) => qty > 0)
-      .map(([menuId, qty]) => ({ menuId, qty }))
+    // 열려 있는 모든 식사의 주문을 한 번에 저장
+    const mealsMap = {}
+    openMeals.forEach((m) => {
+      mealsMap[m.id] = Object.entries(draft[m.id] || {})
+        .filter(([, qty]) => qty > 0)
+        .map(([menuId, qty]) => ({ menuId, qty }))
+    })
     try {
-      await onSave(openMeal.id, items)
+      await onSave(mealsMap)
     } catch {
       setSaving(false)
       alert('네트워크 오류로 주문이 저장되지 않았습니다.\n잠시 후 "주문하기"를 다시 눌러주세요.')
@@ -126,6 +149,9 @@ export default function MenuBoard({
     setTimeout(() => setSavedFlash(false), 2000)
   }
 
+  const hasSaved = openMeals.some((m) => Object.keys(savedByMeal[m.id] || {}).length > 0)
+  const canCancel = hasSaved || totalQty > 0
+
   const cancelAll = async () => {
     if (!hasSaved) {
       setDraft({})
@@ -133,8 +159,12 @@ export default function MenuBoard({
       return
     }
     setSaving(true)
+    const emptyMap = {}
+    openMeals.forEach((m) => {
+      emptyMap[m.id] = []
+    })
     try {
-      await onSave(openMeal.id, [])
+      await onSave(emptyMap)
     } catch {
       setSaving(false)
       alert('네트워크 오류로 취소가 저장되지 않았습니다.\n잠시 후 다시 시도해주세요.')
@@ -145,22 +175,18 @@ export default function MenuBoard({
     setSaving(false)
   }
 
-  const hasSaved = Object.keys(savedItems).length > 0
-  const canCancel = hasSaved || totalQty > 0
-
-  // 이 식사에 실제로 존재하는 카테고리만 탭으로 (보통 음식·음료 둘 다)
-  const cats = ['food', 'drink'].filter((c) => menus.some((m) => m.category === c))
-  const activeCat = cats.includes(cat) ? cat : cats[0]
-  const catMenus = menus.filter((m) => m.category === activeCat)
-
   return (
     <section className="menu-board">
       {/* 티오더식 헤더: 아이콘 + 타이틀 + 마감 카운트다운 */}
       <div className="board-header">
         <div className="board-header-icon">🍽️</div>
         <div className="board-header-text">
-          <div className="board-header-title">{openMeal.label} 주문</div>
-          <div className="board-header-sub">먹고 싶은 메뉴를 담아주세요</div>
+          <div className="board-header-title">
+            {multiMeal ? openMeals.map((m) => m.label).join('·') : activeMeal.label} 주문
+          </div>
+          <div className="board-header-sub">
+            {multiMeal ? '한 번에 담아 주문할 수 있어요' : '먹고 싶은 메뉴를 담아주세요'}
+          </div>
         </div>
         <div className="board-header-actions">
           <div className="board-countdown">
@@ -178,25 +204,38 @@ export default function MenuBoard({
         </div>
       </div>
 
-      {/* 카테고리 탭 */}
-      <div className="cat-tabs">
-        {cats.map((c) => (
-          <button
-            key={c}
-            className={`cat-tab${activeCat === c ? ' on' : ''}`}
-            onClick={() => setCat(c)}
-          >
-            {CATEGORY_TAB[c]}
-          </button>
-        ))}
-      </div>
+      {/* 식사 탭 (저녁/야식/아침처럼 여러 식사를 함께 주문할 때) */}
+      {multiMeal && (
+        <div className="cat-tabs">
+          {openMeals.map((m) => {
+            const q = mealQty(m.id)
+            return (
+              <button
+                key={m.id}
+                className={`cat-tab${activeMeal.id === m.id ? ' on' : ''}`}
+                onClick={() => setActiveMealId(m.id)}
+              >
+                {m.label}
+                {q > 0 && <span className="cat-tab-count">{q}</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* 일괄 메뉴(도시락) 안내 */}
+      {activeMeal.fixedMenu && (
+        <p className="fixed-menu-hint">
+          {activeMeal.label}은 일괄 메뉴예요. <b>먹을 인원수만큼 수량만</b> 담아주세요.
+        </p>
+      )}
 
       {/* 사진 카드 2열 그리드 */}
       <div className="food-grid">
-        {catMenus.map((m) => {
+        {menus.map((m) => {
           const isSoldout = !!soldout[m.id]
-          const qty = draft[m.id] || 0
-          const plusDisabled = isSoldout || (activeCat === 'food' && foodLimitReached)
+          const qty = draft[activeMeal.id]?.[m.id] || 0
+          const plusDisabled = isSoldout || mealLimitReached(activeMeal.id)
           return (
             <div key={m.id} className={`food-card${isSoldout ? ' soldout' : ''}${qty > 0 ? ' picked' : ''}`}>
               <div className="food-card-photo">
@@ -223,7 +262,7 @@ export default function MenuBoard({
                     <button
                       className="add-btn"
                       disabled={plusDisabled}
-                      onClick={() => setQty(m.id, +1)}
+                      onClick={() => setQty(activeMeal.id, m.id, +1)}
                       aria-label={`${m.name} 담기`}
                     >
                       ＋
@@ -232,7 +271,7 @@ export default function MenuBoard({
                     <div className="card-stepper">
                       <button
                         className="qty-btn"
-                        onClick={() => setQty(m.id, -1)}
+                        onClick={() => setQty(activeMeal.id, m.id, -1)}
                         aria-label={`${m.name} 수량 줄이기`}
                       >
                         −
@@ -241,7 +280,7 @@ export default function MenuBoard({
                       <button
                         className="qty-btn"
                         disabled={plusDisabled}
-                        onClick={() => setQty(m.id, +1)}
+                        onClick={() => setQty(activeMeal.id, m.id, +1)}
                         aria-label={`${m.name} 수량 늘리기`}
                       >
                         +
@@ -255,8 +294,10 @@ export default function MenuBoard({
         })}
       </div>
 
-      {activeCat === 'food' && foodLimitReached && (
-        <p className="limit-hint">음식은 팀 인원수({memberCount}명)만큼 담았어요. 바꾸려면 담은 걸 빼고 다시 담으세요.</p>
+      {mealLimitReached(activeMeal.id) && (
+        <p className="limit-hint">
+          {activeMeal.label}은 팀 인원수({memberCount}명)만큼 담았어요. 바꾸려면 담은 걸 빼고 다시 담으세요.
+        </p>
       )}
 
       {/* 하단 고정 바 — 누르면 장바구니 시트 열림 (티오더식) */}
@@ -285,37 +326,41 @@ export default function MenuBoard({
               </button>
             </div>
             <div className="sheet-body">
-              {cartItems.length === 0 ? (
+              {cartGroups.length === 0 ? (
                 <p className="empty-text">담은 메뉴가 없어요. 메뉴를 담아주세요.</p>
               ) : (
-                cartItems.map(({ menuId, qty }) => (
-                  <div key={menuId} className="cart-item">
-                    <span className="cart-item-name">{MENU_BY_ID[menuId]?.name || menuId}</span>
-                    <div className="card-stepper">
-                      <button
-                        className="qty-btn"
-                        onClick={() => setQty(menuId, -1)}
-                        aria-label="수량 줄이기"
-                      >
-                        −
-                      </button>
-                      <span className="qty-num">{qty}</span>
-                      <button
-                        className="qty-btn"
-                        disabled={
-                          MENU_BY_ID[menuId]?.category === 'food' && foodLimitReached
-                        }
-                        onClick={() => setQty(menuId, +1)}
-                        aria-label="수량 늘리기"
-                      >
-                        +
-                      </button>
-                    </div>
+                cartGroups.map(({ meal, items }) => (
+                  <div key={meal.id} className="cart-meal-group">
+                    {multiMeal && (
+                      <div className="cart-meal-label">
+                        {MEAL_BY_ID[meal.id]?.label || meal.id}
+                      </div>
+                    )}
+                    {items.map(({ menuId, qty }) => (
+                      <div key={menuId} className="cart-item">
+                        <span className="cart-item-name">{MENU_BY_ID[menuId]?.name || menuId}</span>
+                        <div className="card-stepper">
+                          <button
+                            className="qty-btn"
+                            onClick={() => setQty(meal.id, menuId, -1)}
+                            aria-label="수량 줄이기"
+                          >
+                            −
+                          </button>
+                          <span className="qty-num">{qty}</span>
+                          <button
+                            className="qty-btn"
+                            disabled={mealLimitReached(meal.id)}
+                            onClick={() => setQty(meal.id, menuId, +1)}
+                            aria-label="수량 늘리기"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ))
-              )}
-              {foodLimitReached && (
-                <p className="limit-hint">음식은 팀 인원수({memberCount}명)만큼 담았어요.</p>
               )}
             </div>
             <div className="sheet-foot">

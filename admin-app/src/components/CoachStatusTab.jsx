@@ -1,25 +1,25 @@
 import { useMemo } from 'react'
 import { COACH_ASSIGNMENTS } from '../config.js'
 
-// 코치 현황 (PRD 요청 #5): 위치 지도 대신, 코치 개인별 리스트를 한눈에.
-// 각 코치가 쉬는 중인지 / 어떤 팀 호출을 대응 중인지 표시.
-// 목적: 특정 코치가 바쁘면(대응 중이면) 다른 코치가 그 담당 팀 호출을 대신 볼 수 있게.
+// 캠프지기 현황 (PRD 요청 #5): 위치 지도 대신, 캠프지기 개인별 리스트를 한눈에.
+// 각 캠프지기가 쉬는 중인지 / 어떤 팀 호출을 대응 중인지 표시.
+// 목적: 특정 캠프지기가 바쁘면(대응 중이면) 다른 캠프지기가 그 담당 팀 호출을 대신 볼 수 있게.
 export default function CoachStatusTab({ scan, coach }) {
-  // 진행 중(in_progress) 호출에서 담당 코치별로 어떤 팀을 맡고 있는지 매핑
+  // 진행 중(in_progress) 호출에서 담당 캠프지기별로 어떤 팀을 맡고 있는지 매핑
   const busyByCoachId = useMemo(() => {
     const map = {}
     Object.entries(scan.calls).forEach(([teamId, data]) => {
       ;(data.calls || []).forEach((c) => {
         if (c.status === 'in_progress' && c.handledById) {
           map[c.handledById] = map[c.handledById] || []
-          map[c.handledById].push({ teamId, reason: c.reason })
+          map[c.handledById].push({ teamId })
         }
       })
     })
     return map
   }, [scan.calls])
 
-  // 이 기기 코치의 이름이 COACH_ASSIGNMENTS 명단과 일치하면, 그 코치가
+  // 이 기기 캠프지기의 이름이 COACH_ASSIGNMENTS 명단과 일치하면, 그 캠프지기가
   // 담당하는 팀 중 대기중인 호출 수를 세어 보여줌 (본인 백로그 확인용)
   const waitingCountByName = useMemo(() => {
     const map = {}
@@ -36,9 +36,9 @@ export default function CoachStatusTab({ scan, coach }) {
   return (
     <div>
       <section className="panel">
-        <h3>코치 현황 ({scan.coaches.length}명)</h3>
+        <h3>캠프지기 현황 ({scan.coaches.length}명)</h3>
         {scan.coaches.length === 0 ? (
-          <p className="empty-text">아직 입장한 코치가 없습니다.</p>
+          <p className="empty-text">아직 입장한 캠프지기가 없습니다.</p>
         ) : (
           <div className="coach-list">
             {scan.coaches.map((c) => {
@@ -67,7 +67,7 @@ export default function CoachStatusTab({ scan, coach }) {
       </section>
 
       <p className="coach-note">
-        💡 담당 코치가 바쁘면(🔴), 그 코치 담당 팀의 대기 호출을 다른 코치가 대신 처리할 수 있습니다.
+        💡 담당 캠프지기가 바쁘면(🔴), 그 캠프지기 담당 팀의 대기 호출을 다른 캠프지기가 대신 처리할 수 있습니다.
       </p>
     </div>
   )

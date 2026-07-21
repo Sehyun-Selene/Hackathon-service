@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { CALL_LIMIT_PER_TEAM, getAssignedCoachForTeam } from '../config.js'
 import { now, fmtCountdown, fmtClock } from '../lib/time.js'
 
-// 코치 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 코치 개인별 배정.
-// 내가 담당하는 팀의 호출을 우선 대응하되, 다른 코치도 지원 가능.
+// 캠프지기 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 캠프지기 개인별 배정.
+// 내가 담당하는 팀의 호출을 우선 대응하되, 다른 캠프지기도 지원 가능.
 // "내 담당 팀만" 필터로 담당 호출을 빠르게 걸러 처리.
 export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }) {
   const [, setTick] = useState(0)
@@ -71,7 +71,6 @@ export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }
                   <div className="call-card-main">
                     <span className="call-table">팀 {c.team}</span>
                     <span className={`call-company${mine ? ' mine' : ''}`}>담당 {c.assignedName}</span>
-                    <span className="call-reason">{c.reason}</span>
                     <span className="call-elapsed">⏱ {fmtCountdown(t - c.createdAt)} 경과</span>
                     {c.status === 'waiting' && avgHandleMin != null && (
                       <span className="avg-wait">예상 처리 ~{avgHandleMin}분</span>
@@ -129,7 +128,6 @@ export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }
               <div className="call-card-main">
                 <span className="call-table">팀 {c.team}</span>
                 <span className="call-company">담당 {c.assignedName}</span>
-                <span className="call-reason">{c.reason}</span>
                 <span className="call-elapsed">
                   {fmtClock(new Date(c.createdAt))} 호출 → {c.doneAt ? fmtClock(new Date(c.doneAt)) : '-'} 완료
                 </span>

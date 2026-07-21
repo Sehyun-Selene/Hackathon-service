@@ -16,7 +16,7 @@
 //    order:{team_id}         해당 팀의 전체 주문 내역
 //    call:{team_id}          해당 팀의 호출 목록(현재 상태 + 이력)
 //    call-count:{team_id}    해당 팀의 누적 호출 횟수
-//    coach-roster            등록된 코치 목록 [{id, name, company}]
+//    coach-roster            등록된 캠프지기 목록 [{id, name}]
 //    soldout                 품절 메뉴 map { menuId: true } (관리자만 씀)
 // =====================================================================
 import { API_BASE_URL } from '../config.js'

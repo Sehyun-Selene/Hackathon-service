@@ -4,17 +4,18 @@ import {
   MENUS,
   MENU_BY_ID,
   MEAL_BY_ID,
+  ALL_MENUS,
   TOTAL_TEAMS,
   DELIVERY_TEAM_RANGE_SIZE,
   getAssignedCoachForTeam,
 } from '../config.js'
-import { getNextMeal, getOpenMeal, getVisibleMeals, now } from '../lib/time.js'
+import { getNextMeal, getOpenMeals, getVisibleMeals, now } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 
 function getDefaultMealId() {
   const currentTime = now().getTime()
-  const openMeal = getOpenMeal(currentTime)
-  if (openMeal) return openMeal.id
+  const openMeals = getOpenMeals(currentTime)
+  if (openMeals.length) return openMeals[0].id
 
   const visibleMeals = getVisibleMeals(currentTime)
   if (visibleMeals.length) return visibleMeals[visibleMeals.length - 1].id
@@ -99,8 +100,8 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
 
   const filteredMealIds = mealFilter === 'all' ? MEALS.map((m) => m.id) : [mealFilter]
   const singleMeal = mealFilter !== 'all' // 배부 체크는 끼니 단위로만 의미 있음
-  const openOrderMeal = getOpenMeal(now().getTime())
-  const soldoutMeal = openOrderMeal
+  // 지금 주문받는 중인 식사들 (저녁·야식·아침은 같은 구간을 공유해 동시에 열림)
+  const soldoutMeals = getOpenMeals(now().getTime())
 
   // total = 총 주문 수량, remaining = 아직 배부 안 된 수량 (배부 완료 팀은 차감)
   // 배부 진행에 따라 remaining이 실시간으로 줄어듦 → 개수 검증용
@@ -193,8 +194,31 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
     return { teamsWith }
   }, [scan.teams])
 
+  // 메뉴 알러지 성분(config.MENUS[].allergens)과 팀 등록 알러지가 겹치는 인원 집계
+  // — 겹치는 인원은 대체 메뉴 준비 대상이므로 별도 인원 수로 관리
+  const menuAllergenInfo = useMemo(() => {
+    const menusWithAllergens = ALL_MENUS.filter((m) => (m.allergens || []).length > 0)
+    const perMenu = menusWithAllergens.map((menu) => ({ menu, count: 0 }))
+    let totalAffected = 0
+    Object.values(scan.teams).forEach((team) => {
+      ;(team.allergies || [])
+        .map((p) => (Array.isArray(p) ? p : [p]))
+        .forEach((personList) => {
+          const hits = menusWithAllergens.filter((menu) =>
+            menu.allergens.some((a) => personList.includes(a)),
+          )
+          if (hits.length) totalAffected += 1
+          hits.forEach((menu) => {
+            const entry = perMenu.find((x) => x.menu.id === menu.id)
+            if (entry) entry.count += 1
+          })
+        })
+    })
+    return { perMenu, totalAffected, configured: menusWithAllergens.length > 0 }
+  }, [scan.teams])
+
   const exportCsv = () => {
-    const rows = [['팀', '담당 코치', '인원수', '식사', '카테고리', '메뉴', '수량']]
+    const rows = [['팀', '담당 캠프지기', '인원수', '식사', '메뉴', '수량']]
     Object.entries(scan.orders)
       .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
       .forEach(([teamId, order]) => {
@@ -207,7 +231,6 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
               getAssignedCoachForTeam(teamId)?.name || '',
               team.memberCount || '',
               meal.label,
-              menu?.category === 'food' ? '음식' : '음료',
               menu?.name || menuId,
               qty,
             ])
@@ -371,6 +394,26 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
             </div>
             <p className="sheet-description">팀별 대체 메뉴 준비에 참고하세요.</p>
             <div className="sheet-body">
+              {/* 메뉴 성분과 겹치는 알러지 인원 — 대체 메뉴 준비 수량의 기준 */}
+              {menuAllergenInfo.configured ? (
+                <div className="allergy-menu-summary">
+                  <div className="allergy-menu-total">
+                    ⚠️ 메뉴 알러지 해당 인원 <b>{menuAllergenInfo.totalAffected}명</b>
+                  </div>
+                  <div className="allergy-menu-rows">
+                    {menuAllergenInfo.perMenu.map(({ menu, count }) => (
+                      <span key={menu.id} className="allergy-person-chip">
+                        {menu.name} ({menu.allergens.join('·')}) <b>{count}명</b>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="allergy-menu-note">
+                  💡 config.js의 메뉴별 <b>allergens</b>를 채우면, 메뉴 성분과 겹치는
+                  알러지 인원이 여기 자동 집계됩니다.
+                </p>
+              )}
               {allergyInfo.teamsWith.length === 0 ? (
                 <p className="empty-text">알러지를 등록한 인원이 없습니다.</p>
               ) : (
@@ -410,32 +453,35 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
             <div className="sheet-handle" aria-hidden="true" {...soldoutDrag.handleHandlers} />
             <div className="sheet-head">
               <h3 id="soldout-sheet-title">
-                품절 관리{soldoutMeal ? ` · ${soldoutMeal.label}` : ''}
+                품절 관리
+                {soldoutMeals.length > 0 && ` · ${soldoutMeals.map((m) => m.label).join('·')}`}
               </h3>
               <button className="sheet-close" onClick={closeUtilityPanels}>닫기</button>
             </div>
             <p className="sheet-description">
-              {soldoutMeal
+              {soldoutMeals.length
                 ? '메뉴를 누르면 참가자 화면에서 즉시 주문할 수 없게 됩니다.'
                 : '현재 주문 가능한 식사가 없습니다.'}
             </p>
             <div className="sheet-body">
-              {soldoutMeal ? (
-                <div className="soldout-row soldout-row-current">
-                  <b>{soldoutMeal.label}</b>
-                  <div className="soldout-chips">
-                    {MENUS[soldoutMeal.id].map((m) => (
-                      <button
-                        key={m.id}
-                        className={`chip${scan.soldout[m.id] ? ' soldout-on' : ''}`}
-                        onClick={() => onToggleSoldout(m.id)}
-                      >
-                        {scan.soldout[m.id] ? '🚫 ' : ''}
-                        {m.name}
-                      </button>
-                    ))}
+              {soldoutMeals.length ? (
+                soldoutMeals.map((meal) => (
+                  <div key={meal.id} className="soldout-row soldout-row-current">
+                    <b>{meal.label}</b>
+                    <div className="soldout-chips">
+                      {(MENUS[meal.id] || []).map((m) => (
+                        <button
+                          key={m.id}
+                          className={`chip${scan.soldout[m.id] ? ' soldout-on' : ''}`}
+                          onClick={() => onToggleSoldout(m.id)}
+                        >
+                          {scan.soldout[m.id] ? '🚫 ' : ''}
+                          {m.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ))
               ) : (
                 <p className="empty-text">주문 가능 시간이 되면 해당 식사의 메뉴가 표시됩니다.</p>
               )}
@@ -487,7 +533,7 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
 
         {!singleMeal && teamRows.length > 0 && (
           <p className="deliver-hint">
-            끼니(저녁/야식/아침/점심)를 선택하면 팀별 <b>완료 체크</b>를 쓸 수 있어요.
+            끼니({MEALS.map((m) => m.label).join('/')})를 선택하면 팀별 <b>완료 체크</b>를 쓸 수 있어요.
           </p>
         )}
 
