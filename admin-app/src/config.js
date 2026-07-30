@@ -21,14 +21,11 @@ export const API_BASE_URL = 'https://hackathon-service-6uf0.onrender.com'
 // ---------------------------------------------------------------
 // 1. 주문 타임라인  (날짜/식사 시각은 TBD — 현재 임시값)
 //
-//    주문은 첫날 딱 두 번만 받습니다:
-//      ① 13:00~14:00 → 간식 주문 (15:00 제공, 메뉴 2가지)
-//      ② 16:00~17:00 → 저녁·야식·아침 한 번에 주문
-//         - 저녁: 일괄 메뉴 도시락 → 수량(먹을 인원수)만 파악
-//         - 야식·아침: 각 2가지 메뉴 중 선택
-//    이후에는 주문 기능이 없습니다:
-//      - 둘째 날 점심: 일괄 도시락 — ②에서 파악한 저녁 수량으로 운영
-//      - 이후 간식: 인원수 기준 일괄 제공
+//    주문은 첫날 딱 한 번만 받습니다:
+//      ① 20:00~21:00 → 야식·아침 한 번에 주문 (각 2가지 메뉴 중 선택)
+//    이후/이외에는 주문 기능이 없습니다:
+//      - 간식·저녁: 주문 없이 인원수 기준 일괄 제공
+//      - 둘째 날 점심·이후 아이스크림: 인원수 기준 일괄 제공
 //      - 음료: 냉장고에서 자율적으로 가져감 (주문 없음)
 //
 //    - orderStart ~ orderEnd : 주문 가능(메뉴판 노출·수정·취소 가능) 구간
@@ -40,32 +37,17 @@ export const API_BASE_URL = 'https://hackathon-service-6uf0.onrender.com'
 // ---------------------------------------------------------------
 export const MEALS = [
   {
-    id: 'snack',
-    label: '간식',
-    orderStart: '2026-09-21T13:00:00',
-    orderEnd: '2026-09-21T14:00:00',
-    eatAt: '2026-09-21T15:00:00',
-  },
-  {
-    id: 'dinner',
-    label: '저녁',
-    fixedMenu: true, // 일괄 도시락 — 먹을 인원수만큼 수량만 담으면 됨
-    orderStart: '2026-09-21T16:00:00',
-    orderEnd: '2026-09-21T17:00:00',
-    eatAt: '2026-09-21T18:00:00', // TBD
-  },
-  {
     id: 'midnight',
     label: '야식',
-    orderStart: '2026-09-21T16:00:00',
-    orderEnd: '2026-09-21T17:00:00',
-    eatAt: '2026-09-21T21:00:00', // TBD
+    orderStart: '2026-09-21T20:00:00',
+    orderEnd: '2026-09-21T21:00:00',
+    eatAt: '2026-09-21T22:00:00', // TBD
   },
   {
     id: 'breakfast',
     label: '아침',
-    orderStart: '2026-09-21T16:00:00',
-    orderEnd: '2026-09-21T17:00:00',
+    orderStart: '2026-09-21T20:00:00',
+    orderEnd: '2026-09-21T21:00:00',
     eatAt: '2026-09-22T09:30:00', // TBD
   },
 ]
@@ -148,14 +130,6 @@ export const DARK_MODE_HOURS = { start: 20, end: 7 }
 //                 팀 등록 알러지와 겹치는 인원을 관리자 화면에서 자동 집계합니다.
 // ---------------------------------------------------------------
 export const MENUS = {
-  snack: [
-    { id: 'sn-a', name: '간식 A (TBD)', badges: [], image: '', allergyNote: '', allergens: [] },
-    { id: 'sn-b', name: '간식 B (TBD)', badges: [], image: '', allergyNote: '', allergens: [] },
-  ],
-  dinner: [
-    // 일괄 메뉴 — 메뉴 선택 없이 먹을 인원수만큼 수량만 담음
-    { id: 'dn-box', name: '저녁 도시락 (TBD)', badges: [], image: '', allergyNote: '', allergens: [] },
-  ],
   midnight: [
     { id: 'md-a', name: '야식 A (TBD)', badges: [], image: '', allergyNote: '', allergens: [] },
     { id: 'md-b', name: '야식 B (TBD)', badges: [], image: '', allergyNote: '', allergens: [] },

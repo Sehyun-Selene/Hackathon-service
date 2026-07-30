@@ -40,7 +40,9 @@ export default function GuideSection({ defaultOpen = false }) {
             ))}
           </ul>
           <p>
-            둘째 날 점심과 이후 아이스크림은 주문 없이 인원수 기준으로 제공됩니다.
+            첫째 날 간식과 저녁, 둘째 날 점심과 이후 아이스크림은
+            <br />
+            주문 없이 인원수 기준으로 제공됩니다.
             <br />
             음료는 냉장고에서 자유롭게 가져가세요.
           </p>
