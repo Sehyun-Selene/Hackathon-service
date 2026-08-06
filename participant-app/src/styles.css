@@ -447,9 +447,11 @@ html.dark .call-company-note { background: #2c2721; }
 
 /* ---- 팀 등록(온보딩) 화면 ---- */
 .setup-header {
-  display: block; background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--primary); color: #fff;
   border-radius: 16px; padding: 18px 16px; margin-bottom: 12px;
 }
+.header-logo { height: 28px; width: auto; object-fit: contain; }
 .setup-header .header-table {
   font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   font-size: 24px; font-weight: 800;

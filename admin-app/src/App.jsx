@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import logo52g from './assets/52g-logo.png'
 import { ADMIN_POLL_MS, COACH_ASSIGNMENTS } from './config.js'
 import {
   storageGet,
@@ -304,7 +305,7 @@ export default function App() {
             ☰
           </button>
           <div className="brand">
-            <span className="brand-mark" aria-hidden="true">🍽️</span>
+            <span className="brand-mark" aria-hidden="true">🖥️</span>
             <span className="brand-text">
               관리자 <b>페이지</b>
             </span>
@@ -313,7 +314,7 @@ export default function App() {
         <nav className={`side-nav${menuOpen ? ' open' : ''}`}>
           <div className="drawer-head">
             <div className="brand">
-              <span className="brand-mark" aria-hidden="true">🍽️</span>
+              <span className="brand-mark" aria-hidden="true">🖥️</span>
               <span className="brand-text">
                 관리자 <b>페이지</b>
               </span>
@@ -339,6 +340,7 @@ export default function App() {
         {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
         <div className="side-foot">
           <span className="side-coach">🧑‍🏫 {coach.name}</span>
+          <img className="side-foot-logo" src={logo52g} alt="52g" />
         </div>
       </aside>
 

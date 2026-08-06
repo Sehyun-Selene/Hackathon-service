@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import logo52g from '../assets/52g-logo.png'
 import { ALLERGY_OPTIONS, TOTAL_TEAMS, MAX_MEMBER_COUNT } from '../config.js'
 import { normalizeTeam } from '../lib/storage.js'
 import GuideSection from './GuideSection.jsx'
@@ -85,6 +86,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
         <div>
           <div className="header-table">팀 등록</div>
         </div>
+        <img className="header-logo" src={logo52g} alt="52g" />
       </header>
 
       <GuideSection defaultOpen />
