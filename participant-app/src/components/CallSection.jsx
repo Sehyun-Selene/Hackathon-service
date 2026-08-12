@@ -52,12 +52,7 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
 
       {active ? (
         <div className="call-status-box">
-          <p className="call-status-reason">
-            {fmtAgo(now().getTime() - active.createdAt)} 호출
-            {active.countsTowardLimit === false && (
-              <span className="no-limit-tag"> (횟수 미포함)</span>
-            )}
-          </p>
+          <p className="call-status-reason">{fmtAgo(now().getTime() - active.createdAt)} 호출</p>
           <div className="status-steps">
             {STATUS_STEPS.map((s, i) => {
               const currentIdx = STATUS_STEPS.indexOf(active.status)

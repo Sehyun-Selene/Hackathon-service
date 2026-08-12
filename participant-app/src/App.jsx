@@ -134,8 +134,6 @@ export default function App() {
         id: `${teamId}-${now().getTime()}-${Math.floor(Math.random() * 1e6)}`,
         status: 'waiting',
         createdAt: now().getTime(),
-        // 기본은 횟수에 포함됨. 관리자가 처리하며 제외로 바꿀 수 있음(관리자 CallsTab)
-        countsTowardLimit: true,
       })
       await storageSet(callKey(teamId), current)
       const count = (await storageGet(callCountKey(teamId))) || 0

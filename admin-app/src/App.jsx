@@ -174,31 +174,6 @@ export default function App() {
     [coach, refresh],
   )
 
-  // 호출별 "팀 횟수 제한 포함 여부"를 관리자가 직접 판단해 조정.
-  // 예: 테이블 흔들림 같은 시설 문제는 담당 캠프지기가 처리하면서 제외로 바꿀 수 있음.
-  // 팀의 누적 횟수(call-count)를 그 자리에서 가감함.
-  const toggleCallCounts = useCallback(
-    async (teamId, callId, nextCounts) => {
-      try {
-        const data = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
-        const call = (data.calls || []).find((c) => c.id === callId)
-        if (!call) return
-        const prevCounts = call.countsTowardLimit !== false // 예전 데이터엔 필드 없을 수 있음 → 기본 true
-        if (prevCounts === nextCounts) return
-        call.countsTowardLimit = nextCounts
-        await storageSet(callKey(teamId), data)
-        const count = (await storageGet(callCountKey(teamId))) || 0
-        const delta = nextCounts ? 1 : -1
-        await storageSet(callCountKey(teamId), Math.max(0, (typeof count === 'number' ? count : 0) + delta))
-      } catch {
-        alert('네트워크 오류로 변경되지 않았습니다.\n잠시 후 다시 시도해주세요.')
-        return
-      }
-      await refresh()
-    },
-    [refresh],
-  )
-
   // 배부 완료 토글 (팀별 delivered:{teamId} 레코드에 끼니별로 기록)
   const toggleDelivered = useCallback(
     async (teamId, mealId, next) => {
@@ -400,7 +375,6 @@ export default function App() {
               scan={scan}
               coach={coach}
               onUpdateStatus={updateCallStatus}
-              onToggleCounts={toggleCallCounts}
             />
           ) : tab === 'coaches' ? (
             <CoachStatusTab scan={scan} coach={coach} />

@@ -5,7 +5,7 @@ import { now, fmtCountdown, fmtClock } from '../lib/time.js'
 // 캠프지기 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 캠프지기 개인별 배정.
 // 내가 담당하는 팀의 호출을 우선 대응하되, 다른 캠프지기도 지원 가능.
 // "내 담당 팀만" 필터로 담당 호출을 빠르게 걸러 처리.
-export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }) {
+export default function CallsTab({ scan, coach, onUpdateStatus }) {
   const [, setTick] = useState(0)
   const [onlyMine, setOnlyMine] = useState(false)
   useEffect(() => {
@@ -78,14 +78,6 @@ export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }
                     <span className="call-used">
                       호출 {used}/{CALL_LIMIT_PER_TEAM}회
                     </span>
-                    <label className="counts-toggle" title="이 호출을 팀 호출 횟수 제한에 포함할지 직접 정하세요">
-                      <input
-                        type="checkbox"
-                        checked={c.countsTowardLimit !== false}
-                        onChange={(e) => onToggleCounts(c.team, c.id, e.target.checked)}
-                      />
-                      횟수 포함
-                    </label>
                   </div>
                   <div className="call-card-actions">
                     {c.status === 'waiting' ? (
@@ -132,14 +124,6 @@ export default function CallsTab({ scan, coach, onUpdateStatus, onToggleCounts }
                   {fmtClock(new Date(c.createdAt))} 호출 → {c.doneAt ? fmtClock(new Date(c.doneAt)) : '-'} 완료
                 </span>
                 <span className="call-used">담당 {c.handledBy || '-'}</span>
-                <label className="counts-toggle" title="이 호출을 팀 호출 횟수 제한에 포함할지 직접 정하세요">
-                  <input
-                    type="checkbox"
-                    checked={c.countsTowardLimit !== false}
-                    onChange={(e) => onToggleCounts(c.team, c.id, e.target.checked)}
-                  />
-                  횟수 포함
-                </label>
               </div>
             </div>
           ))}
