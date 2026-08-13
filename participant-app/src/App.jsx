@@ -195,20 +195,20 @@ export default function App() {
         <div className="folder-tabs" role="tablist">
           <button
             role="tab"
-            aria-selected={tab === 'order'}
-            className={`folder-tab${tab === 'order' ? ' active' : ''}`}
-            onClick={() => setTab('order')}
-          >
-            🍽️ 음식 주문
-          </button>
-          <button
-            role="tab"
             aria-selected={tab === 'call'}
             className={`folder-tab${tab === 'call' ? ' active' : ''}`}
             onClick={() => setTab('call')}
           >
             🙋 마스터 메이트 호출
             {hasActiveCall && <span className="p-tab-dot" />}
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'order'}
+            className={`folder-tab${tab === 'order' ? ' active' : ''}`}
+            onClick={() => setTab('order')}
+          >
+            🍽️ 음식 주문
           </button>
           <div className="folder-team">
             <button

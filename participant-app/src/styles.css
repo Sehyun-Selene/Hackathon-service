@@ -493,6 +493,8 @@ html.dark .call-company-note { background: #2c2721; }
   display: block; margin-top: 4px; font-size: 12.5px; font-weight: 600;
   color: var(--sub); line-height: 1.5;
 }
+/* 음식 주문 탭의 주문 시간 공지 — 호출 가이드와 동일한 형태 */
+.order-notice { margin-top: 12px; }
 html.dark .call-guide { background: #3a2c14; border-color: #5c451c; }
 html.dark .call-guide-title { color: #fbbf24; }
 

@@ -22,12 +22,14 @@ export const API_BASE_URL = 'https://hackathon-service-6uf0.onrender.com'
 // 1. 주문 타임라인  (날짜/식사 시각은 TBD — 현재 임시값)
 //
 //    주문은 첫날 딱 한 번만 받습니다:
-//      ① 20:00~21:00 → 야식·아침 한 번에 주문 (각 2가지 메뉴 중 선택)
+//      ① 14:00~15:00 → 야식·아침 한 번에 주문 (각 2가지 메뉴 중 선택)
 //    이후/이외에는 주문 기능이 없습니다:
 //      - 간식·저녁: 주문 없이 인원수 기준 일괄 제공
 //      - 둘째 날 점심·이후 아이스크림: 인원수 기준 일괄 제공
 //      - 음료: 냉장고에서 자율적으로 가져감 (주문 없음)
 //
+//    - label                 : 식사 이름 (식사 탭·장바구니·관리자 화면 표기)
+//    - shortLabel            : 주문 화면 제목에 쓰는 짧은 이름. 없으면 label 사용.
 //    - orderStart ~ orderEnd : 주문 가능(메뉴판 노출·수정·취소 가능) 구간
 //      (여러 식사가 같은 구간을 공유하면 한 화면에서 탭으로 함께 주문)
 //    - eatAt                 : 식사 시각. 주문 내역은 orderStart부터
@@ -38,17 +40,19 @@ export const API_BASE_URL = 'https://hackathon-service-6uf0.onrender.com'
 export const MEALS = [
   {
     id: 'midnight',
-    label: '야식',
-    orderStart: '2026-09-21T20:00:00',
-    orderEnd: '2026-09-21T21:00:00',
-    eatAt: '2026-09-21T22:00:00', // TBD
+    label: 'DAY 1 야식',
+    shortLabel: '야식',
+    orderStart: '2026-09-21T14:00:00',
+    orderEnd: '2026-09-21T15:00:00',
+    eatAt: '2026-09-21T21:00:00',
   },
   {
     id: 'breakfast',
-    label: '아침',
-    orderStart: '2026-09-21T20:00:00',
-    orderEnd: '2026-09-21T21:00:00',
-    eatAt: '2026-09-22T09:30:00', // TBD
+    label: 'DAY 2 아침',
+    shortLabel: '아침',
+    orderStart: '2026-09-21T14:00:00',
+    orderEnd: '2026-09-21T15:00:00',
+    eatAt: '2026-09-22T09:30:00',
   },
 ]
 

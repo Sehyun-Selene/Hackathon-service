@@ -3,6 +3,20 @@ import { MENUS, MENU_BY_ID, MEAL_BY_ID } from '../config.js'
 import { now, fmtClock, fmtCountdown, mealTimes } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 
+// 주문 시간 공지 — 호출 탭의 가이드 박스(.call-guide)와 같은 형태로 노출.
+// 주문 가능 시간대일 때와 마감/대기 상태일 때 모두 보여줍니다.
+function OrderNotice() {
+  return (
+    <div className="call-guide order-notice">
+      <b className="call-guide-title">📢 공지사항</b>
+      <ul className="call-guide-list">
+        <li>야식과 아침 모두 DAY 1 14시부터 15시까지 신청합니다.</li>
+        <li>야식은 DAY 1 21시에, 아침은 DAY 2 9시 반에 제공합니다.</li>
+      </ul>
+    </div>
+  )
+}
+
 // 현재 시각이 주문 가능 시간대면 메뉴판, 아니면 "다음 주문 가능 시간" 안내.
 // 여러 식사가 같은 주문 구간을 공유하면(저녁·야식·아침) 식사 탭으로 전환하며
 // 한 장바구니에 담아 한 번에 주문합니다.
@@ -66,6 +80,7 @@ export default function MenuBoard({
     return (
       <section className="menu-board">
         <h3 className="card-title">🍽️ 음식 주문</h3>
+        <OrderNotice />
         <div className="closed-box">
           <div className="closed-emoji">⏰</div>
           {nextMeals.length > 0 ? (
@@ -182,7 +197,11 @@ export default function MenuBoard({
         <div className="board-header-icon">🍽️</div>
         <div className="board-header-text">
           <div className="board-header-title">
-            {multiMeal ? openMeals.map((m) => m.label).join('·') : activeMeal.label} 주문
+            {/* 제목은 짧은 이름(야식·아침)으로 — 식사 탭에서는 label(DAY 1 야식) 사용 */}
+            {multiMeal
+              ? openMeals.map((m) => m.shortLabel || m.label).join('·')
+              : activeMeal.shortLabel || activeMeal.label}{' '}
+            주문
           </div>
           <div className="board-header-sub">
             {multiMeal ? '한 번에 담아 주문할 수 있어요' : '먹고 싶은 메뉴를 담아주세요'}
@@ -203,6 +222,8 @@ export default function MenuBoard({
           </button>
         </div>
       </div>
+
+      <OrderNotice />
 
       {/* 식사 탭 (저녁/야식/아침처럼 여러 식사를 함께 주문할 때) */}
       {multiMeal && (
