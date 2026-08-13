@@ -75,7 +75,7 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
               “문제가 A라고 봐서 B를 했고, 결과가 C일줄 알았는데 D가 됐어요.”
             </span>
           </li>
-          <li>다른 조 멘토링을 하고 있는 경우, 대기시간이 발생할 수 있습니다.</li>
+          <li>다른 팀 멘토링을 하고 있는 경우, 대기시간이 발생할 수 있습니다.</li>
         </ul>
       </div>
 
