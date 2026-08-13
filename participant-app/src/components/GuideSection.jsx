@@ -52,8 +52,8 @@ export default function GuideSection({ defaultOpen = false }) {
           <p>각 식사마다 등록한 팀 인원수만큼만 담을 수 있어요.</p>
         </div>
         <div className="guide-block">
-          <b>🙋 캠프지기 호출</b>
-          <p>도움이 필요하면 캠프지기를 호출하세요.</p>
+          <b>🙋 마스터 메이트 호출</b>
+          <p>도움이 필요하면 마스터 메이트를 호출하세요.</p>
           <p className="guide-call-limit">
             <span>팀당</span>
             <strong>{CALL_LIMIT_PER_TEAM}회</strong>

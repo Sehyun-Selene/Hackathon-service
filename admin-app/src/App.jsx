@@ -20,12 +20,12 @@ import CallsTab from './components/CallsTab.jsx'
 import CoachStatusTab from './components/CoachStatusTab.jsx'
 import StatsTab from './components/StatsTab.jsx'
 
-const MY_COACH_KEY = 'torder-coach' // 이 기기의 캠프지기 정보(로컬)
+const MY_COACH_KEY = 'torder-coach' // 이 기기의 마스터 메이트 정보(로컬)
 
 const TAB_DEFS = [
   { id: 'orders', icon: '📋', label: '주문 현황' },
   { id: 'calls', icon: '🔔', label: '호출 알림' },
-  { id: 'coaches', icon: '🧑‍🏫', label: '캠프지기 현황' },
+  { id: 'coaches', icon: '🧑‍🏫', label: '마스터 메이트 현황' },
   { id: 'stats', icon: '📊', label: '호출 통계' },
 ]
 
@@ -33,7 +33,7 @@ const TAB_DEFS = [
 // delivered:{teamId} → { [mealId]: true }
 const deliveredKey = (teamId) => `delivered:${teamId}`
 
-// 등록된 팀 전체 + 주문/호출/카운트 + 캠프지기 로스터 + 품절 + 배부상태를 한 번에 스캔
+// 등록된 팀 전체 + 주문/호출/카운트 + 마스터 메이트 로스터 + 품절 + 배부상태를 한 번에 스캔
 async function scanAll() {
   const roster = (await storageGet(TEAM_ROSTER_KEY)) || { ids: [] }
   const ids = roster.ids || []
@@ -129,7 +129,7 @@ export default function App() {
     return () => clearInterval(id)
   }, [coach, refresh])
 
-  // 캠프지기 등록: 로컬 저장 + 공유 캠프지기 로스터에 등록/갱신
+  // 마스터 메이트 등록: 로컬 저장 + 공유 마스터 메이트 로스터에 등록/갱신
   // name이 COACH_ASSIGNMENTS의 이름과 정확히 일치해야 담당 팀이 자동 연결됨
   const enterAsCoach = useCallback(async (name) => {
     const id = getCoachId()
@@ -146,7 +146,7 @@ export default function App() {
     setCoach(record)
   }, [])
 
-  // 호출 상태 변경: 대기중 → 처리중(담당 캠프지기 기록) → 완료
+  // 호출 상태 변경: 대기중 → 처리중(담당 마스터 메이트 기록) → 완료
   const updateCallStatus = useCallback(
     async (teamId, callId, nextStatus) => {
       try {
@@ -257,7 +257,7 @@ export default function App() {
         { label: '대기 중 호출', value: waitingCount, tone: waitingCount > 0 ? 'alert' : undefined },
         { label: '주문한 팀', value: Object.keys(scan.orders).length },
         { label: '등록한 팀', value: Object.keys(scan.teams).length },
-        { label: '입장한 캠프지기', value: scan.coaches.length },
+        { label: '입장한 마스터 메이트', value: scan.coaches.length },
       ]
     : []
 

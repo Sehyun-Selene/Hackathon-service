@@ -82,7 +82,7 @@ export default function MenuBoard({
               <p className="closed-sub">이후 식사·간식은 주문 없이 제공됩니다</p>
             </>
           )}
-          <p className="closed-hint">캠프지기 호출은 언제든 가능합니다</p>
+          <p className="closed-hint">마스터 메이트 호출은 언제든 가능합니다</p>
         </div>
       </section>
     )

@@ -23,7 +23,7 @@ export default function App() {
   const [editingTeam, setEditingTeam] = useState(false)
   const [showTeamInfo, setShowTeamInfo] = useState(false)
 
-  // 화면 하단 탭: 'order'(음식 주문) | 'call'(캠프지기 호출)
+  // 화면 하단 탭: 'order'(음식 주문) | 'call'(마스터 메이트 호출)
   // 현재 주문 가능한 식사가 있을 때만 음식 주문 탭으로 랜딩
   const [tab, setTab] = useState(() =>
     getOpenMeals(now().getTime()).length > 0 ? 'order' : 'call',
@@ -125,15 +125,17 @@ export default function App() {
     [teamId, refresh],
   )
 
-  // 캠프지기 호출 — 사유 선택 없음
+  // 마스터 메이트 호출 — 참가자가 직접 작성한 호출 사유(reason)를 함께 전달.
+  // 관리자 앱 CallsTab에서 이 사유를 호출 알림과 함께 확인합니다.
   const sendCall = useCallback(
-    async () => {
+    async (reason) => {
       const current = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
       current.calls = current.calls || []
       current.calls.push({
         id: `${teamId}-${now().getTime()}-${Math.floor(Math.random() * 1e6)}`,
         status: 'waiting',
         createdAt: now().getTime(),
+        reason: (reason || '').trim(),
       })
       await storageSet(callKey(teamId), current)
       const count = (await storageGet(callCountKey(teamId))) || 0
@@ -205,7 +207,7 @@ export default function App() {
             className={`folder-tab${tab === 'call' ? ' active' : ''}`}
             onClick={() => setTab('call')}
           >
-            🙋 캠프지기 호출
+            🙋 마스터 메이트 호출
             {hasActiveCall && <span className="p-tab-dot" />}
           </button>
           <div className="folder-team">

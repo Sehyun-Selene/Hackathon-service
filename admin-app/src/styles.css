@@ -375,7 +375,14 @@ body {
 .call-card.done { opacity: 0.72; }
 .call-card-main { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .call-table { font-weight: 800; font-size: 16px; }
-.call-reason { background: #f2f3f5; border-radius: 999px; padding: 3px 10px; font-size: 13px; font-weight: 600; }
+/* 참가자가 작성한 호출 사유 — 카드 전체 폭(두 번째 줄) */
+.call-reason {
+  flex: 0 0 100%; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--primary);
+  border-radius: 8px; padding: 10px 12px; font-size: 14px; line-height: 1.55;
+  color: var(--text); white-space: pre-wrap; word-break: break-word;
+}
+.call-reason.empty { color: var(--sub); font-style: italic; border-left-color: var(--line); }
+.call-card.done .call-reason { background: transparent; }
 .call-elapsed { font-size: 13px; color: var(--red); font-weight: 600; font-variant-numeric: tabular-nums; }
 .call-card.done .call-elapsed { color: var(--sub); font-weight: 400; }
 .call-used { font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; }
@@ -403,7 +410,7 @@ body {
 .member-count { font-size: 12px; color: var(--sub); font-weight: 500; }
 
 /* =====================================================================
-   캠프지기 현황
+   마스터 메이트 현황
    ===================================================================== */
 .coach-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .coach-item {

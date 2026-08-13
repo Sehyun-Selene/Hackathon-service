@@ -218,7 +218,7 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   }, [scan.teams])
 
   const exportCsv = () => {
-    const rows = [['팀', '담당 캠프지기', '인원수', '식사', '메뉴', '수량']]
+    const rows = [['팀', '담당 마스터 메이트', '인원수', '식사', '메뉴', '수량']]
     Object.entries(scan.orders)
       .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
       .forEach(([teamId, order]) => {

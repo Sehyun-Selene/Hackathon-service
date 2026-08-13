@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { CALL_LIMIT_PER_TEAM, getAssignedCoachForTeam } from '../config.js'
 import { now, fmtCountdown, fmtClock } from '../lib/time.js'
 
-// 캠프지기 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 캠프지기 개인별 배정.
-// 내가 담당하는 팀의 호출을 우선 대응하되, 다른 캠프지기도 지원 가능.
+// 마스터 메이트 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 마스터 메이트 개인별 배정.
+// 내가 담당하는 팀의 호출을 우선 대응하되, 다른 마스터 메이트도 지원 가능.
 // "내 담당 팀만" 필터로 담당 호출을 빠르게 걸러 처리.
 export default function CallsTab({ scan, coach, onUpdateStatus }) {
   const [, setTick] = useState(0)
@@ -105,6 +105,10 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                       </>
                     )}
                   </div>
+                  {/* 참가자가 작성한 호출 사유 — 이동 전에 상황을 파악하도록 카드 전체 폭으로 표시 */}
+                  <p className={`call-reason${c.reason ? '' : ' empty'}`}>
+                    {c.reason ? `“${c.reason}”` : '사유 미작성'}
+                  </p>
                 </div>
               )
             })}
@@ -125,6 +129,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                 </span>
                 <span className="call-used">담당 {c.handledBy || '-'}</span>
               </div>
+              {c.reason && <p className="call-reason">“{c.reason}”</p>}
             </div>
           ))}
         </div>
