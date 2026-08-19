@@ -88,6 +88,43 @@ PRD에서 "추후 확정(TBD)"으로 표시된 값은 전부 아래 파일에 �
 4. 배포 후 발급되는 주소 확인 (예: `https://hackathon-torder-api.onrender.com`)
 5. `https://<그 주소>/health` 접속해서 `{"ok":true,...}` 뜨는지 확인
 
+### 1-1) 데이터 보존 설정 ⚠️ 행사에 쓰려면 필수
+
+무료 티어 서버는 **① 무요청 15분이면 잠들고 ② 재시작/재배포 때 프로세스가 새로 뜨며 ③ 영구 디스크가 없습니다.** 아무 설정 없이 쓰면 그때마다 팀 등록·주문·호출 기록이 **전부 사라집니다.** 아래 두 가지를 같이 해두세요. (하나만 해서는 막히지 않습니다.)
+
+**(a) 데이터를 서버 밖에 보관 — 재시작해도 살아남게**
+
+1. [upstash.com](https://upstash.com) 가입 → Redis 데이터베이스 생성 (무료 플랜, 카드 불필요)
+2. 대시보드의 **REST API** 항목에서 `UPSTASH_REDIS_REST_URL` 과 `UPSTASH_REDIS_REST_TOKEN` 복사
+3. Render 서비스 → Environment 에 아래 환경변수 등록 (토큰은 **코드에 넣지 말고** 반드시 여기에)
+
+   | 이름 | 값 | 필수 |
+   |---|---|:--:|
+   | `UPSTASH_REDIS_REST_URL` | Upstash에서 복사한 REST URL | ✅ |
+   | `UPSTASH_REDIS_REST_TOKEN` | Upstash에서 복사한 REST 토큰 | ✅ |
+   | `ADMIN_TOKEN` | 초기화용 비밀 문자열(직접 지정) | 선택 |
+
+4. 재배포 후 `/health` 가 `"persist":{"mode":"redis", ...}` 로 보이면 정상.
+   `"mode":"memory"` 면 환경변수가 안 먹은 것이고, `lastError` 에 값이 있으면 연결 실패입니다.
+
+> 환경변수를 비워두면 예전처럼 메모리 전용으로 동작합니다 (로컬 개발용). 코드 수정은 필요 없습니다.
+
+**(b) 서버가 잠들지 않게 — 콜드스타트 지연 방지**
+
+[cron-job.org](https://cron-job.org) 같은 무료 크론 서비스에 아래를 등록합니다. 코드 수정 없음.
+
+- 주소: `https://<서버주소>/health`
+- 주기: **10분** (무요청 15분보다 짧아야 함)
+- 행사 시작 전날 켜고, 끝나면 끄세요.
+
+**(c) 행사 전 테스트 데이터 초기화**
+
+(a)를 적용하면 테스트 기록도 계속 남습니다. 실서비스 직전에 한 번 비우세요. `ADMIN_TOKEN` 을 설정한 경우에만 동작합니다.
+
+```bash
+curl -X POST https://<서버주소>/api/reset -H "Content-Type: application/json" -d "{\"token\":\"<ADMIN_TOKEN>\"}"
+```
+
 ### 2) 두 앱의 config.js에 API 주소 반영
 
 `participant-app/src/config.js`, `admin-app/src/config.js` **양쪽 다** 아래 값을 1)에서 받은 주소로 변경:
@@ -100,7 +137,7 @@ export const API_BASE_URL = 'https://hackathon-torder-api.onrender.com'
 
 Vercel/Netlify 등에 `participant-app`, `admin-app`을 **각각 별도 프로젝트**로 배포 (build: `npm run build`, output: `dist`). 두 앱 모두 1)의 같은 API 서버를 바라보므로, 서로 다른 도메인이어도 데이터가 공유됩니다.
 
-> ⚠️ Render 무료 티어는 일정 시간 무요청 시 슬립 상태가 되어, 첫 요청 응답이 느릴 수 있습니다. 행사 시작 전에 `/health`로 미리 한 번 깨워두세요.
+> ⚠️ Render 무료 티어는 일정 시간 무요청 시 슬립 상태가 됩니다. **1-1)의 (a)(b)를 반드시 먼저 적용하세요.** 적용 전이라면 행사 시작 전에 `/health`로 미리 한 번 깨워둬야 첫 요청이 느리지 않습니다.
 
 ## 🧪 로컬 개발/연동 테스트
 
