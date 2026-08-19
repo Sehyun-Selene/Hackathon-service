@@ -130,7 +130,7 @@ curl -X POST https://<서버주소>/api/reset -H "Content-Type: application/json
 `participant-app/src/config.js`, `admin-app/src/config.js` **양쪽 다** 아래 값을 1)에서 받은 주소로 변경:
 
 ```js
-export const API_BASE_URL = 'https://hackathon-torder-api.onrender.com'
+export const API_BASE_URL = 'https://hackathon-api-hi55.onrender.com'
 ```
 
 ### 3) 참가자 앱 / 관리자 앱을 각각 배포
@@ -138,6 +138,57 @@ export const API_BASE_URL = 'https://hackathon-torder-api.onrender.com'
 Vercel/Netlify 등에 `participant-app`, `admin-app`을 **각각 별도 프로젝트**로 배포 (build: `npm run build`, output: `dist`). 두 앱 모두 1)의 같은 API 서버를 바라보므로, 서로 다른 도메인이어도 데이터가 공유됩니다.
 
 > ⚠️ Render 무료 티어는 일정 시간 무요청 시 슬립 상태가 됩니다. **1-1)의 (a)(b)를 반드시 먼저 적용하세요.** 적용 전이라면 행사 시작 전에 `/health`로 미리 한 번 깨워둬야 첫 요청이 느리지 않습니다.
+
+## ✅ 행사 전 체크리스트
+
+배포는 끝났고, 행사 당일까지 남은 확인 항목입니다. 위에서 아래 순서로 진행하세요.
+
+| # | 항목 | 상태 |
+|:-:|---|---|
+| 1 | 공유 API 서버 배포 (`shared-api`) | ✅ 완료 |
+| 2 | Upstash 영속화 환경변수 적용 (`/health` → `"mode":"redis"`) | ✅ 완료 |
+| 3 | 두 앱 `config.js`의 `API_BASE_URL` 반영 | ✅ 완료 |
+| 4 | 참가자·관리자 앱 Vercel 재배포 확인 | ⬜ |
+| 5 | 실제 화면 왕복 테스트 (참가자 호출 → 관리자 확인) | ⬜ |
+| 6 | 크론으로 슬립 방지 등록 (`/health`, 10분 주기) | ⬜ |
+| 7 | 재시작 후 데이터 생존 확인 (Manual Deploy → `/health`) | ⬜ |
+| 8 | 구 Render 서비스 삭제 (`hackathon-service-6uf0`) | ⬜ |
+| 9 | 슬랙 Incoming Webhook 승인 → 호출 알림 연동 | ⬜ |
+| 10 | 테스트 데이터 초기화 (`/api/reset`) | ⬜ |
+| 11 | `config.js` 실제 값 채우기 (메뉴·메이트 명단·담당 팀·날짜) | ⬜ |
+
+### 4~5) 앱 재배포 & 왕복 테스트
+
+Vercel이 GitHub과 연동돼 있으면 푸시 시 자동 재배포됩니다. 배포 완료 후:
+
+1. 참가자 앱에서 팀 하나 등록 → 마스터 메이트 호출 (사유 작성)
+2. 관리자 앱 **호출 알림** 탭에서 그 호출과 사유가 보이는지 확인
+3. 처리 시작 → 완료까지 눌러보고, 참가자 화면 상태가 따라 바뀌는지 확인
+
+보이지 않으면 브라우저 개발자도구 Network에서 요청 주소가 `hackathon-api-hi55`인지 확인하세요. 옛 주소면 재배포가 안 된 것입니다.
+
+### 6) 슬립 방지 크론
+
+[cron-job.org](https://cron-job.org) 등에 아래를 등록합니다. 코드 수정은 필요 없습니다.
+
+- 주소: `https://hackathon-api-hi55.onrender.com/health`
+- 주기: **10분** (무요청 15분보다 짧아야 함)
+
+### 7) 재시작 후 데이터 생존 확인
+
+가장 중요한 검증입니다. 이게 통과해야 행사 중 데이터 소멸 위험이 사라집니다.
+
+1. 참가자 앱으로 팀 하나 등록 (또는 `/health`의 `keys` 값을 기억)
+2. Render → 해당 서비스 → **Manual Deploy** (또는 Restart)
+3. 배포 로그의 `[persist] 복원 완료 — N개 키` 에서 **N이 0이 아니면 성공**
+4. `/health`의 `keys` 값이 재시작 전과 같은지 확인
+
+`복원 완료 — 0개 키` 가 뜨면 영속화가 동작하지 않는 것이니 환경변수를 다시 확인하세요.
+
+### 8) 구 서비스 삭제
+
+`hackathon-service-6uf0.onrender.com` 는 다른 계정(개인 GitHub 로그인)에 남아 있는 이전 배포입니다. 같은 저장소에 연결돼 있어 푸시할 때마다 자동 배포가 계속 돌아갑니다. **동작에 해는 없지만 어느 서버가 실제 운영본인지 혼동을 유발하므로** 해당 계정으로 로그인해 삭제하세요.
+
 
 ## 🧪 로컬 개발/연동 테스트
 
