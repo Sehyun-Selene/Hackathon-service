@@ -16,7 +16,7 @@
 //    → 비워두면('') 이 기기(브라우저)의 localStorage만 사용합니다
 //      (다른 사람 화면과 공유되지 않음 — 로컬 개발/시연용).
 // ---------------------------------------------------------------
-export const API_BASE_URL = 'https://hackathon-service-6uf0.onrender.com'
+export const API_BASE_URL = 'https://hackathon-api-hi55.onrender.com'
 
 // ---------------------------------------------------------------
 // 1. 주문 타임라인  (날짜/식사 시각은 TBD — 현재 임시값)
