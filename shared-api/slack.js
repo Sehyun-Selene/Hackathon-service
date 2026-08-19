@@ -6,7 +6,7 @@
 //
 //  ── 알림 단계 ──────────────────────────────────────────────────
 //    호출 즉시    담당 메이트만 멘션 (그 사람 폰만 울림)
-//    N분 미처리   채널에 공개 (멘션 없음 — 여유 있는 메이트가 주워감)
+//    N분 미처리   @here 로 채널 공개 (접속 중인 메이트가 주워감)
 //    M분 미처리   운영 총괄에게 묶음 알림, 이후 반복 간격마다 갱신
 //    처리 시작·완료는 보내지 않습니다 (관리자 화면에서 확인).
 //
@@ -17,9 +17,12 @@
 //  환경변수 (모두 없으면 알림 기능 자체가 꺼진 상태로 서버가 동작):
 //    SLACK_WEBHOOK_URL     슬랙에서 발급받은 Incoming Webhook 주소
 //    SLACK_LEAD_USER_ID    운영 총괄의 슬랙 멤버 ID (예: U01ABCDEF)
-//    ALERT_UNCLAIMED_MIN   채널 공개 전환 시간(분). 기본 5
-//    ALERT_LEAD_MIN        운영 총괄 알림 시간(분). 기본 10
+//    ALERT_UNCLAIMED_MIN   채널 공개 전환 시간(분). 기본 10
+//    ALERT_LEAD_MIN        운영 총괄 알림 시간(분). 기본 20
 //    ALERT_LEAD_REPEAT_MIN 운영 총괄 재알림 간격(분). 기본 10
+//    ALERT_UNCLAIMED_HERE  미처리 알림에 @here 를 붙일지. 기본 켜짐.
+//                          '0' 또는 'false' 로 두면 멘션 없이 조용히 올라감
+//                          (단, 그 경우 채널을 보고 있지 않으면 아무도 모릅니다)
 // =====================================================================
 
 const WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL || ''
@@ -28,9 +31,14 @@ const num = (name, fallback) => {
   const n = parseInt(process.env[name] || '', 10)
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
-const UNCLAIMED_MIN = num('ALERT_UNCLAIMED_MIN', 5)
-const LEAD_MIN = num('ALERT_LEAD_MIN', 10)
+const UNCLAIMED_MIN = num('ALERT_UNCLAIMED_MIN', 10)
+const LEAD_MIN = num('ALERT_LEAD_MIN', 20)
 const LEAD_REPEAT_MIN = num('ALERT_LEAD_REPEAT_MIN', 10)
+// 미처리 알림은 담당자를 콕 집지 않으므로, @here 가 없으면 아무 폰도 울리지
+// 않고 채널에 글만 쌓입니다. 그래서 기본값을 켜짐으로 둡니다.
+const UNCLAIMED_HERE = !['0', 'false', 'no'].includes(
+  (process.env.ALERT_UNCLAIMED_HERE || '').trim().toLowerCase(),
+)
 
 const enabled = Boolean(WEBHOOK_URL)
 const MIN = 60 * 1000
@@ -40,6 +48,7 @@ const state = {
   enabled,
   unclaimedMin: UNCLAIMED_MIN,
   leadMin: LEAD_MIN,
+  unclaimedHere: UNCLAIMED_HERE,
   sent: 0,
   lastOk: null,
   lastError: null,
@@ -96,8 +105,11 @@ function newCallText(call) {
 
 function unclaimedText(call, waitedMin) {
   const name = call.assignedName ? ` (담당 ${call.assignedName} 메이트 응답 없음)` : ''
+  // 슬랙에서 @here 알림을 보내려면 '<!here>' 로 써야 합니다.
+  // 리터럴 '@here' 는 글자로만 표시되고 아무에게도 알림이 가지 않습니다.
+  const here = UNCLAIMED_HERE ? '<!here> ' : ''
   return (
-    `⏳ *팀 ${call.team}* ${waitedMin}분째 미처리 — 여유 있는 분이 받아주세요${name}\n` +
+    `⏳ ${here}*팀 ${call.team}* ${waitedMin}분째 미처리 — 여유 있는 분이 받아주세요${name}\n` +
     `${quote(call.reason)}`
   )
 }
@@ -133,6 +145,7 @@ async function notifyLead(stuck) {
 module.exports = {
   enabled,
   state,
+  UNCLAIMED_HERE,
   UNCLAIMED_MIN,
   LEAD_MIN,
   LEAD_REPEAT_MIN,
