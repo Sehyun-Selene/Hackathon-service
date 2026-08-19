@@ -20,6 +20,12 @@
 //  ※ 슬립 자체는 코드로 못 막습니다. 외부 크론(cron-job.org 등)이
 //    10분 간격으로 /health 를 찔러주도록 등록하세요. README 참고.
 //
+//  ── 슬랙 호출 알림 ────────────────────────────────────────────
+//  SLACK_WEBHOOK_URL 이 설정돼 있으면 마스터 메이트 호출을 슬랙으로
+//  보냅니다 (담당자 멘션 → 미처리 시 채널 공개 → 장시간 미처리 시
+//  운영 총괄 묶음 알림). 상세는 slack.js 참고. 미설정 시 알림만 꺼지고
+//  나머지 기능은 그대로 동작합니다.
+//
 //  엔드포인트:
 //    POST /api/get    body: { keys: string[] }        → { key: value, ... }
 //    POST /api/set    body: { key: string, value: * } → { ok: true }
@@ -27,6 +33,7 @@
 //    GET  /health                                     → 상태 확인용(크론 대상)
 // =====================================================================
 const http = require('http')
+const slack = require('./slack.js')
 
 const store = new Map()
 const PORT = process.env.PORT || 3001
@@ -102,6 +109,107 @@ async function persistKey(key, value) {
   }
 }
 
+
+// ---- 슬랙 알림 발송 이력 ------------------------------------------
+// 같은 호출에 같은 알림을 두 번 보내지 않도록 발송 시각을 남깁니다.
+// 원격 저장소에 함께 보관해 서버가 재시작돼도 중복 발송되지 않습니다.
+const ALERT_STATE_KEY = 'alert-state'
+const SWEEP_MS = 30 * 1000
+
+function alertMarkers() {
+  const v = store.get(ALERT_STATE_KEY)
+  return v && typeof v === 'object' ? v : {}
+}
+
+async function saveAlertMarkers(markers) {
+  store.set(ALERT_STATE_KEY, markers)
+  await persistKey(ALERT_STATE_KEY, markers)
+}
+
+// 저장된 모든 call:* 키에서 호출을 펼쳐 팀 번호를 붙여 돌려줍니다.
+function allCalls() {
+  const out = []
+  for (const [key, value] of store) {
+    if (!key.startsWith('call:')) continue
+    const team = key.slice('call:'.length)
+    for (const call of value?.calls || []) out.push({ ...call, team })
+  }
+  return out
+}
+
+// 새로 생긴 호출을 즉시 알림 (참가자가 호출한 그 순간 호출됨).
+// 요청 응답을 붙잡지 않도록 호출부에서 await 하지 않습니다.
+async function alertNewCalls(newCalls) {
+  if (!slack.enabled || !newCalls.length) return
+  const markers = alertMarkers()
+  for (const call of newCalls) {
+    if (markers[call.id]?.new) continue
+    const ok = await slack.notifyNewCall(call)
+    if (ok) markers[call.id] = { ...(markers[call.id] || {}), new: Date.now() }
+  }
+  await saveAlertMarkers(markers)
+}
+
+// 주기적으로 미처리 호출을 훑어 단계별 알림을 보냅니다.
+// 시간 기준으로만 판단하므로 재시작 후에도 상태가 그대로 이어집니다.
+async function sweepAlerts() {
+  if (!slack.enabled) return
+  const now = Date.now()
+  const markers = alertMarkers()
+  let changed = false
+
+  const waiting = allCalls().filter((c) => c.status === 'waiting' && c.createdAt)
+  const stuck = []
+
+  for (const call of waiting) {
+    const waitedMin = Math.floor((now - call.createdAt) / slack.MIN)
+    const m = markers[call.id] || {}
+
+    // ① 아직 아무 알림도 못 보낸 호출 (전송 실패했거나 서버가 자던 사이 생성)
+    if (!m.new) {
+      if (await slack.notifyNewCall(call)) {
+        markers[call.id] = { ...m, new: now }
+        changed = true
+      }
+      continue
+    }
+
+    // ② 미처리 전환 — 채널 공개 (멘션 없음)
+    if (!m.unclaimed && waitedMin >= slack.UNCLAIMED_MIN) {
+      if (await slack.notifyUnclaimed(call, waitedMin)) {
+        markers[call.id] = { ...markers[call.id], unclaimed: now }
+        changed = true
+      }
+    }
+
+    // ③ 장시간 미처리 — 운영 총괄 묶음 알림 대상으로 모음
+    if (waitedMin >= slack.LEAD_MIN) stuck.push({ call, waitedMin })
+  }
+
+  // 묶음 알림은 호출마다 보내지 않고 한 번에. 반복 간격이 지나면 갱신.
+  if (stuck.length) {
+    const lastLead = markers.__lead?.at || 0
+    if (now - lastLead >= slack.LEAD_REPEAT_MIN * slack.MIN) {
+      if (await slack.notifyLead(stuck)) {
+        markers.__lead = { at: now }
+        changed = true
+      }
+    }
+  }
+
+  // 완료된 호출의 마커는 정리 (무한히 쌓이지 않게)
+  const liveIds = new Set(allCalls().filter((c) => c.status !== 'done').map((c) => c.id))
+  for (const id of Object.keys(markers)) {
+    if (id === '__lead') continue
+    if (!liveIds.has(id)) {
+      delete markers[id]
+      changed = true
+    }
+  }
+
+  if (changed) await saveAlertMarkers(markers)
+}
+
 function sendJson(res, status, body) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -140,7 +248,7 @@ const server = http.createServer(async (req, res) => {
 
   // 크론이 주기적으로 찌르는 엔드포인트 — 슬립 방지 겸 상태 점검
   if (req.method === 'GET' && url.pathname === '/health') {
-    sendJson(res, 200, { ok: true, keys: store.size, persist: persistState })
+    sendJson(res, 200, { ok: true, keys: store.size, persist: persistState, slack: slack.state })
     return
   }
 
@@ -165,9 +273,23 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 400, { error: 'key required' })
         return
       }
+      // 호출 키라면 저장 전 값과 비교해 '새로 추가된 호출'을 찾아냅니다
+      // (관리자의 상태 변경 쓰기와 구분하기 위해 id 기준으로 비교).
+      let freshCalls = []
+      if (slack.enabled && key.startsWith('call:')) {
+        const before = new Set((store.get(key)?.calls || []).map((c) => c.id))
+        const team = key.slice('call:'.length)
+        freshCalls = (value?.calls || [])
+          .filter((c) => c && !before.has(c.id))
+          .map((c) => ({ ...c, team }))
+      }
+
       store.set(key, value)
       const persisted = await persistKey(key, value)
       sendJson(res, 200, { ok: true, persisted })
+
+      // 알림은 응답을 보낸 뒤 뒤에서 처리 — 참가자 화면이 기다리지 않게
+      if (freshCalls.length) alertNewCalls(freshCalls).catch(() => {})
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }
@@ -201,5 +323,13 @@ const server = http.createServer(async (req, res) => {
 restoreFromRedis().finally(() => {
   server.listen(PORT, () => {
     console.log(`shared kv api listening on :${PORT} (persist: ${persistState.mode})`)
+    if (slack.enabled) {
+      console.log(
+        `[slack] 알림 켜짐 — 미처리 ${slack.UNCLAIMED_MIN}분 / 총괄 ${slack.LEAD_MIN}분`,
+      )
+      setInterval(() => sweepAlerts().catch(() => {}), SWEEP_MS)
+    } else {
+      console.log('[slack] 알림 꺼짐 (SLACK_WEBHOOK_URL 없음)')
+    }
   })
 })

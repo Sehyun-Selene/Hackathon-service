@@ -52,6 +52,7 @@ PRD에서 "추후 확정(TBD)"으로 표시된 값은 전부 아래 파일에 �
 | `call-count:{teamId}` | 누적 호출 횟수 (제한 검증) | 참가자 |
 | `coach-roster` | 등록 코치 목록 `{coaches: [{id, name, groupId, group}]}` | 코치(관리자 앱) |
 | `soldout` | 품절 메뉴 map | 관리자 |
+| `alert-state` | 슬랙 알림 발송 이력 (중복 발송 방지) | 공유 API 서버 |
 
 팀별 키 분리로 동시 쓰기 충돌을 최소화합니다.
 
@@ -125,6 +126,55 @@ PRD에서 "추후 확정(TBD)"으로 표시된 값은 전부 아래 파일에 �
 curl -X POST https://<서버주소>/api/reset -H "Content-Type: application/json" -d "{\"token\":\"<ADMIN_TOKEN>\"}"
 ```
 
+### 1-2) 슬랙 호출 알림 설정 (선택 — 없어도 나머지 기능은 동작)
+
+관리자 페이지를 켜두지 않아도 담당 마스터 메이트 폰으로 호출 알림이 가게 합니다.
+
+**(a) 슬랙 Incoming Webhook 발급**
+
+1. [api.slack.com/apps](https://api.slack.com/apps) → Create New App → **Blank app**
+2. 왼쪽 **Incoming Webhooks** → 활성화 → **Add New Webhook to Workspace**
+3. 해커톤 전용 채널을 새로 만들어 지정 (예: `#해커톤-호출-알림`)
+4. 발급된 Webhook URL 복사
+
+> 회사 워크스페이스는 앱 설치에 관리자 승인이 필요할 수 있습니다. 승인을 기다리는 동안 개인 워크스페이스를 만들어 URL을 받아 테스트하고, 승인 후 URL만 교체하면 됩니다.
+
+**(b) Render 환경변수 등록**
+
+| 이름 | 값 | 기본값 |
+|---|---|---|
+| `SLACK_WEBHOOK_URL` | (a)에서 받은 Webhook URL. **없으면 알림 기능 전체가 꺼짐** | 없음 |
+| `SLACK_LEAD_USER_ID` | 호출 전반을 관리하는 운영 총괄의 슬랙 멤버 ID | 없음 |
+| `ALERT_UNCLAIMED_MIN` | 이 시간(분) 넘게 미처리면 채널에 공개 | 5 |
+| `ALERT_LEAD_MIN` | 이 시간(분) 넘게 미처리면 운영 총괄에게 알림 | 10 |
+| `ALERT_LEAD_REPEAT_MIN` | 운영 총괄 재알림 간격(분) | 10 |
+
+**(c) 담당자별 슬랙 멤버 ID 채우기**
+
+`config.js`의 `COACH_ASSIGNMENTS` 각 항목에 `slackUserId`를 넣으면 그 사람만 멘션되어 **개인 알림**을 받습니다.
+
+```js
+{ id: 'coach-1', name: '김OO', teamNumbers: [1, 2, 3], slackUserId: 'U01ABCDEF' },
+```
+
+- 멤버 ID 확인: 슬랙에서 해당 인원 프로필 → 더보기(`⋯`) → **멤버 ID 복사**
+- `slackUserId`가 비어 있으면 멘션 없이 이름만 표기됩니다 (채널 알림으로만 전달) — 명단이 확정되기 전에도 동작합니다.
+
+**(d) 알림 단계**
+
+| 시점 | 슬랙에 뜨는 것 | 개인 알림 대상 |
+|---|---|---|
+| 호출 즉시 | `🔔 팀 47 호출 · 담당 @김OO` + 사유 | 담당 메이트 1명 |
+| `ALERT_UNCLAIMED_MIN` 경과 | `⏳ 팀 47 6분째 미처리 — 여유 있는 분이 받아주세요` | 없음(채널에만 노출) |
+| `ALERT_LEAD_MIN` 경과 | `🚨 @총괄 장시간 미처리 호출 2건` (묶음) | 운영 총괄 1명 |
+| 처리 시작·완료 | 보내지 않음 | — |
+
+- 담당자가 배정되지 않은 팀은 처음부터 멘션 없이 채널에 공개됩니다.
+- 같은 호출에 같은 알림은 다시 가지 않으며, 발송 이력을 원격 저장소에 남겨 **서버가 재시작돼도 재발송되지 않습니다.**
+- 정상 동작 확인: `/health` 의 `"slack":{"enabled":true, ... "lastError":null}`
+
+> Incoming Webhook은 보낸 메시지의 식별자를 돌려주지 않아 **스레드 답글·이모지 반응·버튼을 쓸 수 없습니다.** 그 기능들은 봇 토큰(승인 문턱이 더 높음)이 필요합니다. 현재 설계는 "호출됐다"는 신호만 전달하고, 처리 상태는 관리자 화면에서 확인하는 방식입니다.
+
 ### 2) 두 앱의 config.js에 API 주소 반영
 
 `participant-app/src/config.js`, `admin-app/src/config.js` **양쪽 다** 아래 값을 1)에서 받은 주소로 변경:
@@ -148,14 +198,16 @@ Vercel/Netlify 등에 `participant-app`, `admin-app`을 **각각 별도 프로�
 | 1 | 공유 API 서버 배포 (`shared-api`) | ✅ 완료 |
 | 2 | Upstash 영속화 환경변수 적용 (`/health` → `"mode":"redis"`) | ✅ 완료 |
 | 3 | 두 앱 `config.js`의 `API_BASE_URL` 반영 | ✅ 완료 |
-| 4 | 참가자·관리자 앱 Vercel 재배포 확인 | ⬜ |
-| 5 | 실제 화면 왕복 테스트 (참가자 호출 → 관리자 확인) | ⬜ |
-| 6 | 크론으로 슬립 방지 등록 (`/health`, 10분 주기) | ⬜ |
-| 7 | 재시작 후 데이터 생존 확인 (Manual Deploy → `/health`) | ⬜ |
-| 8 | 구 Render 서비스 삭제 (`hackathon-service-6uf0`) | ⬜ |
-| 9 | 슬랙 Incoming Webhook 승인 → 호출 알림 연동 | ⬜ |
-| 10 | 테스트 데이터 초기화 (`/api/reset`) | ⬜ |
-| 11 | `config.js` 실제 값 채우기 (메뉴·메이트 명단·담당 팀·날짜) | ⬜ |
+| 4 | 참가자·관리자 앱 Vercel 재배포 확인 | ✅ 완료 |
+| 5 | 실제 화면 왕복 테스트 (참가자 호출 → 관리자 확인) | ✅ 완료 |
+| 6 | 크론으로 슬립 방지 등록 (`/health`, 10분 주기) | ✅ 완료 |
+| 7 | 재시작 후 데이터 생존 확인 (Manual Deploy → `/health`) | ✅ 완료 |
+| 8 | 구 Render 서비스 삭제 (`hackathon-service-6uf0`) | ✅ 완료 |
+| 9 | 슬랙 호출 알림 — 코드 구현 | ✅ 완료 |
+| 10 | 슬랙 Webhook 승인 → `SLACK_WEBHOOK_URL` 등록 (1-2 참고) | ⬜ 승인 대기 |
+| 11 | 담당자별 `slackUserId` 채우기 (개인 알림용) | ⬜ |
+| 12 | 테스트 데이터 초기화 (`/api/reset`) | ⬜ 행사 직전 |
+| 13 | `config.js` 실제 값 채우기 (메뉴·메이트 명단·담당 팀·날짜) | ⬜ |
 
 ### 4~5) 앱 재배포 & 왕복 테스트
 
@@ -188,6 +240,10 @@ Vercel이 GitHub과 연동돼 있으면 푸시 시 자동 재배포됩니다. �
 ### 8) 구 서비스 삭제
 
 `hackathon-service-6uf0.onrender.com` 는 다른 계정(개인 GitHub 로그인)에 남아 있는 이전 배포입니다. 같은 저장소에 연결돼 있어 푸시할 때마다 자동 배포가 계속 돌아갑니다. **동작에 해는 없지만 어느 서버가 실제 운영본인지 혼동을 유발하므로** 해당 계정으로 로그인해 삭제하세요.
+
+### 10~11) 슬랙 알림 활성화
+
+코드는 이미 들어가 있고, **환경변수 `SLACK_WEBHOOK_URL` 하나만 등록하면 켜집니다.** 설정 방법은 위 **1-2)** 를 보세요. 미등록 상태에서는 알림만 꺼진 채로 나머지 기능이 정상 동작합니다.
 
 
 ## 🧪 로컬 개발/연동 테스트

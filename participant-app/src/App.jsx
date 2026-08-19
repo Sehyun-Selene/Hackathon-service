@@ -127,15 +127,20 @@ export default function App() {
 
   // 마스터 메이트 호출 — 참가자가 직접 작성한 호출 사유(reason)를 함께 전달.
   // 관리자 앱 CallsTab에서 이 사유를 호출 알림과 함께 확인합니다.
+  // 담당 메이트 이름·슬랙 ID도 함께 저장합니다. 공유 API 서버가 슬랙 알림을
+  // 보낼 때 쓰는데, 서버는 config를 모르기 때문에 앱이 값을 실어보냅니다.
   const sendCall = useCallback(
     async (reason) => {
       const current = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
       current.calls = current.calls || []
+      const assigned = getAssignedCoachForTeam(teamId)
       current.calls.push({
         id: `${teamId}-${now().getTime()}-${Math.floor(Math.random() * 1e6)}`,
         status: 'waiting',
         createdAt: now().getTime(),
         reason: (reason || '').trim(),
+        assignedName: assigned?.name || '',
+        assignedSlackId: assigned?.slackUserId || '',
       })
       await storageSet(callKey(teamId), current)
       const count = (await storageGet(callCountKey(teamId))) || 0

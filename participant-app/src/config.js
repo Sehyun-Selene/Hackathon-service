@@ -71,16 +71,20 @@ export const CALL_LIMIT_PER_TEAM = 5
 //                   확정되면 이름을 채우세요 (예: '김민준').
 //    - teamNumbers: 그 마스터 메이트가 담당하는 팀 번호(숫자) 배열.
 //                   예: teamNumbers: [1, 2, 3, 4, 5]
+//    - slackUserId : 슬랙 멤버 ID (예: 'U01ABCDEF'). 채우면 호출 발생 시
+//                   그 사람만 슬랙에서 멘션되어 개인 알림을 받습니다.
+//                   비어 있으면 멘션 없이 이름만 표기됩니다(채널 알림).
+//                   ※ 슬랙 프로필 → 더보기 → '멤버 ID 복사'로 확인.
 //    - 마스터 메이트는 관리자 앱 입장 시 이름을 직접 입력합니다. 여기 채워둔
 //      이름과 정확히 같은 글자로 입력해야 담당 팀이 자동으로 연결됩니다.
 //    - 인원 자체도 확정 전이라, 배열에 항목을 자유롭게 추가/삭제하면
 //      됩니다 (지금은 자리 4개만 미리 만들어둔 상태).
 // ---------------------------------------------------------------
 export const COACH_ASSIGNMENTS = [
-  { id: 'coach-1', name: '', teamNumbers: [] },
-  { id: 'coach-2', name: '', teamNumbers: [] },
-  { id: 'coach-3', name: '', teamNumbers: [] },
-  { id: 'coach-4', name: '', teamNumbers: [] },
+  { id: 'coach-1', name: '', teamNumbers: [], slackUserId: '' },
+  { id: 'coach-2', name: '', teamNumbers: [], slackUserId: '' },
+  { id: 'coach-3', name: '', teamNumbers: [], slackUserId: '' },
+  { id: 'coach-4', name: '', teamNumbers: [], slackUserId: '' },
 ]
 
 // ---------------------------------------------------------------
