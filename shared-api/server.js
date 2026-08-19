@@ -326,7 +326,7 @@ restoreFromRedis().finally(() => {
     if (slack.enabled) {
       console.log(
         `[slack] 알림 켜짐 — 미처리 ${slack.UNCLAIMED_MIN}분` +
-          `${slack.UNCLAIMED_HERE ? '(@here)' : '(멘션 없음)'} / 총괄 ${slack.LEAD_MIN}분`,
+          `(${slack.UNCLAIMED_MENTION}) / 총괄 ${slack.LEAD_MIN}분`,
       )
       setInterval(() => sweepAlerts().catch(() => {}), SWEEP_MS)
     } else {
