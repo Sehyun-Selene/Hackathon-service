@@ -239,7 +239,14 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
       })
     const csv =
       '﻿' +
-      rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
+      rows
+        .map((r) =>
+          r
+            // 메뉴명에 카드 표시용 줄바꿈이 들어있을 수 있어 공백으로 눕힘
+            .map((c) => `"${String(c).replace(/\s*\n\s*/g, ' ').replace(/"/g, '""')}"`)
+            .join(','),
+        )
+        .join('\r\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
