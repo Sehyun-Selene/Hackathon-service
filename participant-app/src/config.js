@@ -150,7 +150,9 @@ export const MENUS = {
       name: '수퍼잭슨',
       badges: [],
       image: './menu/super-jackson.png',
-      allergyNote: '',
+      // 성분이 5개라 카드 폭에서 줄이 어색하게 끊겨, 줄바꿈 위치를 직접 지정.
+      // ⚠️ 자동 생성을 쓰지 않으므로 allergens를 고치면 이 문구도 함께 고칠 것.
+      allergyNote: '⚠️ 우유·밀·돼지고기·쇠고기\n토마토 포함',
       allergens: ['우유', '밀', '돼지고기', '쇠고기', '토마토'],
     },
   ],
@@ -165,7 +167,7 @@ export const MENUS = {
     },
     {
       id: 'bf-b',
-      name: '햄&치즈\n샌드위치',
+      name: '햄&치즈 샌드위치',
       badges: [],
       image: './menu/ham-cheese.jpg',
       allergyNote: '',

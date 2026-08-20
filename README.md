@@ -145,8 +145,8 @@ curl -X POST https://<서버주소>/api/reset -H "Content-Type: application/json
 |---|---|---|
 | `SLACK_WEBHOOK_URL` | (a)에서 받은 Webhook URL. **없으면 알림 기능 전체가 꺼짐** | 없음 |
 | `SLACK_LEAD_USER_ID` | 호출 전반을 관리하는 운영 총괄의 슬랙 멤버 ID | 없음 |
-| `ALERT_UNCLAIMED_MIN` | 이 시간(분) 넘게 미처리면 `@channel` 로 채널에 공개 | 10 |
-| `ALERT_LEAD_MIN` | 이 시간(분) 넘게 미처리면 운영 총괄에게 알림 | 20 |
+| `ALERT_UNCLAIMED_MIN` | 이 시간(분) 넘게 미처리면 `@channel` 로 채널에 공개 | 15 |
+| `ALERT_LEAD_MIN` | 이 시간(분) 넘게 미처리면 운영 총괄에게 알림 | 25 |
 | `ALERT_LEAD_REPEAT_MIN` | 운영 총괄 재알림 간격(분) | 10 |
 | `ALERT_UNCLAIMED_MENTION` | 미처리 알림의 호출 방식 — `channel` / `here` / `none` | `channel` |
 
@@ -179,10 +179,11 @@ curl -X POST https://<서버주소>/api/reset -H "Content-Type: application/json
 | 시점 | 슬랙에 뜨는 것 | 개인 알림 대상 |
 |---|---|---|
 | 호출 즉시 | `🔔 팀 47 호출 · 담당 @김OO` + 사유 | 담당 메이트 1명 |
-| `ALERT_UNCLAIMED_MIN` 경과 | `⏳ @channel 팀 47 11분째 미처리 — 여유 있는 분이 받아주세요` | 채널 멤버 전원 |
+| `ALERT_UNCLAIMED_MIN` 경과 | `⏳ @channel 팀 47 16분째 미처리 — 여유 있는 분이 받아주세요` | 채널 멤버 전원 |
 | `ALERT_LEAD_MIN` 경과 | `🚨 @총괄 장시간 미처리 호출 2건` (묶음) | 운영 총괄 1명 |
 | 처리 시작·완료 | 보내지 않음 | — |
 
+- 기본 15분은 **메이트가 한 팀에 머무는 시간(15분)** 에서 나온 값입니다. 그보다 짧게 잡으면 다른 팀 멘토링 중인 담당자를 정상 상황에서도 재촉하게 됩니다.
 - 담당자가 배정되지 않은 팀은 처음부터 멘션 없이 채널에 공개됩니다.
 - 같은 호출에 같은 알림은 다시 가지 않으며, 발송 이력을 원격 저장소에 남겨 **서버가 재시작돼도 재발송되지 않습니다.**
 - 정상 동작 확인: `/health` 의 `"slack":{"enabled":true, ... "lastError":null}`

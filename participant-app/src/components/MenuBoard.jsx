@@ -267,17 +267,21 @@ export default function MenuBoard({
               <div className="food-card-body">
                 <div className="food-card-info">
                   <div className="food-card-name">{m.name}</div>
-                  {(m.badges.length > 0 || m.allergyNote) && (
-                    <div className="food-badges">
-                      {m.badges.map((b) => (
-                        <span key={b} className="diet-badge">
-                          {b}
-                        </span>
-                      ))}
-                      {m.allergyNote && <span className="allergy-note">{m.allergyNote}</span>}
-                    </div>
-                  )}
                 </div>
+                {/* 알러지·식이 표기는 담기 버튼과 같은 줄에 두면 폭이 80px 남짓으로
+                    좁아져 성분이 여러 줄로 잘립니다. 카드 전체 폭을 쓰도록 버튼과
+                    형제로 두고, 배치는 styles.css의 order로 조정합니다.
+                    (DOM 순서는 이름 → 알러지 → 버튼 — 읽는 순서와 맞춤) */}
+                {(m.badges.length > 0 || m.allergyNote) && (
+                  <div className="food-badges">
+                    {m.badges.map((b) => (
+                      <span key={b} className="diet-badge">
+                        {b}
+                      </span>
+                    ))}
+                    {m.allergyNote && <span className="allergy-note">{m.allergyNote}</span>}
+                  </div>
+                )}
                 <div className="food-card-action">
                   {qty === 0 ? (
                     <button

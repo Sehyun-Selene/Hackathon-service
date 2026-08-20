@@ -17,8 +17,8 @@
 //  환경변수 (모두 없으면 알림 기능 자체가 꺼진 상태로 서버가 동작):
 //    SLACK_WEBHOOK_URL     슬랙에서 발급받은 Incoming Webhook 주소
 //    SLACK_LEAD_USER_ID    운영 총괄의 슬랙 멤버 ID (예: U01ABCDEF)
-//    ALERT_UNCLAIMED_MIN   채널 공개 전환 시간(분). 기본 10
-//    ALERT_LEAD_MIN        운영 총괄 알림 시간(분). 기본 20
+//    ALERT_UNCLAIMED_MIN   채널 공개 전환 시간(분). 기본 15
+//    ALERT_LEAD_MIN        운영 총괄 알림 시간(분). 기본 25
 //    ALERT_LEAD_REPEAT_MIN 운영 총괄 재알림 간격(분). 기본 10
 //    ALERT_UNCLAIMED_MENTION  미처리 알림의 호출 방식. 기본 'channel'
 //                          'channel' → @channel (슬랙을 닫아둔 사람도 푸시 받음)
@@ -35,8 +35,10 @@ const num = (name, fallback) => {
   const n = parseInt(process.env[name] || '', 10)
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
-const UNCLAIMED_MIN = num('ALERT_UNCLAIMED_MIN', 10)
-const LEAD_MIN = num('ALERT_LEAD_MIN', 20)
+// 기본 15분 — 메이트가 한 팀에 머무는 시간이 15분이라, 그보다 짧게 잡으면
+// 다른 팀 멘토링 중인 담당자를 정상 상황에서도 계속 재촉하게 됩니다.
+const UNCLAIMED_MIN = num('ALERT_UNCLAIMED_MIN', 15)
+const LEAD_MIN = num('ALERT_LEAD_MIN', 25)
 const LEAD_REPEAT_MIN = num('ALERT_LEAD_REPEAT_MIN', 10)
 // 미처리 알림은 특정 담당자를 지목하지 않으므로 멘션이 없으면 아무 폰도
 // 울리지 않고 채널에 글만 쌓입니다. 그래서 기본값을 @channel 로 둡니다.

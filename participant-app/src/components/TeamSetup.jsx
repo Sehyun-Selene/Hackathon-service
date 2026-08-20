@@ -6,7 +6,7 @@ import GuideSection from './GuideSection.jsx'
 
 // 알러지 인원 블록의 React key 겸 식별자 생성 (사람별로 별개 목록을 구분하기 위함)
 let blockSeq = 0
-const newBlock = (list = []) => ({ id: `p${blockSeq++}`, list, customInput: '' })
+const newBlock = (list = []) => ({ id: `p${blockSeq++}`, list })
 
 // 저장된 team.allergies를 사람 단위 블록으로 변환.
 // 예전 형식(사람 구분 없는 문자열 배열)이 남아있어도 각 항목을 1인分으로 감싸서
@@ -28,9 +28,6 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
 
   const addPerson = () => setAllergyBlocks((blocks) => [...blocks, newBlock()])
   const removePerson = (id) => setAllergyBlocks((blocks) => blocks.filter((b) => b.id !== id))
-  const patchBlock = (id, patch) =>
-    setAllergyBlocks((blocks) => blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)))
-
   const toggleAllergyFor = (id, a) =>
     setAllergyBlocks((blocks) =>
       blocks.map((b) =>
@@ -39,13 +36,6 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
           : b,
       ),
     )
-
-  const addCustomFor = (id) => {
-    const block = allergyBlocks.find((b) => b.id === id)
-    const v = block?.customInput.trim()
-    if (v && !block.list.includes(v)) patchBlock(id, { list: [...block.list, v], customInput: '' })
-    else patchBlock(id, { customInput: '' })
-  }
 
   // 팀 번호를 입력하면, 이미 등록된 팀이면 정보를 미리 채워줌 (다른 팀원이 먼저 등록한 경우)
   const onTeamNoBlur = async () => {
@@ -165,33 +155,6 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
                   </button>
                 ))}
               </div>
-              <div className="custom-allergy-row">
-                <input
-                  className="setup-input"
-                  placeholder="목록에 없는 알러지 직접 입력"
-                  value={block.customInput}
-                  onChange={(e) => patchBlock(block.id, { customInput: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && addCustomFor(block.id)}
-                />
-                <button className="btn-ghost" onClick={() => addCustomFor(block.id)}>
-                  추가
-                </button>
-              </div>
-              {block.list.filter((a) => !ALLERGY_OPTIONS.includes(a)).length > 0 && (
-                <div className="custom-allergy-chips">
-                  {block.list
-                    .filter((a) => !ALLERGY_OPTIONS.includes(a))
-                    .map((a) => (
-                      <span
-                        key={a}
-                        className="custom-chip"
-                        onClick={() => toggleAllergyFor(block.id, a)}
-                      >
-                        {a} ✕
-                      </span>
-                    ))}
-                </div>
-              )}
             </div>
           ))}
 

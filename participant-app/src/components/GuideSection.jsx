@@ -23,11 +23,7 @@ export default function GuideSection({ defaultOpen = false }) {
         </div>
         <div className="guide-block">
           <b>🥗 알러지</b>
-          <p>
-            팀 등록 시 입력한 알러지 정보를 운영진이 확인해 대체 메뉴를 준비합니다.
-            <br />
-            메뉴 옆 알러지 표시도 함께 확인해 주세요.
-          </p>
+          <p>메뉴에 포함된 알러지 유발 물질 중 해당 사항이 있다면 하단에 표기해주세요.</p>
         </div>
       </div>
     </details>
