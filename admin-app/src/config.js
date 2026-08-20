@@ -88,7 +88,7 @@ export const COACH_ASSIGNMENTS = [
 ]
 
 // ---------------------------------------------------------------
-// 4. 알러지 선택지  (TBD)
+// 4. 알러지 선택지
 //    흔한 항목은 선택지로 제공하고, 없으면 참가자가 직접 입력.
 //    ※ 알러지 대응 메뉴를 미리 준비하는 게 아니라, 여기서 수집한
 //      현황을 운영진이 확인해 대체 메뉴를 준비하는 방식입니다.
@@ -110,7 +110,9 @@ export const ALLERGY_OPTIONS = [
   '생선',
   '복숭아',
   '돼지고기',
+  '쇠고기',
   '닭고기',
+  '토마토',
 ]
 
 // ---------------------------------------------------------------
@@ -126,25 +128,58 @@ export const ADMIN_POLL_MS = 3000 // 관리자 화면 폴링 주기 (호출 알�
 export const DARK_MODE_HOURS = { start: 20, end: 7 }
 
 // ---------------------------------------------------------------
-// 6. 메뉴  (이름은 전부 TBD — 케이터링 확정 후 교체)
+// 6. 메뉴  (확정 — 야식 피자 2종 / 아침 베이글 샌드위치 2종)
 //    음료는 냉장고 자율 이용이라 메뉴에 없습니다. 전부 음식이며,
 //    식사(끼니)마다 팀 인원수만큼만 담을 수 있습니다.
 //    badges     : 메뉴 카드에 표시되는 식이 정보 뱃지 (예: '⚠️ 밀', '🌱 비건')
-//    image      : 음식 사진 URL (TBD — 확정 후 채우기. 비면 플레이스홀더 표시)
-//    allergyNote: 알러지 상세 설명 (TBD — 확정 후 채우기. 뱃지 외 추가 안내)
-//    allergens  : 이 메뉴에 포함된 알러지 유발 성분 목록 (TBD).
+//    image      : 음식 사진 경로. 파일은 participant-app/public/menu/ 에 두고
+//                 './menu/파일명' 으로 씁니다 (배포 경로가 바뀌어도 동작하도록
+//                 상대 경로 — vite.config의 base: './' 와 짝). 비면 🍽️ 표시.
+//                 ※ 사진은 참가자 앱에만 필요하므로 admin-app에는 두지 않습니다
+//                   (관리자 화면은 사진을 쓰지 않음 — 번들만 무거워짐).
+//    allergyNote: 알러지 상세 설명. **비워두면 allergens 로 자동 생성**됩니다
+//                 (아래 파생 값 참고). 직접 문구를 쓰면 그 값이 그대로 쓰입니다.
+//    allergens  : 이 메뉴에 포함된 알러지 유발 성분 목록.
 //                 ⚠️ 반드시 ALLERGY_OPTIONS와 똑같은 표기로 적으세요.
 //                 (예: allergens: ['밀', '계란'])
 //                 팀 등록 알러지와 겹치는 인원을 관리자 화면에서 자동 집계합니다.
 // ---------------------------------------------------------------
 export const MENUS = {
   midnight: [
-    { id: 'md-a', name: '야식 A (TBD)', badges: [], image: '', allergyNote: '', allergens: [] },
-    { id: 'md-b', name: '야식 B (TBD)', badges: [], image: '', allergyNote: '', allergens: [] },
+    {
+      id: 'md-a',
+      name: '페퍼로니 딜라이트',
+      badges: [],
+      image: './menu/pepperoni-delight.png',
+      allergyNote: '',
+      allergens: ['우유', '밀', '돼지고기', '토마토'],
+    },
+    {
+      id: 'md-b',
+      name: '수퍼잭슨',
+      badges: [],
+      image: './menu/super-jackson.png',
+      allergyNote: '',
+      allergens: ['우유', '밀', '돼지고기', '쇠고기', '토마토'],
+    },
   ],
   breakfast: [
-    { id: 'bf-a', name: '아침 A (TBD)', badges: [], image: '', allergyNote: '', allergens: [] },
-    { id: 'bf-b', name: '아침 B (TBD)', badges: [], image: '', allergyNote: '', allergens: [] },
+    {
+      id: 'bf-a',
+      name: '잠봉뵈르 샌드위치',
+      badges: [],
+      image: './menu/jambon-beurre.png',
+      allergyNote: '',
+      allergens: ['우유', '밀', '돼지고기'],
+    },
+    {
+      id: 'bf-b',
+      name: '햄&치즈 샌드위치',
+      badges: [],
+      image: './menu/ham-cheese.png',
+      allergyNote: '',
+      allergens: ['우유', '밀', '돼지고기', '토마토'],
+    },
   ],
 }
 
@@ -152,6 +187,15 @@ export const MENUS = {
 // (파생 값 — 수정하지 마세요)
 // ---------------------------------------------------------------
 export const ALL_MENUS = Object.values(MENUS).flat()
+
+// 알러지 표기 자동 생성 — allergyNote가 비어 있으면 allergens 로 문구를 만듭니다.
+// 같은 정보를 두 곳에 손으로 적다 어긋나면 참가자에게 잘못된 알러지 정보가
+// 보이므로, 한쪽(allergens)만 관리하면 되게 했습니다.
+ALL_MENUS.forEach((m) => {
+  if (!m.allergyNote && m.allergens?.length) {
+    m.allergyNote = `⚠️ ${m.allergens.join('·')} 포함`
+  }
+})
 export const MENU_BY_ID = Object.fromEntries(ALL_MENUS.map((m) => [m.id, m]))
 export const MEAL_BY_ID = Object.fromEntries(MEALS.map((m) => [m.id, m]))
 
