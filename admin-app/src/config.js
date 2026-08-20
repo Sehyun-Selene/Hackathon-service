@@ -139,7 +139,7 @@ export const MENUS = {
   midnight: [
     {
       id: 'md-a',
-      name: '페퍼로니 딜라이트',
+      name: '페퍼로니 딜라이트 (1인)',
       badges: [],
       image: './menu/pepperoni-delight.png',
       allergyNote: '',
@@ -147,7 +147,7 @@ export const MENUS = {
     },
     {
       id: 'md-b',
-      name: '수퍼잭슨',
+      name: '수퍼잭슨 (1인)',
       badges: [],
       image: './menu/super-jackson.png',
       // 성분이 5개라 카드 폭에서 줄이 어색하게 끊겨, 줄바꿈 위치를 직접 지정.
