@@ -69,13 +69,7 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
     const isOrders = kind === 'orders'
     const cells = Array.from({ length: TOTAL_TEAMS }, (_, i) => {
       const n = i + 1
-      return {
-        key: n,
-        label: n,
-        done: isOrders ? ordered.has(n) : registered.has(n),
-        // 주문 격자에서는 '등록도 안 한 팀'을 구분해 표시 (독려 대상이 다름)
-        muted: isOrders && !registered.has(n),
-      }
+      return { key: n, label: n, done: isOrders ? ordered.has(n) : registered.has(n) }
     })
     return {
       mode: 'team-grid',
@@ -83,7 +77,6 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
       cells,
       doneLabel: isOrders ? '주문 완료' : '등록',
       pendingLabel: isOrders ? '미주문' : '미등록',
-      footnote: isOrders ? '흐린 칸은 아직 팀 등록도 하지 않은 팀입니다.' : '',
     }
   }, [kind, scan])
 
@@ -162,11 +155,7 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
           ) : data.mode === 'team-grid' ? (
             <div className="check-grid">
               {cells.map((c) => (
-                <span
-                  key={c.key}
-                  className={`check-cell${c.done ? ' done' : ''}${c.muted ? ' muted' : ''}`}
-                  title={c.muted ? '팀 등록 안 됨' : undefined}
-                >
+                <span key={c.key} className={`check-cell${c.done ? ' done' : ''}`}>
                   {c.label}
                   {c.done && <b aria-hidden="true">✓</b>}
                 </span>
@@ -187,7 +176,6 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
           )}
         </div>
 
-        {data.footnote && !onlyPending && <p className="sheet-foot">{data.footnote}</p>}
       </section>
     </div>
   )
