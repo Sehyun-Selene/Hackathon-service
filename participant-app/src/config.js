@@ -91,15 +91,15 @@ export const COACH_ASSIGNMENTS = [
 // 4. 알러지 선택지
 //    ⚠️ 아래 MENUS에 실제로 들어간 성분만 선택지로 둡니다. 메뉴에 없는
 //      성분을 늘어놓으면 대체 메뉴 준비와 무관한 응답이 쌓이기 때문입니다.
-//      목록에 없는 알러지는 참가자가 직접 입력할 수 있습니다(팀 등록 화면).
 //      → 메뉴가 바뀌면 이 목록도 함께 갱신하세요.
 //    ※ 알러지 대응 메뉴를 미리 준비하는 게 아니라, 여기서 수집한
 //      현황을 운영진이 확인해 대체 메뉴를 준비하는 방식입니다.
 //    ※ 저장 형태: team.allergies = [[사람1의 알러지...], [사람2의 알러지...]]
 //      (사람 단위로 배열을 나눠 저장 — 1명이 여러 개인지 여러 명이 각각
 //      하나씩인지에 따라 대체 메뉴 준비 개수/조합이 달라지기 때문)
-//    ※ 아래 MENUS의 allergens와 같은 표기를 쓰면, 팀 등록 시 입력한
-//      알러지가 메뉴 성분과 겹치는 인원을 관리자 화면에서 자동 집계합니다.
+//    ※ 이 표기는 MENUS의 allergens와 정확히 일치해야 합니다. 그래야
+//      "이 사람이 어떤 메뉴를 먹을 수 있는지"(아래 personDiet/teamDiet)와
+//      관리자 화면의 대체식 집계가 동작합니다.
 // ---------------------------------------------------------------
 export const ALLERGY_OPTIONS = ['우유', '밀', '돼지고기', '쇠고기', '토마토']
 
@@ -219,4 +219,65 @@ export function formatTeamRange(teamNumbers) {
     }
   }
   return `${parts.join(', ')}번`
+}
+
+// ---------------------------------------------------------------
+// 알러지 → 식사 가능 여부 판정  (수집한 알러지를 "해석"하는 부분)
+//
+//   같은 끼니의 메뉴들이 성분을 거의 공유하기 때문에, 알러지 한 항목만
+//   달라도 결과가 크게 갈립니다. 예를 들어 현재 메뉴 구성에서는
+//     - 우유·밀·돼지고기 중 하나라도 있으면 → 4개 메뉴 전부 불가(두 끼 대체식)
+//     - 쇠고기만 있으면              → 야식은 페퍼로니만, 아침은 제한 없음
+//     - 토마토만 있으면              → 야식은 불가, 아침은 잠봉뵈르만
+//   이 판정을 화면마다 따로 계산하면 서로 어긋나므로 여기 한 곳에 둡니다.
+//
+//   ※ 메뉴/알러지 구성이 바뀌면 이 함수는 그대로 두고 MENUS만 고치면 됩니다
+//     (판정은 allergens 값에서 파생되므로 하드코딩된 규칙이 없습니다).
+// ---------------------------------------------------------------
+
+// 특정 알러지 목록을 가진 1명이 해당 메뉴를 먹을 수 있는지
+export function canEatMenu(menu, allergies) {
+  const mine = allergies || []
+  return !(menu.allergens || []).some((a) => mine.includes(a))
+}
+
+// 1명 기준 판정 → { byMeal: { [mealId]: 먹을 수 있는 메뉴[] }, needsAlt: [mealId...] }
+export function personDiet(allergies) {
+  const byMeal = {}
+  const needsAlt = []
+  MEALS.forEach((meal) => {
+    const eatable = (MENUS[meal.id] || []).filter((m) => canEatMenu(m, allergies))
+    byMeal[meal.id] = eatable
+    if (eatable.length === 0) needsAlt.push(meal.id)
+  })
+  return { byMeal, needsAlt }
+}
+
+// 팀 전체 판정. team.allergies = [[1인의 알러지...], [2인의 알러지...]]
+//   - eatableByMenu : 메뉴별로 "먹을 수 있는 팀원 수" (주문 담기 상한 계산용)
+//   - eatableByMeal : 끼니별로 "한 가지라도 먹을 수 있는 팀원 수"
+//   - altByMeal     : 끼니별로 "대체식이 필요한 인원 수"
+//   - altPeople     : 대체식 대상 인원의 알러지 목록 (케이터링 준비 내역용)
+export function teamDiet(memberCount, allergies) {
+  const people = (allergies || []).map((p) => (Array.isArray(p) ? p : [p]))
+  // 알러지를 입력하지 않은 나머지 인원은 제약이 없는 사람으로 계산
+  const plain = Math.max(0, (memberCount || 0) - people.length)
+
+  const eatableByMenu = {}
+  const eatableByMeal = {}
+  const altByMeal = {}
+  const altPeople = {}
+
+  MEALS.forEach((meal) => {
+    ;(MENUS[meal.id] || []).forEach((menu) => {
+      eatableByMenu[menu.id] = plain + people.filter((p) => canEatMenu(menu, p)).length
+    })
+    const okPeople = people.filter((p) => (MENUS[meal.id] || []).some((m) => canEatMenu(m, p)))
+    eatableByMeal[meal.id] = plain + okPeople.length
+    const alt = people.filter((p) => !(MENUS[meal.id] || []).some((m) => canEatMenu(m, p)))
+    altByMeal[meal.id] = alt.length
+    altPeople[meal.id] = alt
+  })
+
+  return { eatableByMenu, eatableByMeal, altByMeal, altPeople }
 }

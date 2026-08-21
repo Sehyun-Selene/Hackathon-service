@@ -8,6 +8,7 @@ import {
   TOTAL_TEAMS,
   DELIVERY_TEAM_RANGE_SIZE,
   getAssignedCoachForTeam,
+  personDiet,
 } from '../config.js'
 import { getNextMeal, getOpenMeals, getVisibleMeals, now } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
@@ -217,6 +218,38 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
     return { perMenu, totalAffected, configured: menusWithAllergens.length > 0 }
   }, [scan.teams])
 
+  // 대체식 필요 인원 — 케이터링에 넘길 실제 숫자.
+  // "메뉴 성분과 겹치는 인원"(menuAllergenInfo)과 다릅니다. 겹쳐도 같은 끼니의
+  // 다른 메뉴를 먹을 수 있으면 대체식이 필요 없기 때문입니다.
+  // (예: 쇠고기만 있으면 야식은 페퍼로니로 해결 → 대체식 불필요)
+  const altMealInfo = useMemo(() => {
+    const byMeal = {}
+    MEALS.forEach((meal) => {
+      byMeal[meal.id] = { meal, count: 0, byAllergen: {} }
+    })
+    // 대체식이 한 끼도 필요하지 않은 인원(다른 메뉴로 해결되는 사람)
+    let coveredByOtherMenu = 0
+    Object.values(scan.teams).forEach((team) => {
+      const people = (team.allergies || []).map((x) => (Array.isArray(x) ? x : [x]))
+      people.forEach((personList) => {
+        const { needsAlt } = personDiet(personList)
+        if (needsAlt.length === 0) {
+          if (personList.length) coveredByOtherMenu += 1
+          return
+        }
+        needsAlt.forEach((mealId) => {
+          const row = byMeal[mealId]
+          if (!row) return
+          row.count += 1
+          personList.forEach((a) => {
+            row.byAllergen[a] = (row.byAllergen[a] || 0) + 1
+          })
+        })
+      })
+    })
+    return { rows: MEALS.map((m) => byMeal[m.id]), coveredByOtherMenu }
+  }, [scan.teams])
+
   const exportCsv = () => {
     const rows = [['팀', '담당 마스터 메이트', '인원수', '식사', '메뉴', '수량']]
     Object.entries(scan.orders)
@@ -414,6 +447,30 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
             </div>
             <p className="sheet-description">팀별 대체 메뉴 준비에 참고하세요.</p>
             <div className="sheet-body">
+              {/* 대체식이 반드시 필요한 인원 — 준비 수량의 기준이 되는 숫자 */}
+              <div className="alt-meal-summary">
+                <div className="alt-meal-title">🍱 대체 메뉴 필요 인원</div>
+                {altMealInfo.rows.map(({ meal, count, byAllergen }) => (
+                  <div key={meal.id} className="alt-meal-row">
+                    <span className="alt-meal-name">{meal.label}</span>
+                    <b className={count ? 'alt-meal-count on' : 'alt-meal-count'}>{count}명</b>
+                    {count > 0 && (
+                      <span className="alt-meal-break">
+                        {Object.entries(byAllergen)
+                          .sort(([, a], [, b]) => b - a)
+                          .map(([a, n]) => `${a} ${n}`)
+                          .join(' · ')}
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {altMealInfo.coveredByOtherMenu > 0 && (
+                  <p className="alt-meal-note">
+                    ℹ️ 알러지가 있지만 같은 끼니의 다른 메뉴로 해결되는 인원{' '}
+                    <b>{altMealInfo.coveredByOtherMenu}명</b> — 대체 메뉴 불필요
+                  </p>
+                )}
+              </div>
               {/* 메뉴 성분과 겹치는 알러지 인원 — 대체 메뉴 준비 수량의 기준 */}
               {menuAllergenInfo.configured ? (
                 <div className="allergy-menu-summary">

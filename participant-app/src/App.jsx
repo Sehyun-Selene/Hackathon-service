@@ -236,6 +236,7 @@ export default function App() {
               soldout={soldout}
               savedOrder={savedOrder}
               memberCount={team.memberCount}
+              allergies={team.allergies}
               onRefresh={refresh}
               onSave={saveOrders}
             />

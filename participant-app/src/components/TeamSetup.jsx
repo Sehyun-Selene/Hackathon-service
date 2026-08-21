@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import logo52g from '../assets/52g-logo.png'
-import { ALLERGY_OPTIONS, TOTAL_TEAMS, MAX_MEMBER_COUNT } from '../config.js'
+import {
+  ALLERGY_OPTIONS,
+  TOTAL_TEAMS,
+  MAX_MEMBER_COUNT,
+  MEALS,
+  MENUS,
+  personDiet,
+} from '../config.js'
 import { normalizeTeam } from '../lib/storage.js'
 import GuideSection from './GuideSection.jsx'
 
@@ -13,6 +20,39 @@ const newBlock = (list = []) => ({ id: `p${blockSeq++}`, list })
 // 화면이 깨지지 않도록 방어 (list.filter 등이 문자열에는 없어 크래시하는 걸 방지)
 const toAllergyBlocks = (allergies) =>
   (allergies || []).map((p) => newBlock(Array.isArray(p) ? p : [p]))
+
+// 한 사람의 알러지 선택 결과를 사람이 읽을 수 있는 안내로 바꿔 보여줌.
+// 판정 자체는 config.personDiet 한 곳에서만 하므로 화면끼리 어긋나지 않습니다.
+function DietSummary({ allergies }) {
+  const { byMeal, needsAlt } = personDiet(allergies)
+  const allAlt = needsAlt.length === MEALS.length
+  return (
+    <div className={`diet-summary${allAlt ? ' diet-alt' : ''}`}>
+      {allAlt ? (
+        <b>⚠️ 모든 메뉴에 해당 성분이 들어 있어 대체 메뉴가 필요합니다. 운영진이 따로 준비합니다.</b>
+      ) : (
+        MEALS.map((meal) => {
+          const eatable = byMeal[meal.id]
+          const total = (MENUS[meal.id] || []).length
+          return (
+            <p key={meal.id}>
+              <span className="diet-meal">{meal.label}</span>
+              {eatable.length === 0 ? (
+                <b className="diet-none">먹을 수 있는 메뉴 없음 · 대체 메뉴 준비</b>
+              ) : eatable.length === total ? (
+                <span className="diet-ok">전체 메뉴 가능</span>
+              ) : (
+                <span className="diet-partial">
+                  {eatable.map((m) => m.name.replace('\n', ' ')).join(', ')} 만 가능
+                </span>
+              )}
+            </p>
+          )
+        })
+      )}
+    </div>
+  )
+}
 
 // QR은 모든 팀이 공유 → 첫 진입 시 팀 정보를 직접 입력 (PRD 요청 #2)
 // 팀 번호 / 인원수 / 알러지(인원별로 구분 입력 — 1명이 여러 개인지,
@@ -155,6 +195,11 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
                   </button>
                 ))}
               </div>
+              {/* 고른 알러지가 실제로 어떤 결과가 되는지 즉시 보여줌 —
+                  같은 끼니의 메뉴들이 성분을 거의 공유해서, 항목 하나로
+                  "다른 메뉴 선택 가능"과 "대체식 필요"가 갈립니다.
+                  잘못 체크한 경우도 이 자리에서 바로 알아챌 수 있음. */}
+              {block.list.length > 0 && <DietSummary allergies={block.list} />}
             </div>
           ))}
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MENUS, MENU_BY_ID, MEAL_BY_ID } from '../config.js'
+import { MENUS, MENU_BY_ID, MEAL_BY_ID, teamDiet } from '../config.js'
 import { now, fmtClock, fmtCountdown, mealTimes } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 
@@ -21,12 +21,21 @@ function OrderNotice() {
 // 여러 식사가 같은 주문 구간을 공유하면(저녁·야식·아침) 식사 탭으로 전환하며
 // 한 장바구니에 담아 한 번에 주문합니다.
 // 각 식사(끼니)마다 팀 인원수(memberCount)만큼만 담을 수 있습니다.
+//
+// 여기에 알러지 제한이 더 붙습니다. 같은 끼니의 메뉴들이 성분을 거의
+// 공유해서, 알러지가 있는 팀원은 특정 메뉴를 아예 못 먹습니다. 그대로
+// 인원수만큼 담게 두면 확실히 버려지는 몫이 생기므로,
+//   - 메뉴별 상한 = 그 메뉴를 먹을 수 있는 팀원 수
+//   - 끼니별 상한 = 그 끼니에서 하나라도 먹을 수 있는 팀원 수
+// 로 자동 조정합니다 (판정은 config.teamDiet). 줄어든 몫은 운영진이
+// 대체 메뉴로 준비하므로, 문구도 "못 받는다"가 아니라 그렇게 안내합니다.
 export default function MenuBoard({
   openMeals,
   nextMeals,
   soldout,
   savedOrder,
   memberCount,
+  allergies,
   onRefresh,
   onSave,
 }) {
@@ -109,20 +118,27 @@ export default function MenuBoard({
   const menus = MENUS[activeMeal.id] || []
   const multiMeal = openMeals.length > 1
 
-  // 식사별 담은 수량 (끼니마다 인원수만큼 제한)
+  // 알러지를 반영한 상한 (알러지가 없으면 전부 memberCount 와 같음)
+  const diet = teamDiet(memberCount, allergies)
+  const mealCap = (mealId) => Math.min(memberCount, diet.eatableByMeal[mealId] ?? memberCount)
+  const menuCap = (menuId) => diet.eatableByMenu[menuId] ?? memberCount
+
+  // 식사별 담은 수량
   const mealQty = (mealId) =>
     Object.values(draft[mealId] || {}).reduce((s, q) => s + q, 0)
-  const mealLimitReached = (mealId) => mealQty(mealId) >= memberCount
+  const mealLimitReached = (mealId) => mealQty(mealId) >= mealCap(mealId)
+  const menuLimitReached = (mealId, menuId) => (draft[mealId]?.[menuId] || 0) >= menuCap(menuId)
 
   const setQty = (mealId, menuId, delta) => {
     setDraft((d) => {
       const mealDraft = d[mealId] || {}
       const cur = mealDraft[menuId] || 0
-      // 증가 시 인원수 초과 차단 — 최신 draft(d)로 다시 합산해
+      // 증가 시 두 상한을 모두 검사 — 최신 draft(d)로 다시 합산해
       // 연타(빠른 클릭)에도 한도를 정확히 지킴
       if (delta > 0) {
         const curTotal = Object.values(mealDraft).reduce((s, q) => s + q, 0)
-        if (curTotal >= memberCount) return d
+        if (curTotal >= mealCap(mealId)) return d
+        if (cur >= menuCap(menuId)) return d
       }
       const next = Math.max(0, cur + delta)
       return { ...d, [mealId]: { ...mealDraft, [menuId]: next } }
@@ -251,12 +267,36 @@ export default function MenuBoard({
         </p>
       )}
 
+      {/* 알러지로 상한이 줄어든 경우 그 이유를 밝혀줌 — 그냥 버튼이 막히면
+          품절이나 오류로 오해하기 때문. 줄어든 몫은 대체 메뉴로 준비됨을 명시 */}
+      {(mealCap(activeMeal.id) < memberCount ||
+        menus.some((m) => menuCap(m.id) < memberCount)) && (
+        <div className="diet-cap-hint">
+          <b>🥗 알러지 반영 안내</b>
+          {mealCap(activeMeal.id) < memberCount && (
+            <p>
+              {activeMeal.label}은 <b>{mealCap(activeMeal.id)}개</b>까지 담을 수 있어요. 남은{' '}
+              {memberCount - mealCap(activeMeal.id)}명분은 <b>대체 메뉴로 따로 준비</b>됩니다.
+            </p>
+          )}
+          {menus
+            .filter((m) => menuCap(m.id) < memberCount && menuCap(m.id) > mealCap(activeMeal.id))
+            .map((m) => (
+              <p key={m.id}>
+                {m.name.replace('\n', ' ')} — 알러지가 있는 팀원이 있어{' '}
+                <b>{menuCap(m.id)}개</b>까지 담을 수 있어요.
+              </p>
+            ))}
+        </div>
+      )}
+
       {/* 사진 카드 2열 그리드 */}
       <div className="food-grid">
         {menus.map((m) => {
           const isSoldout = !!soldout[m.id]
           const qty = draft[activeMeal.id]?.[m.id] || 0
-          const plusDisabled = isSoldout || mealLimitReached(activeMeal.id)
+          const plusDisabled =
+            isSoldout || mealLimitReached(activeMeal.id) || menuLimitReached(activeMeal.id, m.id)
           return (
             <div key={m.id} className={`food-card${isSoldout ? ' soldout' : ''}${qty > 0 ? ' picked' : ''}`}>
               <div className="food-card-photo">
@@ -321,7 +361,11 @@ export default function MenuBoard({
 
       {mealLimitReached(activeMeal.id) && (
         <p className="limit-hint">
-          {activeMeal.label}은 팀 인원수({memberCount}명)만큼 담았어요.
+          {activeMeal.label}은 {mealCap(activeMeal.id)}개까지 담을 수 있어요
+          {mealCap(activeMeal.id) < memberCount
+            ? ' (알러지 반영)'
+            : ` (팀 인원수 ${memberCount}명)`}
+          .
         </p>
       )}
 
@@ -375,7 +419,7 @@ export default function MenuBoard({
                           <span className="qty-num">{qty}</span>
                           <button
                             className="qty-btn"
-                            disabled={mealLimitReached(meal.id)}
+                            disabled={mealLimitReached(meal.id) || menuLimitReached(meal.id, menuId)}
                             onClick={() => setQty(meal.id, menuId, +1)}
                             aria-label="수량 늘리기"
                           >

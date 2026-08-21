@@ -493,3 +493,19 @@ body {
   .table-search-icon { left: 7px; width: 13px; height: 13px; }
   .bar-name { min-width: 84px; font-size: 13px; }
 }
+
+/* 대체 메뉴 필요 인원 — 케이터링에 넘길 실제 숫자.
+   "메뉴 성분과 겹치는 인원"과 다릅니다. 겹쳐도 같은 끼니의 다른 메뉴를
+   먹을 수 있으면 대체식이 필요 없기 때문입니다. */
+.alt-meal-summary {
+  border: 1px solid #f0b6b8; background: #fef5f5; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.alt-meal-title { font-size: 14px; font-weight: 800; }
+.alt-meal-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.alt-meal-name { font-weight: 700; min-width: 92px; }
+.alt-meal-count { font-variant-numeric: tabular-nums; color: var(--sub); }
+.alt-meal-count.on { color: var(--red); font-size: 16px; }
+.alt-meal-break { font-size: 12px; color: var(--sub); }
+.alt-meal-note { font-size: 12px; color: var(--sub); line-height: 1.5; margin-top: 2px; }

@@ -594,3 +594,35 @@ html.dark .call-guide-title { color: #fbbf24; }
   .board-header-actions { gap: 4px; }
   .board-refresh-btn { width: 32px; height: 32px; }
 }
+
+/* ---- 알러지 선택 결과 안내 (팀 등록 화면) ----
+   고른 알러지가 "어떤 메뉴를 먹을 수 있는지 / 대체식이 필요한지"로
+   바로 번역돼 보이도록. 판정은 config.personDiet 에서 옵니다. */
+.diet-summary {
+  margin-top: 10px; padding: 9px 11px; border-radius: 10px;
+  background: #f5f5f4; font-size: 12.5px; line-height: 1.5;
+  display: flex; flex-direction: column; gap: 3px; text-align: left;
+}
+.diet-summary.diet-alt { background: #fef3c7; }
+.diet-summary.diet-alt b { color: #92400e; font-weight: 700; }
+.diet-meal {
+  display: inline-block; min-width: 74px; font-weight: 700; color: var(--primary);
+}
+.diet-ok { color: var(--green); }
+.diet-partial { color: var(--text); }
+.diet-none { color: var(--amber); font-weight: 700; }
+html.dark .diet-summary { background: #2c2721; }
+html.dark .diet-summary.diet-alt { background: #3a2c14; }
+html.dark .diet-summary.diet-alt b { color: #fbbf24; }
+
+/* 알러지로 담기 상한이 줄었을 때 그 이유를 밝히는 안내 (주문 화면).
+   버튼만 막히면 품절/오류로 오해하므로 반드시 이유를 함께 보여줍니다. */
+.diet-cap-hint {
+  background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;
+  padding: 10px 12px; margin-bottom: 10px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.diet-cap-hint b:first-child { font-size: 13px; color: #b45309; }
+.diet-cap-hint p { font-size: 12.5px; line-height: 1.5; color: var(--text); }
+html.dark .diet-cap-hint { background: #3a2c14; border-color: #5c451c; }
+html.dark .diet-cap-hint b:first-child { color: #fbbf24; }
