@@ -225,7 +225,7 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   const altMealInfo = useMemo(() => {
     const byMeal = {}
     MEALS.forEach((meal) => {
-      byMeal[meal.id] = { meal, count: 0, byAllergen: {} }
+      byMeal[meal.id] = { meal, count: 0, combos: {} }
     })
     // 대체식이 한 끼도 필요하지 않은 인원(다른 메뉴로 해결되는 사람)
     let coveredByOtherMenu = 0
@@ -237,13 +237,16 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
           if (personList.length) coveredByOtherMenu += 1
           return
         }
+        // 내역은 성분별로 쪼개지 않고 "한 사람이 가진 조합" 단위로 셉니다.
+        // 성분별로 세면 우유+토마토 1명이 "우유 1 · 토마토 1"로 보여 2명처럼
+        // 읽히고, 무엇보다 대체식은 그 사람의 성분을 "모두" 피해야 하므로
+        // 조합이 그대로 조리 단위가 됩니다.
+        const combo = [...personList].filter(Boolean).sort().join('·')
         needsAlt.forEach((mealId) => {
           const row = byMeal[mealId]
           if (!row) return
           row.count += 1
-          personList.forEach((a) => {
-            row.byAllergen[a] = (row.byAllergen[a] || 0) + 1
-          })
+          if (combo) row.combos[combo] = (row.combos[combo] || 0) + 1
         })
       })
     })
@@ -450,15 +453,17 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
               {/* 대체식이 반드시 필요한 인원 — 준비 수량의 기준이 되는 숫자 */}
               <div className="alt-meal-summary">
                 <div className="alt-meal-title">🍱 대체 메뉴 필요 인원</div>
-                {altMealInfo.rows.map(({ meal, count, byAllergen }) => (
+                {altMealInfo.rows.map(({ meal, count, combos }) => (
                   <div key={meal.id} className="alt-meal-row">
                     <span className="alt-meal-name">{meal.label}</span>
                     <b className={count ? 'alt-meal-count on' : 'alt-meal-count'}>{count}명</b>
                     {count > 0 && (
                       <span className="alt-meal-break">
-                        {Object.entries(byAllergen)
+                        {/* 조합 단위 — 내역의 합이 위 인원수와 정확히 같습니다.
+                            각 항목이 대체식 조리 단위(피해야 할 성분 전체)입니다 */}
+                        {Object.entries(combos)
                           .sort(([, a], [, b]) => b - a)
-                          .map(([a, n]) => `${a} ${n}`)
+                          .map(([combo, n]) => `${combo} ${n}명`)
                           .join(' · ')}
                       </span>
                     )}
