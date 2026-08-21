@@ -18,16 +18,15 @@ import { initAudio, playCallAlert } from './lib/audio.js'
 import OrdersTab from './components/OrdersTab.jsx'
 import CallsTab from './components/CallsTab.jsx'
 import CoachStatusTab from './components/CoachStatusTab.jsx'
-import StatsTab from './components/StatsTab.jsx'
 import CoachProfileSheet from './components/CoachProfileSheet.jsx'
 
 const MY_COACH_KEY = 'torder-coach' // 이 기기의 마스터 메이트 정보(로컬)
 
+// 마스터 메이트가 가장 자주 쓰는 화면이 위로 오도록. 첫 화면도 '호출 알림'.
 const TAB_DEFS = [
-  { id: 'orders', icon: '📋', label: '주문 현황' },
   { id: 'calls', icon: '🔔', label: '호출 알림' },
   { id: 'coaches', icon: '🧑‍🏫', label: '마스터 메이트 현황' },
-  { id: 'stats', icon: '📊', label: '호출 통계' },
+  { id: 'orders', icon: '📋', label: '주문 현황' },
 ]
 
 // 배부 완료 상태 키 (팀별 분리 — 여러 러너가 동시에 체크해도 충돌 최소화)
@@ -92,7 +91,7 @@ export default function App() {
   // 입장 화면에서 입력한 글자로 좁혀 보여줄 후보 목록 (명단이 비면 자유 입력)
   const knownCoachNames = COACH_ASSIGNMENTS.map((c) => c.name).filter(Boolean)
 
-  const [tab, setTab] = useState('orders')
+  const [tab, setTab] = useState('calls') // 입장 직후 첫 화면
   const [menuOpen, setMenuOpen] = useState(false) // 모바일 좌상단 메뉴 팝업
   const [showProfile, setShowProfile] = useState(false) // 내 프로필 시트
   const [scan, setScan] = useState(null)
@@ -435,16 +434,10 @@ export default function App() {
               onToggleSoldout={toggleSoldout}
               onToggleDelivered={toggleDelivered}
             />
-          ) : tab === 'calls' ? (
-            <CallsTab
-              scan={scan}
-              coach={coach}
-              onUpdateStatus={updateCallStatus}
-            />
           ) : tab === 'coaches' ? (
             <CoachStatusTab scan={scan} coach={coach} />
           ) : (
-            <StatsTab scan={scan} />
+            <CallsTab scan={scan} coach={coach} onUpdateStatus={updateCallStatus} />
           )}
         </main>
       </div>

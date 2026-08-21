@@ -447,11 +447,6 @@ body {
 /* =====================================================================
    통계
    ===================================================================== */
-.stat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 10px; }
-.stat-card { border: 1px solid var(--line); border-radius: 10px; padding: 15px; text-align: center; }
-.stat-label { font-size: 13px; color: var(--sub); }
-.stat-value { font-size: 24px; font-weight: 800; margin: 5px 0; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.stat-sub { font-size: 12px; color: var(--sub); }
 .stat-h4 { font-size: 14px; font-weight: 800; margin: 16px 0 8px; color: var(--text); }
 .stat-range { margin-bottom: 10px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
 .stat-range .chip { flex: 0 0 auto; min-height: 38px; padding: 8px 14px; }
@@ -470,8 +465,7 @@ body {
   .toolbar-tool { padding: 7px 6px; font-size: 11px; }
   .bottom-sheet { width: 100%; max-height: 86dvh; padding-left: 14px; padding-right: 14px; }
   .totals-grid, .count-grid, .coach-list { grid-template-columns: 1fr; }
-  .stat-cards { grid-template-columns: repeat(2, 1fr); }
-  .call-card { flex-direction: column; align-items: stretch; }
+    .call-card { flex-direction: column; align-items: stretch; }
   .call-card-actions { justify-content: flex-end; }
   .call-card-actions .btn-primary, .call-card-actions .btn-secondary { width: auto; }
   .table-search-wrap .table-search {
