@@ -82,7 +82,6 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
 
   const done = (data.cells || []).filter((c) => c.done).length
   const total = (data.cells || []).length
-  const pending = total - done
   const cells = onlyPending ? data.cells.filter((c) => !c.done) : data.cells
 
   return (
@@ -108,9 +107,6 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
             <div className="grid-summary">
               <span>
                 {data.doneLabel} <b>{done}</b> / {total}
-              </span>
-              <span className={pending ? 'grid-pending on' : 'grid-pending'}>
-                {data.pendingLabel} <b>{pending}</b>
               </span>
               <label className="grid-toggle">
                 <input
