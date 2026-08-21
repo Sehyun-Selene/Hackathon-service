@@ -19,6 +19,7 @@ import OrdersTab from './components/OrdersTab.jsx'
 import CallsTab from './components/CallsTab.jsx'
 import CoachStatusTab from './components/CoachStatusTab.jsx'
 import StatsTab from './components/StatsTab.jsx'
+import CoachProfileSheet from './components/CoachProfileSheet.jsx'
 
 const MY_COACH_KEY = 'torder-coach' // 이 기기의 마스터 메이트 정보(로컬)
 
@@ -93,6 +94,7 @@ export default function App() {
 
   const [tab, setTab] = useState('orders')
   const [menuOpen, setMenuOpen] = useState(false) // 모바일 좌상단 메뉴 팝업
+  const [showProfile, setShowProfile] = useState(false) // 내 프로필 시트
   const [scan, setScan] = useState(null)
   const [soundOn, setSoundOn] = useState(true)
   const [syncError, setSyncError] = useState(false)
@@ -314,7 +316,16 @@ export default function App() {
         </nav>
         {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
         <div className="side-foot">
-          <span className="side-coach">🧑‍🏫 {coach.name}</span>
+          {/* 이름을 누르면 담당 팀 범위·알림 연결 상태를 확인하는 시트가 열립니다 */}
+          <button
+            className="side-coach"
+            onClick={() => setShowProfile(true)}
+            aria-haspopup="dialog"
+            aria-label="내 프로필 보기"
+          >
+            🧑‍🏫 {coach.name}
+            <span className="side-coach-chevron" aria-hidden="true">›</span>
+          </button>
           <img className="side-foot-logo" src={logo52g} alt="52g" />
         </div>
       </aside>
@@ -326,6 +337,15 @@ export default function App() {
             <h1>{activeTab?.label}</h1>
           </div>
           <div className="topbar-actions">
+            {/* 좁은 화면에서는 사이드바 하단이 숨겨져 여기가 프로필 진입점 */}
+            <button
+              className="topbar-coach"
+              onClick={() => setShowProfile(true)}
+              aria-haspopup="dialog"
+              aria-label="내 프로필 보기"
+            >
+              🧑‍🏫 {coach.name}
+            </button>
             <label className="sound-toggle">
               <input
                 type="checkbox"
@@ -383,6 +403,21 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {showProfile && (
+        <CoachProfileSheet
+          scan={scan}
+          coach={coach}
+          onClose={() => setShowProfile(false)}
+          onChangeName={() => {
+            // 기기를 다른 사람이 쓰게 될 때: 저장된 이름을 지우고 입장 화면으로
+            window.localStorage.removeItem(MY_COACH_KEY)
+            setShowProfile(false)
+            setCoach(null)
+            setNameInput('')
+          }}
+        />
+      )}
     </div>
   )
 }
