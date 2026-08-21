@@ -4,7 +4,6 @@ import {
   MENUS,
   MENU_BY_ID,
   MEAL_BY_ID,
-  ALL_MENUS,
   TOTAL_TEAMS,
   DELIVERY_TEAM_RANGE_SIZE,
   getAssignedCoachForTeam,
@@ -195,37 +194,14 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
     return { teamsWith }
   }, [scan.teams])
 
-  // 메뉴 알러지 성분(config.MENUS[].allergens)과 팀 등록 알러지가 겹치는 인원 집계
-  // — 겹치는 인원은 대체 메뉴 준비 대상이므로 별도 인원 수로 관리
-  const menuAllergenInfo = useMemo(() => {
-    const menusWithAllergens = ALL_MENUS.filter((m) => (m.allergens || []).length > 0)
-    const perMenu = menusWithAllergens.map((menu) => ({ menu, count: 0 }))
-    let totalAffected = 0
-    Object.values(scan.teams).forEach((team) => {
-      ;(team.allergies || [])
-        .map((p) => (Array.isArray(p) ? p : [p]))
-        .forEach((personList) => {
-          const hits = menusWithAllergens.filter((menu) =>
-            menu.allergens.some((a) => personList.includes(a)),
-          )
-          if (hits.length) totalAffected += 1
-          hits.forEach((menu) => {
-            const entry = perMenu.find((x) => x.menu.id === menu.id)
-            if (entry) entry.count += 1
-          })
-        })
-    })
-    return { perMenu, totalAffected, configured: menusWithAllergens.length > 0 }
-  }, [scan.teams])
-
   // 대체식 필요 인원 — 케이터링에 넘길 실제 숫자.
-  // "메뉴 성분과 겹치는 인원"(menuAllergenInfo)과 다릅니다. 겹쳐도 같은 끼니의
-  // 다른 메뉴를 먹을 수 있으면 대체식이 필요 없기 때문입니다.
+  // 메뉴 성분이 겹치는 것만으로는 대체식 대상이 아닙니다. 같은 끼니의 다른
+  // 메뉴를 먹을 수 있으면 대체식이 필요 없기 때문입니다.
   // (예: 쇠고기만 있으면 야식은 페퍼로니로 해결 → 대체식 불필요)
   const altMealInfo = useMemo(() => {
     const byMeal = {}
     MEALS.forEach((meal) => {
-      byMeal[meal.id] = { meal, count: 0, combos: {} }
+      byMeal[meal.id] = { meal, count: 0, combos: {}, factors: {} }
     })
     // 대체식이 한 끼도 필요하지 않은 인원(다른 메뉴로 해결되는 사람)
     let coveredByOtherMenu = 0
@@ -247,6 +223,12 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
           if (!row) return
           row.count += 1
           if (combo) row.combos[combo] = (row.combos[combo] || 0) + 1
+          // 요인별: "이 성분을 피해야 하는 인원"이라 복수 알러지 1명은 여러
+          // 항목에 들어갑니다. 그래서 합이 인원수보다 클 수 있고, 화면에도
+          // '중복 포함'으로 밝혀 적습니다. 재료 단위 발주에 쓰는 숫자입니다.
+          personList.forEach((a) => {
+            if (a) row.factors[a] = (row.factors[a] || 0) + 1
+          })
         })
       })
     })
@@ -453,19 +435,34 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
               {/* 대체식이 반드시 필요한 인원 — 준비 수량의 기준이 되는 숫자 */}
               <div className="alt-meal-summary">
                 <div className="alt-meal-title">🍱 대체 메뉴 필요 인원</div>
-                {altMealInfo.rows.map(({ meal, count, combos }) => (
+                {altMealInfo.rows.map(({ meal, count, combos, factors }) => (
                   <div key={meal.id} className="alt-meal-row">
-                    <span className="alt-meal-name">{meal.label}</span>
-                    <b className={count ? 'alt-meal-count on' : 'alt-meal-count'}>{count}명</b>
+                    <div className="alt-meal-head">
+                      <span className="alt-meal-name">{meal.label}</span>
+                      <b className={count ? 'alt-meal-count on' : 'alt-meal-count'}>{count}명</b>
+                    </div>
                     {count > 0 && (
-                      <span className="alt-meal-break">
-                        {/* 조합 단위 — 내역의 합이 위 인원수와 정확히 같습니다.
-                            각 항목이 대체식 조리 단위(피해야 할 성분 전체)입니다 */}
-                        {Object.entries(combos)
-                          .sort(([, a], [, b]) => b - a)
-                          .map(([combo, n]) => `${combo} ${n}명`)
-                          .join(' · ')}
-                      </span>
+                      <>
+                        {/* 조리 단위 — 합이 위 인원수와 정확히 같습니다.
+                            한 항목이 대체식 하나(피해야 할 성분 전체) */}
+                        <div className="alt-meal-line">
+                          <span className="alt-meal-tag">조리 단위</span>
+                          {Object.entries(combos)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([combo, n]) => `${combo} ${n}명`)
+                            .join(' · ')}
+                        </div>
+                        {/* 성분별 — 복수 알러지 인원이 여러 항목에 들어가므로
+                            합이 인원수보다 클 수 있음(재료 단위 확인용) */}
+                        <div className="alt-meal-line sub">
+                          <span className="alt-meal-tag">성분별</span>
+                          {Object.entries(factors)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([a, n]) => `${a} ${n}`)
+                            .join(' · ')}
+                          <span className="alt-meal-dup">중복 포함</span>
+                        </div>
+                      </>
                     )}
                   </div>
                 ))}
@@ -476,26 +473,6 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
                   </p>
                 )}
               </div>
-              {/* 메뉴 성분과 겹치는 알러지 인원 — 대체 메뉴 준비 수량의 기준 */}
-              {menuAllergenInfo.configured ? (
-                <div className="allergy-menu-summary">
-                  <div className="allergy-menu-total">
-                    ⚠️ 메뉴 알러지 해당 인원 <b>{menuAllergenInfo.totalAffected}명</b>
-                  </div>
-                  <div className="allergy-menu-rows">
-                    {menuAllergenInfo.perMenu.map(({ menu, count }) => (
-                      <span key={menu.id} className="allergy-person-chip">
-                        {menu.name} ({menu.allergens.join('·')}) <b>{count}명</b>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="allergy-menu-note">
-                  💡 config.js의 메뉴별 <b>allergens</b>를 채우면, 메뉴 성분과 겹치는
-                  알러지 인원이 여기 자동 집계됩니다.
-                </p>
-              )}
               {allergyInfo.teamsWith.length === 0 ? (
                 <p className="empty-text">알러지를 등록한 인원이 없습니다.</p>
               ) : (
