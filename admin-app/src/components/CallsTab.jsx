@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CALL_LIMIT_PER_TEAM, getAssignedCoachForTeam } from '../config.js'
+import { CALL_LIMIT_PER_TEAM, TOTAL_TEAMS, getAssignedCoachForTeam } from '../config.js'
 import { now, fmtCountdown, fmtClock } from '../lib/time.js'
 
 // 마스터 메이트 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 마스터 메이트 개인별 배정.
@@ -27,7 +27,11 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
     if (am !== bm) return am - bm
     return a.createdAt - b.createdAt
   })
-  const done = all.filter((c) => c.status === 'done').sort((a, b) => b.doneAt - a.doneAt)
+  // 완료 이력은 내가 처리한 것만. 전원 이력이 섞이면 40명 규모에서 목록이
+  // 길어지고, 정작 "내가 뭘 처리했는지" 확인이 어려워짐.
+  const done = all
+    .filter((c) => c.status === 'done' && c.handledById === coach.id)
+    .sort((a, b) => b.doneAt - a.doneAt)
 
   const shown = onlyMine ? active.filter((c) => c.assignedName === coach.name) : active
 
@@ -52,7 +56,6 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
         ) : (
           <div className="call-list">
             {shown.map((c) => {
-              const used = scan.counts[c.team] || 0
               const mine = c.assignedName === coach.name
               return (
                 <div key={c.id} className={`call-card ${c.status}${mine ? ' mine-company' : ''}`}>
@@ -60,9 +63,6 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                     <span className="call-table">팀 {c.team}</span>
                     <span className={`call-company${mine ? ' mine' : ''}`}>담당 {c.assignedName}</span>
                     <span className="call-elapsed">⏱ {fmtCountdown(t - c.createdAt)} 경과</span>
-                    <span className="call-used">
-                      호출 {used}/{CALL_LIMIT_PER_TEAM}회
-                    </span>
                   </div>
                   <div className="call-card-actions">
                     {c.status === 'waiting' ? (
@@ -101,7 +101,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
       </section>
 
       <details className="panel done-panel">
-        <summary>완료된 호출 이력 ({done.length}건)</summary>
+        <summary>내가 완료한 호출 ({done.length}건)</summary>
         <div className="call-list">
           {done.map((c) => (
             <div key={c.id} className="call-card done">
@@ -111,7 +111,6 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                 <span className="call-elapsed">
                   {fmtClock(new Date(c.createdAt))} 호출 → {c.doneAt ? fmtClock(new Date(c.doneAt)) : '-'} 완료
                 </span>
-                <span className="call-used">처리 {c.handledBy || '-'}</span>
               </div>
               {c.reason && <p className="call-reason">“{c.reason}”</p>}
             </div>
@@ -119,31 +118,27 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
         </div>
       </details>
 
-      <section className="panel">
-        <h3>팀별 호출 횟수 (제한 {CALL_LIMIT_PER_TEAM}회)</h3>
-        {Object.entries(scan.counts).filter(([, n]) => n > 0).length === 0 ? (
-          <p className="empty-text">아직 호출한 팀이 없습니다.</p>
-        ) : (
-          <div className="count-grid">
-            {Object.entries(scan.counts)
-              .filter(([, n]) => n > 0)
-              .sort(([, a], [, b]) => b - a)
-              .map(([teamId, n]) => {
-                const nearLimit = n >= CALL_LIMIT_PER_TEAM - 1
-                return (
-                  <div key={teamId} className={`count-item${nearLimit ? ' near-limit' : ''}`}>
-                    <span>
-                      팀 {teamId} <span className="count-company">담당 {assignedNameOf(teamId)}</span>
-                    </span>
-                    <b>
-                      {n}회 · 잔여 {Math.max(0, CALL_LIMIT_PER_TEAM - n)}회
-                    </b>
-                  </div>
-                )
-              })}
-          </div>
-        )}
-      </section>
+      {/* 팀별 호출 횟수 — 등록·주문 현황과 같은 격자 형태.
+          전체 팀을 깔아두고 호출한 횟수만 적어, 한도에 가까운 팀이 눈에 띄게 함 */}
+      <details className="panel done-panel">
+        <summary>팀별 호출 횟수 (제한 {CALL_LIMIT_PER_TEAM}회)</summary>
+        <div className="check-grid">
+          {Array.from({ length: TOTAL_TEAMS }, (_, i) => {
+            const teamId = String(i + 1).padStart(2, '0')
+            const n = scan.counts[teamId] || 0
+            const full = n >= CALL_LIMIT_PER_TEAM
+            return (
+              <span
+                key={teamId}
+                className={`call-count-cell${n ? ' used' : ''}${full ? ' full' : ''}`}
+              >
+                {i + 1}
+                <b>{n}</b>
+              </span>
+            )
+          })}
+        </div>
+      </details>
     </div>
   )
 }

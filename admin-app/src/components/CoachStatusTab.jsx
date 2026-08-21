@@ -25,20 +25,6 @@ export default function CoachStatusTab({ scan, coach }) {
     return map
   }, [scan.calls])
 
-  // 이름이 COACH_ASSIGNMENTS 명단과 일치하면, 그가 담당하는 팀 중 대기중인
-  // 호출 수를 세어 보여줌 (본인 백로그 확인용)
-  const waitingCountByName = useMemo(() => {
-    const map = {}
-    Object.entries(scan.calls).forEach(([teamId, data]) => {
-      const assigned = COACH_ASSIGNMENTS.find((c) => c.teamNumbers.includes(parseInt(teamId, 10)))
-      if (!assigned?.name) return
-      ;(data.calls || []).forEach((c) => {
-        if (c.status === 'waiting') map[assigned.name] = (map[assigned.name] || 0) + 1
-      })
-    })
-    return map
-  }, [scan.calls])
-
   // 담당 팀 번호(가장 작은 번호) 기준 정렬. 미배정은 뒤로.
   const rows = useMemo(() => {
     return scan.coaches
@@ -48,13 +34,12 @@ export default function CoachStatusTab({ scan, coach }) {
         return {
           coach: c,
           busy: busyByCoachId[c.id] || [],
-          waiting: waitingCountByName[c.name] || 0,
           range: formatTeamRange(teams),
           sortKey: teams.length ? Math.min(...teams) : Number.MAX_SAFE_INTEGER,
         }
       })
       .sort((a, b) => a.sortKey - b.sortKey || a.coach.name.localeCompare(b.coach.name))
-  }, [scan.coaches, busyByCoachId, waitingCountByName])
+  }, [scan.coaches, busyByCoachId])
 
   const idle = rows.filter((r) => r.busy.length === 0)
   const busy = rows.filter((r) => r.busy.length > 0)
@@ -119,7 +104,7 @@ export default function CoachStatusTab({ scan, coach }) {
                 </p>
               ) : (
                 <div className="coach-list">
-                  {g.rows.map(({ coach: c, busy: b, waiting, range }) => {
+                  {g.rows.map(({ coach: c, busy: b, range }) => {
                     const isMe = c.id === coach.id
                     return (
                       <div key={c.id} className={`coach-item${b.length ? ' busy' : ' idle'}`}>
@@ -129,7 +114,6 @@ export default function CoachStatusTab({ scan, coach }) {
                             {range ? `팀 ${range}` : '담당 미배정'}
                           </span>
                           {isMe && <span className="coach-me">나</span>}
-                          {waiting > 0 && <span className="coach-waiting">담당 대기 {waiting}건</span>}
                         </span>
                         {b.length ? (
                           <span className="coach-status busy">
