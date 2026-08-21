@@ -594,3 +594,42 @@ body {
 .kpi-detail-head b { font-size: 15px; }
 .kpi-detail-sub { font-size: 12px; color: var(--sub); font-weight: 600; }
 .kpi-detail-body { font-size: 12.5px; color: var(--sub); line-height: 1.5; margin-top: 3px; }
+
+/* KPI 상세 격자 — '누가 아직 안 했는지'를 찾는 화면.
+   전체 대상을 미리 깔고 완료된 칸에 체크. 빈 칸이 곧 할 일. */
+.grid-summary {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 2px 0 10px; font-size: 13px; color: var(--sub);
+}
+.grid-summary b { color: var(--text); font-variant-numeric: tabular-nums; }
+.grid-pending.on b { color: var(--red); }
+.grid-toggle {
+  display: flex; align-items: center; gap: 5px; margin-left: auto;
+  font-size: 12.5px; font-weight: 600; cursor: pointer; min-height: 32px;
+}
+.grid-toggle input { width: 16px; height: 16px; accent-color: var(--primary); }
+
+.check-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 5px;
+}
+.check-cell {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  min-height: 34px; border: 1px solid var(--line); border-radius: 7px;
+  font-size: 12.5px; font-weight: 600; color: var(--sub);
+  font-variant-numeric: tabular-nums; background: #fbfbfc;
+}
+.check-cell.done { background: #eaf7ef; border-color: #bce3cb; color: var(--text); }
+.check-cell.done b { position: absolute; top: 1px; right: 4px; font-size: 10px; color: var(--green); }
+.check-cell.muted { opacity: 0.45; }
+
+.check-names { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.check-name {
+  display: flex; align-items: baseline; gap: 7px;
+  border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px;
+  background: #fbfbfc; font-size: 14px;
+}
+.check-name.done { background: #eaf7ef; border-color: #bce3cb; }
+.check-name-mark { color: var(--sub); font-weight: 800; width: 12px; }
+.check-name.done .check-name-mark { color: var(--green); }
+.check-name-note { font-size: 11.5px; color: var(--sub); margin-left: auto; white-space: nowrap; }
+.sheet-foot { margin-top: 8px; font-size: 12px; color: var(--sub); }

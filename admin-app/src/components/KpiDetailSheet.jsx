@@ -1,115 +1,96 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   COACH_ASSIGNMENTS,
   MEALS,
-  MENU_BY_ID,
+  TOTAL_TEAMS,
   formatTeamRange,
   getAssignedCoachForTeam,
 } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 
 // 상단 KPI 카드를 누르면 그 숫자의 '내용'을 보여주는 시트.
-// 숫자만 보고 "그래서 어느 팀?"을 다시 찾아 헤매지 않도록, 각 카드마다
-// 해당하는 목록을 그대로 펼쳐줍니다. 팀 목록은 모두 번호 순입니다.
-const byTeamNo = (a, b) => a.localeCompare(b, undefined, { numeric: true })
+//
+// 등록·주문·입장은 "누가 했는가"보다 **누가 아직 안 했는가**를 찾는 것이 목적입니다
+// (미등록 팀 독려, 미주문 팀 독려, 미입장 메이트 확인). 그래서 한 항목씩 나열하지
+// 않고 전체 대상(팀 1~TOTAL_TEAMS / 명단 전원)을 미리 깔아두고 완료 여부를
+// 표시하는 격자로 보여줍니다. 빠진 칸이 곧 할 일이 됩니다.
+//
+// 대기 중 호출은 성격이 달라(대상이 정해져 있지 않은 사건 목록) 그대로 목록입니다.
+
+const teamNo = (id) => parseInt(id, 10)
 
 export default function KpiDetailSheet({ kind, scan, onClose }) {
   const drag = useSheetDrag(onClose)
+  const [onlyPending, setOnlyPending] = useState(false)
 
-  const view = useMemo(() => {
+  const data = useMemo(() => {
     if (kind === 'waiting') {
-      // 대기 중 호출 — 오래 기다린 순
       const rows = Object.entries(scan.calls)
-        .flatMap(([teamId, data]) =>
-          (data.calls || [])
-            .filter((c) => c.status === 'waiting')
-            .map((c) => ({ teamId, call: c })),
+        .flatMap(([teamId, d]) =>
+          (d.calls || []).filter((c) => c.status === 'waiting').map((c) => ({ teamId, call: c })),
         )
         .sort((a, b) => (a.call.createdAt || 0) - (b.call.createdAt || 0))
+      return { mode: 'list', title: '대기 중 호출', rows }
+    }
+
+    if (kind === 'coaches') {
+      // 명단 전원을 깔고 입장 여부를 표시 (미입장 파악이 목적)
+      const enteredNames = new Set(scan.coaches.map((c) => c.name))
+      const roster = COACH_ASSIGNMENTS.filter((c) => c.name)
+      // 명단이 아직 비어 있으면 입장한 사람만이라도 보여줍니다
+      const cells = roster.length
+        ? roster
+            .map((c) => ({
+              key: c.id,
+              label: c.name,
+              note: c.teamNumbers.length ? `팀 ${formatTeamRange(c.teamNumbers)}` : '담당 미배정',
+              done: enteredNames.has(c.name),
+              sortKey: c.teamNumbers.length ? Math.min(...c.teamNumbers) : Number.MAX_SAFE_INTEGER,
+            }))
+            .sort((a, b) => a.sortKey - b.sortKey || a.label.localeCompare(b.label))
+        : scan.coaches.map((c) => ({ key: c.id, label: c.name, note: '명단 외', done: true }))
       return {
-        title: '대기 중 호출',
-        empty: '대기 중인 호출이 없습니다.',
-        items: rows.map(({ teamId, call }) => ({
-          key: call.id,
-          head: `팀 ${teamId}`,
-          sub: getAssignedCoachForTeam(teamId)?.name
-            ? `담당 ${getAssignedCoachForTeam(teamId).name}`
-            : '담당 미배정',
-          body: call.reason || '',
-        })),
+        mode: 'name-grid',
+        title: '마스터 메이트 입장 현황',
+        cells,
+        doneLabel: '입장',
+        pendingLabel: '미입장',
+        rosterMissing: roster.length === 0,
       }
     }
 
-    if (kind === 'orders') {
-      // 주문한 팀 — 무엇을 얼마나 담았는지 함께
-      const ids = Object.keys(scan.orders)
-        .filter((id) =>
-          MEALS.some((m) => (scan.orders[id]?.meals?.[m.id]?.items || []).length > 0),
-        )
-        .sort(byTeamNo)
+    // 팀 격자 — 등록 / 주문
+    const registered = new Set(Object.keys(scan.teams).map(teamNo))
+    const ordered = new Set(
+      Object.entries(scan.orders)
+        .filter(([, o]) => MEALS.some((m) => (o?.meals?.[m.id]?.items || []).length > 0))
+        .map(([id]) => teamNo(id)),
+    )
+    const isOrders = kind === 'orders'
+    const cells = Array.from({ length: TOTAL_TEAMS }, (_, i) => {
+      const n = i + 1
       return {
-        title: '주문한 팀',
-        empty: '아직 주문한 팀이 없습니다.',
-        items: ids.map((id) => ({
-          key: id,
-          head: `팀 ${id}`,
-          sub: `${scan.teams[id]?.memberCount || '-'}명`,
-          body: MEALS.flatMap((m) =>
-            (scan.orders[id]?.meals?.[m.id]?.items || []).map(
-              ({ menuId, qty }) => `${MENU_BY_ID[menuId]?.name.replace('\n', ' ') || menuId} ${qty}`,
-            ),
-          ).join(' · '),
-        })),
+        key: n,
+        label: n,
+        done: isOrders ? ordered.has(n) : registered.has(n),
+        // 주문 격자에서는 '등록도 안 한 팀'을 구분해 표시 (독려 대상이 다름)
+        muted: isOrders && !registered.has(n),
       }
-    }
-
-    if (kind === 'teams') {
-      const ids = Object.keys(scan.teams).sort(byTeamNo)
-      return {
-        title: '등록한 팀',
-        empty: '아직 등록한 팀이 없습니다.',
-        items: ids.map((id) => {
-          const t = scan.teams[id] || {}
-          const people = (t.allergies || []).length
-          return {
-            key: id,
-            head: `팀 ${id}`,
-            sub: `${t.memberCount || '-'}명`,
-            body: people ? `알러지 ${people}명` : '',
-          }
-        }),
-      }
-    }
-
-    // 입장한 마스터 메이트 — 담당 팀 번호 순, 지금 대응 중인지 함께
-    const busyTeamsById = {}
-    Object.entries(scan.calls).forEach(([teamId, data]) => {
-      ;(data.calls || []).forEach((c) => {
-        if (c.status === 'in_progress' && c.handledById) {
-          busyTeamsById[c.handledById] = busyTeamsById[c.handledById] || []
-          busyTeamsById[c.handledById].push(teamId)
-        }
-      })
     })
-    const items = scan.coaches
-      .map((c) => {
-        const teams = COACH_ASSIGNMENTS.find((a) => a.name === c.name)?.teamNumbers || []
-        const busy = busyTeamsById[c.id] || []
-        return {
-          key: c.id,
-          head: c.name,
-          sub: teams.length ? `팀 ${formatTeamRange(teams)}` : '담당 미배정',
-          body: busy.length ? `🔴 팀 ${busy.join(', ')} 대응 중` : '🟢 대기 중',
-          sortKey: teams.length ? Math.min(...teams) : Number.MAX_SAFE_INTEGER,
-        }
-      })
-      .sort((a, b) => a.sortKey - b.sortKey || a.head.localeCompare(b.head))
     return {
-      title: '입장한 마스터 메이트',
-      empty: '아직 입장한 마스터 메이트가 없습니다.',
-      items,
+      mode: 'team-grid',
+      title: isOrders ? '팀별 주문 현황' : '팀별 등록 현황',
+      cells,
+      doneLabel: isOrders ? '주문 완료' : '등록',
+      pendingLabel: isOrders ? '미주문' : '미등록',
+      footnote: isOrders ? '흐린 칸은 아직 팀 등록도 하지 않은 팀입니다.' : '',
     }
   }, [kind, scan])
+
+  const done = (data.cells || []).filter((c) => c.done).length
+  const total = (data.cells || []).length
+  const pending = total - done
+  const cells = onlyPending ? data.cells.filter((c) => !c.done) : data.cells
 
   return (
     <div className="bottom-sheet-backdrop" onClick={onClose}>
@@ -123,28 +104,90 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
       >
         <div className="sheet-handle" aria-hidden="true" {...drag.handleHandlers} />
         <div className="sheet-head">
-          <h3 id="kpi-sheet-title">{view.title}</h3>
+          <h3 id="kpi-sheet-title">{data.title}</h3>
           <button className="sheet-close" onClick={onClose}>
             닫기
           </button>
         </div>
+
+        {data.mode !== 'list' && (
+          <>
+            <div className="grid-summary">
+              <span>
+                {data.doneLabel} <b>{done}</b> / {total}
+              </span>
+              <span className={pending ? 'grid-pending on' : 'grid-pending'}>
+                {data.pendingLabel} <b>{pending}</b>
+              </span>
+              <label className="grid-toggle">
+                <input
+                  type="checkbox"
+                  checked={onlyPending}
+                  onChange={(e) => setOnlyPending(e.target.checked)}
+                />
+                {data.pendingLabel}만 보기
+              </label>
+            </div>
+            {data.rosterMissing && (
+              <p className="sheet-description">
+                config의 마스터 메이트 명단이 비어 있어, 입장한 인원만 표시합니다.
+              </p>
+            )}
+          </>
+        )}
+
         <div className="sheet-body">
-          {(view.items || []).length === 0 ? (
-            <p className="empty-text">{view.empty}</p>
-          ) : (
-            <div className="kpi-detail-list">
-              {view.items.map((it) => (
-                <div key={it.key} className="kpi-detail-row">
-                  <div className="kpi-detail-head">
-                    <b>{it.head}</b>
-                    {it.sub && <span className="kpi-detail-sub">{it.sub}</span>}
+          {data.mode === 'list' ? (
+            data.rows.length === 0 ? (
+              <p className="empty-text">대기 중인 호출이 없습니다.</p>
+            ) : (
+              <div className="kpi-detail-list">
+                {data.rows.map(({ teamId, call }) => (
+                  <div key={call.id} className="kpi-detail-row">
+                    <div className="kpi-detail-head">
+                      <b>팀 {teamId}</b>
+                      <span className="kpi-detail-sub">
+                        {getAssignedCoachForTeam(teamId)?.name
+                          ? `담당 ${getAssignedCoachForTeam(teamId).name}`
+                          : '담당 미배정'}
+                      </span>
+                    </div>
+                    {call.reason && <div className="kpi-detail-body">{call.reason}</div>}
                   </div>
-                  {it.body && <div className="kpi-detail-body">{it.body}</div>}
+                ))}
+              </div>
+            )
+          ) : cells.length === 0 ? (
+            <p className="empty-text">모두 완료됐습니다. 🎉</p>
+          ) : data.mode === 'team-grid' ? (
+            <div className="check-grid">
+              {cells.map((c) => (
+                <span
+                  key={c.key}
+                  className={`check-cell${c.done ? ' done' : ''}${c.muted ? ' muted' : ''}`}
+                  title={c.muted ? '팀 등록 안 됨' : undefined}
+                >
+                  {c.label}
+                  {c.done && <b aria-hidden="true">✓</b>}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="check-names">
+              {cells.map((c) => (
+                <div key={c.key} className={`check-name${c.done ? ' done' : ''}`}>
+                  <span className="check-name-mark" aria-hidden="true">
+                    {c.done ? '✓' : '·'}
+                  </span>
+                  <b>{c.label}</b>
+                  <span className="check-name-note">{c.note}</span>
                 </div>
               ))}
             </div>
           )}
         </div>
+
+        {data.footnote && !onlyPending && <p className="sheet-foot">{data.footnote}</p>}
       </section>
     </div>
   )
