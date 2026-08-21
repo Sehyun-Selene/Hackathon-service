@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
-import { CALL_LIMIT_PER_TEAM, TOTAL_TEAMS, getAssignedCoachForTeam } from '../config.js'
+import {
+  CALL_LIMIT_PER_TEAM,
+  COACH_ASSIGNMENTS,
+  TOTAL_TEAMS,
+  getAssignedCoachForTeam,
+} from '../config.js'
 import { now, fmtCountdown, fmtClock } from '../lib/time.js'
 
 // 마스터 메이트 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 마스터 메이트 개인별 배정.
@@ -34,6 +39,12 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
     .sort((a, b) => b.doneAt - a.doneAt)
 
   const shown = onlyMine ? active.filter((c) => c.assignedName === coach.name) : active
+
+  // 내 담당 팀 번호 (명단에서 이름으로 찾음). 배정이 없으면 전체 팀을 대상으로.
+  const myTeams = COACH_ASSIGNMENTS.find((a) => a.name === coach.name)?.teamNumbers || []
+  const countTeams = myTeams.length
+    ? [...myTeams].sort((a, b) => a - b)
+    : Array.from({ length: TOTAL_TEAMS }, (_, i) => i + 1)
 
   return (
     <div>
@@ -118,22 +129,26 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
         </div>
       </details>
 
-      {/* 팀별 호출 횟수 — 등록·주문 현황과 같은 격자 형태.
-          전체 팀을 깔아두고 호출한 횟수만 적어, 한도에 가까운 팀이 눈에 띄게 함 */}
+      {/* 팀별 호출 횟수 — 내가 담당하는 팀만. 남의 담당 팀 잔여 횟수는
+          내가 판단할 일이 아니고, 125칸을 훑으면 내 팀을 못 찾음.
+          담당이 배정되지 않았으면 전체를 보여줍니다(지원용). */}
       <details className="panel done-panel">
-        <summary>팀별 호출 횟수 (제한 {CALL_LIMIT_PER_TEAM}회)</summary>
+        <summary>
+          {myTeams.length ? '내 담당 팀 호출 횟수' : '팀별 호출 횟수'} (제한{' '}
+          {CALL_LIMIT_PER_TEAM}회)
+        </summary>
         <div className="check-grid">
-          {Array.from({ length: TOTAL_TEAMS }, (_, i) => {
-            const teamId = String(i + 1).padStart(2, '0')
-            const n = scan.counts[teamId] || 0
-            const full = n >= CALL_LIMIT_PER_TEAM
+          {countTeams.map((n) => {
+            const teamId = String(n).padStart(2, '0')
+            const used = scan.counts[teamId] || 0
+            const full = used >= CALL_LIMIT_PER_TEAM
             return (
               <span
                 key={teamId}
-                className={`call-count-cell${n ? ' used' : ''}${full ? ' full' : ''}`}
+                className={`call-count-cell${used ? ' used' : ''}${full ? ' full' : ''}`}
               >
-                {i + 1}
-                <b>{n}</b>
+                {n}
+                <b>{used}</b>
               </span>
             )
           })}

@@ -9,19 +9,8 @@ import {
   getAssignedCoachForTeam,
   personDiet,
 } from '../config.js'
-import { getNextMeal, getOpenMeals, getVisibleMeals, now } from '../lib/time.js'
+import { getOpenMeals, now } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
-
-function getDefaultMealId() {
-  const currentTime = now().getTime()
-  const openMeals = getOpenMeals(currentTime)
-  if (openMeals.length) return openMeals[0].id
-
-  const visibleMeals = getVisibleMeals(currentTime)
-  if (visibleMeals.length) return visibleMeals[visibleMeals.length - 1].id
-
-  return getNextMeal(currentTime)?.id || MEALS[MEALS.length - 1].id
-}
 
 function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelivered }) {
   return (
@@ -68,8 +57,9 @@ function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelive
 
 // 주문 현황 (PRD 5.2): 팀별 내역, 시간대 필터, 메뉴별 합산, 품절 처리,
 // CSV 내보내기, 팀 번호 검색, 알러지 현황, 배부 체크(끼니별), 인쇄용 체크리스트.
-export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) {
-  const [mealFilter, setMealFilter] = useState(getDefaultMealId)
+// 식사 선택(DAY 1 야식 / DAY 2 아침)은 좌측 메뉴의 하위 항목으로 옮겨졌으므로
+// mealFilter는 App에서 관리하고 prop으로 받습니다.
+export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleDelivered }) {
   const [showSoldoutPanel, setShowSoldoutPanel] = useState(false)
   const [showAllergyPanel, setShowAllergyPanel] = useState(false)
   const [teamQuery, setTeamQuery] = useState('')
@@ -313,23 +303,6 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   return (
     <div>
       <div className="toolbar">
-        <section className="workflow-step workflow-meal-step">
-          <div className="workflow-step-head">
-            <span className="step-number">1</span>
-            <b>식사 선택</b>
-          </div>
-          <div className="filter-group">
-            {MEALS.map((m) => (
-              <button
-                key={m.id}
-                className={`chip${mealFilter === m.id ? ' on' : ''}`}
-                onClick={() => setMealFilter(m.id)}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </section>
         <div className="toolbar-actions">
           <label className="table-search-wrap">
             <svg
@@ -347,7 +320,7 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
               className="table-search"
               type="search"
               inputMode="numeric"
-              placeholder="팀번호"
+              placeholder="팀 번호로 검색 (예: 47)"
               value={teamQuery}
               onChange={(e) => setTeamQuery(e.target.value)}
               aria-label="팀 번호 검색"
@@ -380,34 +353,32 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
         </div>
       </div>
 
-      {singleMeal && (
-        <section className="delivery-range-bar" aria-label="배부할 팀 번호 구간">
-          <div className="delivery-range-head">
-            <div className="workflow-step-head">
-              <span className="step-number">2</span>
-              <b>배부 구간</b>
-            </div>
-            <span className="pending-count">미배부 {pendingRows.length}팀</span>
+      <section className="panel">
+        <h3>메뉴별 합산 수량</h3>
+        {Object.keys(totals.total).length === 0 ? (
+          <p className="empty-text">아직 주문이 없습니다.</p>
+        ) : (
+          <div className="totals-grid">
+            {Object.entries(totals.total)
+              .sort(([, a], [, b]) => b - a)
+              .map(([menuId, total]) => {
+                const remain = totals.remaining[menuId]
+                const allDone = anyDelivered && remain === 0
+                return (
+                  <div key={menuId} className={`total-item${allDone ? ' done' : ''}`}>
+                    <span>{MENU_BY_ID[menuId]?.name || menuId}</span>
+                    <b>
+                      {remain}개
+                      {anyDelivered && remain !== total && (
+                        <span className="total-of"> / 총 {total}</span>
+                      )}
+                    </b>
+                  </div>
+                )
+              })}
           </div>
-          <div className="filter-group delivery-ranges">
-            <button
-              className={`chip${teamRange === 'all' ? ' on' : ''}`}
-              onClick={() => setTeamRange('all')}
-            >
-              전체
-            </button>
-            {rangeOptions.map((range) => (
-              <button
-                key={range.id}
-                className={`chip${teamRange === range.id ? ' on' : ''}`}
-                onClick={() => setTeamRange(range.id)}
-              >
-                {range.label}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {showAllergyPanel && (
         <div className="bottom-sheet-backdrop" onClick={closeUtilityPanels}>
@@ -538,37 +509,35 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
         </div>
       )}
 
-      <section className="panel">
-        <h3>메뉴별 합산 수량 {mealFilter !== 'all' && `— ${MEAL_BY_ID[mealFilter].label}`}</h3>
-        {Object.keys(totals.total).length === 0 ? (
-          <p className="empty-text">아직 주문이 없습니다.</p>
-        ) : (
-          <div className="totals-grid">
-            {Object.entries(totals.total)
-              .sort(([, a], [, b]) => b - a)
-              .map(([menuId, total]) => {
-                const remain = totals.remaining[menuId]
-                const allDone = anyDelivered && remain === 0
-                return (
-                  <div key={menuId} className={`total-item${allDone ? ' done' : ''}`}>
-                    <span>{MENU_BY_ID[menuId]?.name || menuId}</span>
-                    <b>
-                      {remain}개
-                      {anyDelivered && remain !== total && (
-                        <span className="total-of"> / 총 {total}</span>
-                      )}
-                    </b>
-                  </div>
-                )
-              })}
+      {singleMeal && (
+        <section className="delivery-range-bar" aria-label="배부할 팀 번호 구간">
+          <div className="delivery-range-head">
+            <b className="delivery-range-title">배부 구간</b>
+            <span className="pending-count">미배부 {pendingRows.length}팀</span>
           </div>
-        )}
-      </section>
+          <div className="filter-group delivery-ranges">
+            <button
+              className={`chip${teamRange === 'all' ? ' on' : ''}`}
+              onClick={() => setTeamRange('all')}
+            >
+              전체
+            </button>
+            {rangeOptions.map((range) => (
+              <button
+                key={range.id}
+                className={`chip${teamRange === range.id ? ' on' : ''}`}
+                onClick={() => setTeamRange(range.id)}
+              >
+                {range.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="panel delivery-team-panel">
         <div className="panel-head-row">
-          <h3 className="workflow-heading">
-            {singleMeal && !hasQuery && <span className="step-number">3</span>}
+          <h3>
             {singleMeal && !hasQuery ? '미배부 팀' : '팀별 주문'} ({visibleRows.length}팀
             {hasQuery && ` — "${queryNum}번" 검색 중`})
           </h3>

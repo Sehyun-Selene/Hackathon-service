@@ -203,17 +203,23 @@ body {
 /* =====================================================================
    주문 현황 — 툴바 / 워크플로 스텝
    ===================================================================== */
+/* 팀 번호 검색 — 주문 현황에서 가장 자주 쓰는 입력이라 눈에 띄게 */
 .table-search {
-  border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px;
-  font-size: 14px; min-height: 44px; width: 140px; background: #fbfbfc;
+  border: 1.5px solid #d5cffa; border-radius: 10px; padding: 12px 16px;
+  font-size: 15px; min-height: 48px; width: 100%; background: #fff;
+  box-shadow: 0 1px 2px rgba(20, 22, 30, 0.04);
 }
-.table-search:focus { outline: none; border-color: var(--primary); background: #fff; }
+.table-search::placeholder { color: #a7a2c4; }
+.table-search:focus {
+  outline: none; border-color: var(--primary); background: #fff;
+  box-shadow: 0 0 0 3px rgba(109, 90, 230, 0.14);
+}
 .table-search-wrap { position: relative; display: block; min-width: 0; }
 .table-search-icon {
-  position: absolute; left: 12px; top: 50%; z-index: 1; width: 16px; height: 16px;
-  color: var(--sub); pointer-events: none; transform: translateY(-50%);
+  position: absolute; left: 14px; top: 50%; z-index: 1; width: 18px; height: 18px;
+  color: var(--primary); pointer-events: none; transform: translateY(-50%);
 }
-.table-search-wrap .table-search { padding-left: 36px; }
+.table-search-wrap .table-search { padding-left: 42px; }
 .table-search-wrap:focus-within .table-search-icon { color: var(--primary); }
 .toolbar { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 14px; }
 .filter-group, .toolbar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -645,3 +651,18 @@ body {
 .call-count-cell.used b { color: var(--primary-dark); }
 .call-count-cell.full { background: #fef5f5; border-color: #f0b6b8; }
 .call-count-cell.full b { color: var(--red); }
+
+/* 좌측 메뉴의 하위 항목 (주문 현황 > 식사) */
+.nav-sub { display: flex; flex-direction: column; gap: 2px; margin: 2px 0 4px; }
+.nav-subitem {
+  border: 0; background: transparent; text-align: left; cursor: pointer;
+  font: inherit; font-size: 13.5px; font-weight: 600; color: var(--sub);
+  padding: 9px 12px 9px 38px; border-radius: 8px; min-height: 38px;
+  position: relative;
+}
+.nav-subitem::before {
+  content: ''; position: absolute; left: 22px; top: 0; bottom: 0; width: 1px;
+  background: var(--line);
+}
+.nav-subitem:hover { color: var(--text); }
+.nav-subitem.active { background: var(--violet-soft); color: var(--primary-dark); }

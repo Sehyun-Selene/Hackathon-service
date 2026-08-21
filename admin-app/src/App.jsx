@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import logo52g from './assets/52g-logo.png'
-import { ADMIN_POLL_MS, COACH_ASSIGNMENTS } from './config.js'
+import { ADMIN_POLL_MS, COACH_ASSIGNMENTS, MEALS } from './config.js'
 import {
   storageGet,
   storageGetMany,
@@ -13,7 +13,7 @@ import {
   COACH_ROSTER_KEY,
   SOLDOUT_KEY,
 } from './lib/storage.js'
-import { now, fmtClock } from './lib/time.js'
+import { now, fmtClock, getNextMeal, getOpenMeals, getVisibleMeals } from './lib/time.js'
 import { initAudio, playCallAlert } from './lib/audio.js'
 import OrdersTab from './components/OrdersTab.jsx'
 import CallsTab from './components/CallsTab.jsx'
@@ -71,6 +71,17 @@ async function scanAll() {
   }
 }
 
+// 주문 현황에서 처음 보여줄 식사 — 지금 주문받는 중인 식사가 있으면 그것,
+// 없으면 이미 지난 식사 중 마지막, 그것도 없으면 다음 식사
+function getDefaultMealId() {
+  const t = now().getTime()
+  const open = getOpenMeals(t)
+  if (open.length) return open[0].id
+  const visible = getVisibleMeals(t)
+  if (visible.length) return visible[visible.length - 1].id
+  return getNextMeal(t)?.id || MEALS[MEALS.length - 1].id
+}
+
 function getCoachId() {
   let id = window.localStorage.getItem('torder-coach-id')
   if (!id) {
@@ -93,6 +104,8 @@ export default function App() {
   const knownCoachNames = COACH_ASSIGNMENTS.map((c) => c.name).filter(Boolean)
 
   const [tab, setTab] = useState('calls') // 입장 직후 첫 화면
+  // 주문 현황의 식사 선택 — 좌측 메뉴의 하위 항목으로 노출되므로 여기서 관리
+  const [mealFilter, setMealFilter] = useState(getDefaultMealId)
   const [menuOpen, setMenuOpen] = useState(false) // 모바일 좌상단 메뉴 팝업
   const [showProfile, setShowProfile] = useState(false) // 내 프로필 시트
   const [kpiDetail, setKpiDetail] = useState(null) // 눌린 KPI 카드의 상세 목록
@@ -352,17 +365,35 @@ export default function App() {
             </button>
           </div>
           {TAB_DEFS.map((td) => (
-            <button
-              key={td.id}
-              className={`nav-item${tab === td.id ? ' active' : ''}`}
-              onClick={() => selectTab(td.id)}
-            >
-              <span className="nav-icon" aria-hidden="true">{td.icon}</span>
-              <span className="nav-label">{td.label}</span>
-              {td.id === 'calls' && waitingCount > 0 && (
-                <span className="nav-badge">{waitingCount}</span>
+            <div key={td.id} className="nav-group">
+              <button
+                className={`nav-item${tab === td.id ? ' active' : ''}`}
+                onClick={() => selectTab(td.id)}
+              >
+                <span className="nav-icon" aria-hidden="true">{td.icon}</span>
+                <span className="nav-label">{td.label}</span>
+                {td.id === 'calls' && waitingCount > 0 && (
+                  <span className="nav-badge">{waitingCount}</span>
+                )}
+              </button>
+              {/* 주문 현황은 식사별로 보므로 하위 항목으로 노출 */}
+              {td.id === 'orders' && tab === 'orders' && (
+                <div className="nav-sub">
+                  {MEALS.map((m) => (
+                    <button
+                      key={m.id}
+                      className={`nav-subitem${mealFilter === m.id ? ' active' : ''}`}
+                      onClick={() => {
+                        setMealFilter(m.id)
+                        setMenuOpen(false)
+                      }}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
               )}
-            </button>
+            </div>
           ))}
         </nav>
         {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
@@ -444,6 +475,7 @@ export default function App() {
           ) : tab === 'orders' ? (
             <OrdersTab
               scan={scan}
+              mealFilter={mealFilter}
               onToggleSoldout={toggleSoldout}
               onToggleDelivered={toggleDelivered}
             />
