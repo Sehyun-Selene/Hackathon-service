@@ -201,7 +201,7 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
   const altMealInfo = useMemo(() => {
     const byMeal = {}
     MEALS.forEach((meal) => {
-      byMeal[meal.id] = { meal, count: 0, combos: {}, factors: {} }
+      byMeal[meal.id] = { meal, count: 0, combos: {} }
     })
     // 대체식이 한 끼도 필요하지 않은 인원(다른 메뉴로 해결되는 사람)
     let coveredByOtherMenu = 0
@@ -213,22 +213,16 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
           if (personList.length) coveredByOtherMenu += 1
           return
         }
-        // 내역은 성분별로 쪼개지 않고 "한 사람이 가진 조합" 단위로 셉니다.
-        // 성분별로 세면 우유+토마토 1명이 "우유 1 · 토마토 1"로 보여 2명처럼
-        // 읽히고, 무엇보다 대체식은 그 사람의 성분을 "모두" 피해야 하므로
-        // 조합이 그대로 조리 단위가 됩니다.
+        // 세부 내역은 "한 사람이 가진 알러지 조합" 단위로 셉니다.
+        // 성분별로 쪼개면 우유+토마토 1명이 "우유 1 · 토마토 1"이 되어 합이
+        // 총 개수와 어긋나고, 대체식은 그 사람의 성분을 모두 피해야 하므로
+        // 조합 하나가 그대로 대체식 하나입니다.
         const combo = [...personList].filter(Boolean).sort().join('·')
         needsAlt.forEach((mealId) => {
           const row = byMeal[mealId]
           if (!row) return
           row.count += 1
           if (combo) row.combos[combo] = (row.combos[combo] || 0) + 1
-          // 요인별: "이 성분을 피해야 하는 인원"이라 복수 알러지 1명은 여러
-          // 항목에 들어갑니다. 그래서 합이 인원수보다 클 수 있고, 화면에도
-          // '중복 포함'으로 밝혀 적습니다. 재료 단위 발주에 쓰는 숫자입니다.
-          personList.forEach((a) => {
-            if (a) row.factors[a] = (row.factors[a] || 0) + 1
-          })
         })
       })
     })
@@ -434,43 +428,38 @@ export default function OrdersTab({ scan, onToggleSoldout, onToggleDelivered }) 
             <div className="sheet-body">
               {/* 대체식이 반드시 필요한 인원 — 준비 수량의 기준이 되는 숫자 */}
               <div className="alt-meal-summary">
-                <div className="alt-meal-title">🍱 대체 메뉴 필요 인원</div>
-                {altMealInfo.rows.map(({ meal, count, combos, factors }) => (
+                <div className="alt-meal-title">🍱 대체 메뉴 필요 개수</div>
+                {/* 필요한 건 "몇 개를 준비하는가" 하나. 조합별 내역은 접어둡니다. */}
+                {altMealInfo.rows.map(({ meal, count }) => (
                   <div key={meal.id} className="alt-meal-row">
-                    <div className="alt-meal-head">
-                      <span className="alt-meal-name">{meal.label}</span>
-                      <b className={count ? 'alt-meal-count on' : 'alt-meal-count'}>{count}명</b>
-                    </div>
-                    {count > 0 && (
-                      <>
-                        {/* 조리 단위 — 합이 위 인원수와 정확히 같습니다.
-                            한 항목이 대체식 하나(피해야 할 성분 전체) */}
-                        <div className="alt-meal-line">
-                          <span className="alt-meal-tag">조리 단위</span>
-                          {Object.entries(combos)
-                            .sort(([, a], [, b]) => b - a)
-                            .map(([combo, n]) => `${combo} ${n}명`)
-                            .join(' · ')}
-                        </div>
-                        {/* 성분별 — 복수 알러지 인원이 여러 항목에 들어가므로
-                            합이 인원수보다 클 수 있음(재료 단위 확인용) */}
-                        <div className="alt-meal-line sub">
-                          <span className="alt-meal-tag">성분별</span>
-                          {Object.entries(factors)
-                            .sort(([, a], [, b]) => b - a)
-                            .map(([a, n]) => `${a} ${n}`)
-                            .join(' · ')}
-                          <span className="alt-meal-dup">중복 포함</span>
-                        </div>
-                      </>
-                    )}
+                    <span className="alt-meal-name">{meal.label}</span>
+                    <b className={count ? 'alt-meal-count on' : 'alt-meal-count'}>{count}개</b>
                   </div>
                 ))}
-                {altMealInfo.coveredByOtherMenu > 0 && (
-                  <p className="alt-meal-note">
-                    ℹ️ 알러지가 있지만 같은 끼니의 다른 메뉴로 해결되는 인원{' '}
-                    <b>{altMealInfo.coveredByOtherMenu}명</b> — 대체 메뉴 불필요
-                  </p>
+                {altMealInfo.rows.some((r) => r.count > 0) && (
+                  <details className="alt-meal-detail">
+                    <summary>상세 보기</summary>
+                    {altMealInfo.rows
+                      .filter((r) => r.count > 0)
+                      .map(({ meal, count, combos }) => (
+                        <p key={meal.id}>
+                          <b>
+                            {meal.label} {count}개
+                          </b>
+                          {' — '}
+                          {Object.entries(combos)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([combo, n]) => `${combo} ${n}`)
+                            .join(' · ')}
+                        </p>
+                      ))}
+                    {altMealInfo.coveredByOtherMenu > 0 && (
+                      <p className="alt-meal-note">
+                        알러지가 있지만 같은 끼니의 다른 메뉴로 해결되는{' '}
+                        <b>{altMealInfo.coveredByOtherMenu}명</b>은 위 개수에서 제외했습니다.
+                      </p>
+                    )}
+                  </details>
                 )}
               </div>
               {allergyInfo.teamsWith.length === 0 ? (

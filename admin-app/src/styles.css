@@ -491,23 +491,15 @@ body {
   display: flex; flex-direction: column; gap: 6px;
 }
 .alt-meal-title { font-size: 14px; font-weight: 800; }
-.alt-meal-row {
-  display: flex; flex-direction: column; gap: 3px; font-size: 14px;
-  padding: 7px 0; border-top: 1px solid #f6dcdd;
-}
-.alt-meal-row:first-of-type { border-top: none; padding-top: 0; }
-.alt-meal-head { display: flex; align-items: baseline; gap: 8px; }
+.alt-meal-row { display: flex; align-items: baseline; gap: 10px; font-size: 14px; }
 .alt-meal-name { font-weight: 700; min-width: 92px; }
 .alt-meal-count { font-variant-numeric: tabular-nums; color: var(--sub); }
-.alt-meal-count.on { color: var(--red); font-size: 16px; }
-.alt-meal-line {
-  font-size: 12.5px; color: var(--text); line-height: 1.5;
-  display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+.alt-meal-count.on { color: var(--red); font-size: 20px; font-weight: 800; }
+/* 세부 조합은 접어둠 — 평소엔 총 개수만 보이게 */
+.alt-meal-detail { margin-top: 4px; }
+.alt-meal-detail summary {
+  cursor: pointer; font-size: 12.5px; color: var(--sub); font-weight: 600;
+  padding: 2px 0; width: fit-content;
 }
-.alt-meal-line.sub { color: var(--sub); }
-.alt-meal-tag {
-  flex: 0 0 auto; font-size: 11px; font-weight: 700; color: var(--sub);
-  background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px;
-}
-.alt-meal-dup { font-size: 11px; color: var(--sub); opacity: 0.85; }
-.alt-meal-note { font-size: 12px; color: var(--sub); line-height: 1.5; margin-top: 2px; }
+.alt-meal-detail p { font-size: 12.5px; color: var(--text); line-height: 1.6; margin-top: 4px; }
+.alt-meal-note { font-size: 12px; color: var(--sub); line-height: 1.5; margin-top: 6px; }
