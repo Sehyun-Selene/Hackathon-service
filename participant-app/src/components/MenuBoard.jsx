@@ -1,17 +1,50 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MENUS, MENU_BY_ID, MEAL_BY_ID, teamDiet } from '../config.js'
+import { MEALS, MENUS, MENU_BY_ID, MEAL_BY_ID, teamDiet } from '../config.js'
 import { now, fmtClock, fmtCountdown, mealTimes } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 
+// '2026-09-21T13:30:00' → '13시 30분' (정시는 '21시')
+const fmtHM = (iso) => {
+  const d = new Date(iso)
+  const h = d.getHours()
+  const m = d.getMinutes()
+  return m ? `${h}시 ${m}분` : `${h}시`
+}
+// label 'DAY 1 야식' → 'DAY 1' (없으면 빈 문자열)
+const dayOf = (label) => (label || '').match(/^DAY\s*\d+/)?.[0] || ''
+
 // 주문 시간 공지 — 호출 탭의 가이드 박스(.call-guide)와 같은 형태로 노출.
 // 주문 가능 시간대일 때와 마감/대기 상태일 때 모두 보여줍니다.
+//
+// 문구의 시각은 전부 config.MEALS에서 뽑습니다. 예전에는 "14시부터 15시까지"가
+// 글자로 박혀 있어, 시간이 바뀌면 화면에만 옛 시간이 남는 문제가 있었습니다.
 function OrderNotice() {
+  // 모든 식사가 같은 주문 구간을 공유하면 한 문장으로 묶어 안내
+  const windows = [...new Set(MEALS.map((m) => `${m.orderStart}~${m.orderEnd}`))]
+  const shared = windows.length === 1 ? MEALS[0] : null
   return (
     <div className="call-guide order-notice">
       <b className="call-guide-title">📢 공지사항</b>
       <ul className="call-guide-list">
-        <li>야식과 아침 모두 DAY 1 14시부터 15시까지 신청합니다.</li>
-        <li>야식은 DAY 1 21시에, 아침은 DAY 2 9시 반에 제공합니다.</li>
+        {shared ? (
+          <li>
+            {MEALS.map((m) => m.shortLabel || m.label).join('과 ')} 모두{' '}
+            {dayOf(shared.label)} {fmtHM(shared.orderStart)}부터 {fmtHM(shared.orderEnd)}까지
+            신청합니다.
+          </li>
+        ) : (
+          MEALS.map((m) => (
+            <li key={m.id}>
+              {m.label}은 {dayOf(m.label)} {fmtHM(m.orderStart)}부터 {fmtHM(m.orderEnd)}까지
+              신청합니다.
+            </li>
+          ))
+        )}
+        <li>
+          {MEALS.map((m) => `${m.shortLabel || m.label}은 ${dayOf(m.label)} ${fmtHM(m.eatAt)}에`)
+            .join(', ')}{' '}
+          제공합니다.
+        </li>
       </ul>
     </div>
   )
