@@ -552,19 +552,26 @@ body {
 .profile-change { width: 100%; margin-top: 14px; }
 
 /* 입장 화면 이름 검색 — 명단이 40명 규모라 칩을 전부 깔지 않고
-   입력한 글자로 좁혀가는 방식 (공백은 무시하고 비교) */
+   입력한 글자로 좁혀가는 방식 (공백은 무시하고 비교).
+   후보 목록은 입력칸 위에 떠 있게 두어(absolute) 뜨고 사라질 때
+   카드 높이가 흔들리지 않게 합니다. */
+.gate-field { position: relative; margin-bottom: 12px; }
+.gate-field .gate-input { margin-bottom: 0; }
 .gate-suggest {
-  display: flex; flex-direction: column; gap: 4px; margin: 0 0 12px;
-  max-height: 240px; overflow-y: auto; text-align: left;
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 20;
+  display: flex; flex-direction: column; gap: 4px; text-align: left;
+  max-height: 236px; overflow-y: auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 6px; box-shadow: 0 12px 28px rgba(20, 22, 30, 0.14);
 }
+.gate-enter { width: 100%; }
 .gate-suggest-item {
-  border: 1px solid var(--line); background: var(--card); border-radius: 9px;
-  padding: 12px 14px; font: inherit; font-size: 15px; font-weight: 600;
+  border: 0; background: transparent; border-radius: 7px;
+  padding: 12px 12px; font: inherit; font-size: 15px; font-weight: 600;
   color: var(--text); cursor: pointer; text-align: left; min-height: 44px;
 }
-.gate-suggest-item:hover { border-color: var(--primary); background: var(--violet-soft); }
+.gate-suggest-item:hover { background: var(--violet-soft); color: var(--primary-dark); }
 .gate-nomatch {
   font-size: 13px; color: var(--red); line-height: 1.5; padding: 8px 2px;
 }
 .gate-more { font-size: 12px; color: var(--sub); padding: 4px 2px; }
-.gate-force { width: 100%; font-size: 13px; }
