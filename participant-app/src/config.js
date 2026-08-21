@@ -71,6 +71,10 @@ export const CALL_LIMIT_PER_TEAM = 5
 //                   확정되면 이름을 채우세요 (예: '김민준').
 //    - teamNumbers: 그 마스터 메이트가 담당하는 팀 번호(숫자) 배열.
 //                   예: teamNumbers: [1, 2, 3, 4, 5]
+//    - callManager: true면 '호출 총관리자'로, 관리자 앱에서 전체 팀의 호출
+//                   횟수를 볼 수 있습니다. 담당 팀이 있는 일반 메이트는 자기
+//                   담당 팀만 보이므로, 전체를 봐야 하는 운영 총괄에게만
+//                   true를 주세요 (비워두면 false).
 //    - slackUserId : 슬랙 멤버 ID (예: 'U01ABCDEF'). 채우면 호출 발생 시
 //                   그 사람만 슬랙에서 멘션되어 개인 알림을 받습니다.
 //                   비어 있으면 멘션 없이 이름만 표기됩니다(채널 알림).
@@ -81,10 +85,10 @@ export const CALL_LIMIT_PER_TEAM = 5
 //      됩니다 (지금은 자리 4개만 미리 만들어둔 상태).
 // ---------------------------------------------------------------
 export const COACH_ASSIGNMENTS = [
-  { id: 'coach-1', name: '', teamNumbers: [], slackUserId: '' },
-  { id: 'coach-2', name: '', teamNumbers: [], slackUserId: '' },
-  { id: 'coach-3', name: '', teamNumbers: [], slackUserId: '' },
-  { id: 'coach-4', name: '', teamNumbers: [], slackUserId: '' },
+  { id: 'coach-1', name: '', teamNumbers: [], slackUserId: '', callManager: false },
+  { id: 'coach-2', name: '', teamNumbers: [], slackUserId: '', callManager: false },
+  { id: 'coach-3', name: '', teamNumbers: [], slackUserId: '', callManager: false },
+  { id: 'coach-4', name: '', teamNumbers: [], slackUserId: '', callManager: false },
 ]
 
 // ---------------------------------------------------------------

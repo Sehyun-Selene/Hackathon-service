@@ -40,11 +40,14 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
 
   const shown = onlyMine ? active.filter((c) => c.assignedName === coach.name) : active
 
-  // 내 담당 팀 번호 (명단에서 이름으로 찾음). 배정이 없으면 전체 팀을 대상으로.
-  const myTeams = COACH_ASSIGNMENTS.find((a) => a.name === coach.name)?.teamNumbers || []
-  const countTeams = myTeams.length
-    ? [...myTeams].sort((a, b) => a - b)
-    : Array.from({ length: TOTAL_TEAMS }, (_, i) => i + 1)
+  // 호출 횟수는 내 담당 팀만. 전체를 봐야 하는 사람은 호출 총관리자
+  // (config의 callManager: true) 한 명이라, 그 경우에만 전체 팀을 보여줍니다.
+  const myAssignment = COACH_ASSIGNMENTS.find((a) => a.name === coach.name)
+  const myTeams = myAssignment?.teamNumbers || []
+  const isCallManager = !!myAssignment?.callManager
+  const countTeams = isCallManager
+    ? Array.from({ length: TOTAL_TEAMS }, (_, i) => i + 1)
+    : [...myTeams].sort((a, b) => a - b)
 
   return (
     <div>
@@ -134,9 +137,15 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
           담당이 배정되지 않았으면 전체를 보여줍니다(지원용). */}
       <details className="panel done-panel">
         <summary>
-          {myTeams.length ? '내 담당 팀 호출 횟수' : '팀별 호출 횟수'} (제한{' '}
+          {isCallManager ? '전체 팀 호출 횟수' : '내 담당 팀 호출 횟수'} (제한{' '}
           {CALL_LIMIT_PER_TEAM}회)
         </summary>
+        {countTeams.length === 0 ? (
+          <p className="empty-text">
+            담당 팀이 배정되지 않아 표시할 팀이 없습니다. 입장할 때 입력한 이름이 운영 명단과
+            같은지 확인해 주세요.
+          </p>
+        ) : (
         <div className="check-grid">
           {countTeams.map((n) => {
             const teamId = String(n).padStart(2, '0')
@@ -153,6 +162,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
             )
           })}
         </div>
+        )}
       </details>
     </div>
   )
