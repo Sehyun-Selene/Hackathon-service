@@ -538,8 +538,9 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       <section className="panel delivery-team-panel">
         <div className="panel-head-row">
           <h3>
-            {singleMeal && !hasQuery ? '미배부 팀' : '팀별 주문'} ({visibleRows.length}팀
-            {hasQuery && ` — "${queryNum}번" 검색 중`})
+            {singleMeal && !hasQuery ? '미배부 팀' : '팀별 주문'}
+            {!singleMeal && ` (${visibleRows.length}팀)`}
+            {hasQuery && ` — "${queryNum}번" 검색 중`}
           </h3>
           {singleMeal && teamRows.length > 0 && (
             <span className="deliver-progress">

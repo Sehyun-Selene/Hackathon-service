@@ -339,8 +339,10 @@ body {
 }
 .delivery-range-head {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; margin-bottom: 10px; font-size: 14px;
+  gap: 10px; margin-bottom: 10px;
 }
+/* 다른 패널 제목(.panel h3)과 같은 크기·굵기로 맞춤 */
+.delivery-range-title { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
 .delivery-range-head .pending-count { color: var(--red); font-size: 13px; font-weight: 700; }
 .delivery-ranges { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
 .delivery-ranges .chip { flex: 0 0 auto; }
