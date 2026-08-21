@@ -81,23 +81,23 @@ export default function CoachStatusTab({ scan, coach }) {
   return (
     <div>
       <section className="panel">
-        <div className="panel-head-row">
-          <h3>마스터 메이트 현황</h3>
+        {/* 화면 제목이 상단바에 이미 있어 패널 제목은 생략.
+            탭과 요약을 한 줄에 좌/우로 둡니다. */}
+        <div className="coach-head">
+          <div className="coach-tabs">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                className={`coach-tab${filter === t.id ? ' on' : ''}`}
+                onClick={() => setFilter(t.id)}
+              >
+                {t.label} {t.count}
+              </button>
+            ))}
+          </div>
           <span className="coach-summary">
             대기 <b>{idle.length}</b> · 대응 중 <b>{busy.length}</b>
           </span>
-        </div>
-
-        <div className="filter-group coach-filters">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={`chip${filter === t.id ? ' on' : ''}`}
-              onClick={() => setFilter(t.id)}
-            >
-              {t.label} {t.count}
-            </button>
-          ))}
         </div>
 
         {rows.length === 0 ? (
