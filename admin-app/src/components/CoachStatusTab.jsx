@@ -81,23 +81,18 @@ export default function CoachStatusTab({ scan, coach }) {
   return (
     <div>
       <section className="panel">
-        {/* 화면 제목이 상단바에 이미 있어 패널 제목은 생략.
-            탭과 요약을 한 줄에 좌/우로 둡니다. */}
-        <div className="coach-head">
-          <div className="coach-tabs">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                className={`coach-tab${filter === t.id ? ' on' : ''}`}
-                onClick={() => setFilter(t.id)}
-              >
-                {t.label} {t.count}
-              </button>
-            ))}
-          </div>
-          <span className="coach-summary">
-            대기 <b>{idle.length}</b> · 대응 중 <b>{busy.length}</b>
-          </span>
+        {/* 화면 제목은 상단바에 있고, 인원수는 탭 라벨에 이미 들어 있어
+            별도 요약을 두지 않습니다 (같은 숫자가 두 번 보임). */}
+        <div className="coach-tabs">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              className={`coach-tab${filter === t.id ? ' on' : ''}`}
+              onClick={() => setFilter(t.id)}
+            >
+              {t.label} {t.count}
+            </button>
+          ))}
         </div>
 
         {rows.length === 0 ? (
@@ -134,7 +129,7 @@ export default function CoachStatusTab({ scan, coach }) {
                             {range ? `팀 ${range}` : '담당 미배정'}
                           </span>
                           {isMe && <span className="coach-me">나</span>}
-                          {waiting > 0 && <span className="avg-wait">담당 대기 {waiting}건</span>}
+                          {waiting > 0 && <span className="coach-waiting">담당 대기 {waiting}건</span>}
                         </span>
                         {b.length ? (
                           <span className="coach-status busy">

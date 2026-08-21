@@ -29,25 +29,13 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
   })
   const done = all.filter((c) => c.status === 'done').sort((a, b) => b.doneAt - a.doneAt)
 
-  // 완료 이력 기반 평균 처리 시간 (대기 팀 예상 시간 안내용)
-  const handled = done.filter((c) => c.doneAt)
-  const avgHandleMs = handled.length
-    ? handled.reduce((s, c) => s + (c.doneAt - c.createdAt), 0) / handled.length
-    : null
-  const avgHandleMin = avgHandleMs != null ? Math.max(1, Math.round(avgHandleMs / 60000)) : null
-
   const shown = onlyMine ? active.filter((c) => c.assignedName === coach.name) : active
 
   return (
     <div>
       <section className="panel">
         <div className="panel-head-row">
-          <h3>
-            진행 중인 호출 ({shown.length}건)
-            {avgHandleMin != null && (
-              <span className="avg-handle-hint"> · 평균 처리 약 {avgHandleMin}분</span>
-            )}
-          </h3>
+          <h3>진행 중인 호출 ({shown.length}건)</h3>
           <label className="mine-toggle">
             <input
               type="checkbox"
@@ -72,9 +60,6 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                     <span className="call-table">팀 {c.team}</span>
                     <span className={`call-company${mine ? ' mine' : ''}`}>담당 {c.assignedName}</span>
                     <span className="call-elapsed">⏱ {fmtCountdown(t - c.createdAt)} 경과</span>
-                    {c.status === 'waiting' && avgHandleMin != null && (
-                      <span className="avg-wait">예상 처리 ~{avgHandleMin}분</span>
-                    )}
                     <span className="call-used">
                       호출 {used}/{CALL_LIMIT_PER_TEAM}회
                     </span>
@@ -93,8 +78,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                     ) : (
                       <>
                         <span className="status-pill in-progress">
-                          처리중 · {c.handledBy}
-                          {c.handledById === coach.id ? ' (나)' : ''}
+                          처리중{c.handledById === coach.id ? ' (나)' : ''}
                         </span>
                         <button
                           className="btn-secondary sm"
@@ -127,7 +111,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                 <span className="call-elapsed">
                   {fmtClock(new Date(c.createdAt))} 호출 → {c.doneAt ? fmtClock(new Date(c.doneAt)) : '-'} 완료
                 </span>
-                <span className="call-used">담당 {c.handledBy || '-'}</span>
+                <span className="call-used">처리 {c.handledBy || '-'}</span>
               </div>
               {c.reason && <p className="call-reason">“{c.reason}”</p>}
             </div>
