@@ -58,7 +58,19 @@ export default function CoachStatusTab({ scan, coach }) {
 
   const idle = rows.filter((r) => r.busy.length === 0)
   const busy = rows.filter((r) => r.busy.length > 0)
-  const shown = filter === 'idle' ? idle : filter === 'busy' ? busy : rows
+
+  // '전체'에서도 섞이지 않게 그룹으로 나눠 보여줍니다. 대기 중을 먼저 —
+  // 이 화면을 보는 목적이 "지금 부를 수 있는 사람"을 찾는 것이기 때문입니다.
+  const groups =
+    filter === 'idle'
+      ? [{ id: 'idle', title: '🟢 대기 중', rows: idle }]
+      : filter === 'busy'
+        ? [{ id: 'busy', title: '🔴 대응 중', rows: busy }]
+        : [
+            { id: 'idle', title: '🟢 대기 중', rows: idle },
+            { id: 'busy', title: '🔴 대응 중', rows: busy },
+          ]
+  const shownCount = groups.reduce((s, g) => s + g.rows.length, 0)
 
   const TABS = [
     { id: 'idle', label: '대기 중', count: idle.length },
@@ -90,35 +102,54 @@ export default function CoachStatusTab({ scan, coach }) {
 
         {rows.length === 0 ? (
           <p className="empty-text">아직 입장한 마스터 메이트가 없습니다.</p>
-        ) : shown.length === 0 ? (
+        ) : shownCount === 0 ? (
           <p className="empty-text">
             {filter === 'idle'
               ? '지금 대기 중인 마스터 메이트가 없습니다.'
               : '지금 대응 중인 마스터 메이트가 없습니다.'}
           </p>
         ) : (
-          <div className="coach-list">
-            {shown.map(({ coach: c, busy: b, waiting, range }) => {
-              const isMe = c.id === coach.id
-              return (
-                <div key={c.id} className={`coach-item${b.length ? ' busy' : ' idle'}`}>
-                  <span className="coach-name">
-                    🧑‍🏫 {c.name}
-                    <span className="coach-range">{range ? `팀 ${range}` : '담당 미배정'}</span>
-                    {isMe && <span className="coach-me">나</span>}
-                    {waiting > 0 && <span className="avg-wait">담당 대기 {waiting}건</span>}
-                  </span>
-                  {b.length ? (
-                    <span className="coach-status busy">
-                      🔴 팀 {b.map((x) => x.teamId).join(', ')} 대응 중
-                    </span>
-                  ) : (
-                    <span className="coach-status idle">🟢 대기 중</span>
-                  )}
+          groups.map((g) => (
+            <div key={g.id} className="coach-group">
+              {/* 그룹 제목은 두 그룹이 함께 보이는 '전체'에서만 — 필터를 걸면
+                  칩과 같은 말이 반복되므로 생략 */}
+              {filter === 'all' && (
+                <div className="coach-group-head">
+                  {g.title} <b>{g.rows.length}명</b>
                 </div>
-              )
-            })}
-          </div>
+              )}
+              {g.rows.length === 0 ? (
+                <p className="empty-text coach-group-empty">
+                  {g.id === 'idle' ? '모두 대응 중입니다.' : '대응 중인 인원이 없습니다.'}
+                </p>
+              ) : (
+                <div className="coach-list">
+                  {g.rows.map(({ coach: c, busy: b, waiting, range }) => {
+                    const isMe = c.id === coach.id
+                    return (
+                      <div key={c.id} className={`coach-item${b.length ? ' busy' : ' idle'}`}>
+                        <span className="coach-name">
+                          🧑‍🏫 {c.name}
+                          <span className="coach-range">
+                            {range ? `팀 ${range}` : '담당 미배정'}
+                          </span>
+                          {isMe && <span className="coach-me">나</span>}
+                          {waiting > 0 && <span className="avg-wait">담당 대기 {waiting}건</span>}
+                        </span>
+                        {b.length ? (
+                          <span className="coach-status busy">
+                            🔴 팀 {b.map((x) => x.teamId).join(', ')}
+                          </span>
+                        ) : (
+                          <span className="coach-status idle">🟢 대기 중</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          ))
         )}
       </section>
 

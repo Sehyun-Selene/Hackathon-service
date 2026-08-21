@@ -19,6 +19,7 @@ import OrdersTab from './components/OrdersTab.jsx'
 import CallsTab from './components/CallsTab.jsx'
 import CoachStatusTab from './components/CoachStatusTab.jsx'
 import CoachProfileSheet from './components/CoachProfileSheet.jsx'
+import KpiDetailSheet from './components/KpiDetailSheet.jsx'
 
 const MY_COACH_KEY = 'torder-coach' // 이 기기의 마스터 메이트 정보(로컬)
 
@@ -94,6 +95,7 @@ export default function App() {
   const [tab, setTab] = useState('calls') // 입장 직후 첫 화면
   const [menuOpen, setMenuOpen] = useState(false) // 모바일 좌상단 메뉴 팝업
   const [showProfile, setShowProfile] = useState(false) // 내 프로필 시트
+  const [kpiDetail, setKpiDetail] = useState(null) // 눌린 KPI 카드의 상세 목록
   const [scan, setScan] = useState(null)
   const [soundOn, setSoundOn] = useState(true)
   const [syncError, setSyncError] = useState(false)
@@ -300,10 +302,15 @@ export default function App() {
   // 상단 KPI 스트립용 요약값 — 항상 의미 있는 4개
   const kpis = scan
     ? [
-        { label: '대기 중 호출', value: waitingCount, tone: waitingCount > 0 ? 'alert' : undefined },
-        { label: '주문한 팀', value: Object.keys(scan.orders).length },
-        { label: '등록한 팀', value: Object.keys(scan.teams).length },
-        { label: '입장한 마스터 메이트', value: scan.coaches.length },
+        {
+          kind: 'waiting',
+          label: '대기 중 호출',
+          value: waitingCount,
+          tone: waitingCount > 0 ? 'alert' : undefined,
+        },
+        { kind: 'orders', label: '주문한 팀', value: Object.keys(scan.orders).length },
+        { kind: 'teams', label: '등록한 팀', value: Object.keys(scan.teams).length },
+        { kind: 'coaches', label: '입장한 마스터 메이트', value: scan.coaches.length },
       ]
     : []
 
@@ -417,10 +424,16 @@ export default function App() {
         {kpis.length > 0 && (
           <div className="kpi-strip">
             {kpis.map((k) => (
-              <div key={k.label} className={`kpi-card${k.tone ? ` ${k.tone}` : ''}`}>
+              <button
+                key={k.label}
+                className={`kpi-card${k.tone ? ` ${k.tone}` : ''}`}
+                onClick={() => setKpiDetail(k.kind)}
+                aria-haspopup="dialog"
+                aria-label={`${k.label} 목록 보기`}
+              >
                 <div className="kpi-label">{k.label}</div>
                 <div className="kpi-value">{k.value}</div>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -441,6 +454,10 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {kpiDetail && scan && (
+        <KpiDetailSheet kind={kpiDetail} scan={scan} onClose={() => setKpiDetail(null)} />
+      )}
 
       {showProfile && (
         <CoachProfileSheet

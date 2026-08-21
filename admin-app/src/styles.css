@@ -575,3 +575,22 @@ body {
 .coach-summary { font-size: 13px; color: var(--sub); font-weight: 600; }
 .coach-summary b { color: var(--text); font-variant-numeric: tabular-nums; }
 .coach-filters { margin-bottom: 12px; }
+/* 대기/대응 그룹 구분 — '전체'에서도 두 상태가 섞이지 않게 */
+.coach-group + .coach-group { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.coach-group-head {
+  font-size: 13px; font-weight: 700; color: var(--sub); margin-bottom: 8px;
+}
+.coach-group-head b { color: var(--text); font-variant-numeric: tabular-nums; }
+.coach-group-empty { padding: 2px 0 4px; font-size: 13px; }
+
+/* KPI 카드 상세 — 숫자만 보고 "그래서 어느 팀?"을 찾아 헤매지 않도록
+   카드를 눌러 해당 목록을 그대로 펼침 */
+.kpi-card { text-align: left; font: inherit; cursor: pointer; width: 100%; }
+.kpi-card:hover { border-color: #d9dce1; }
+.kpi-card.alert:hover { border-color: #f0a8ab; }
+.kpi-detail-list { display: flex; flex-direction: column; gap: 6px; }
+.kpi-detail-row { border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; }
+.kpi-detail-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.kpi-detail-head b { font-size: 15px; }
+.kpi-detail-sub { font-size: 12px; color: var(--sub); font-weight: 600; }
+.kpi-detail-body { font-size: 12.5px; color: var(--sub); line-height: 1.5; margin-top: 3px; }
