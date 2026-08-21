@@ -89,7 +89,7 @@ export default function App() {
     }
   })
   const [nameInput, setNameInput] = useState(coach?.name || '')
-  // 명단이 확정돼 이름이 채워지면 빠른 선택 칩으로 보여줌 (없으면 직접 입력만)
+  // 입장 화면에서 입력한 글자로 좁혀 보여줄 후보 목록 (명단이 비면 자유 입력)
   const knownCoachNames = COACH_ASSIGNMENTS.map((c) => c.name).filter(Boolean)
 
   const [tab, setTab] = useState('orders')
@@ -210,37 +210,77 @@ export default function App() {
   )
 
   if (!coach) {
+    const query = nameInput.trim()
+    // 이름을 전부 칩으로 깔면 40명 규모에서 화면이 잠기므로, 입력한 글자로
+    // 좁혀가는 방식. 아직 아무것도 입력하지 않았으면 목록을 보여주지 않습니다.
+    const matches = query
+      ? knownCoachNames.filter((n) => n.replace(/\s/g, '').includes(query.replace(/\s/g, '')))
+      : []
+    const exact = knownCoachNames.some((n) => n === query)
+    const rosterReady = knownCoachNames.length > 0
+
     return (
       <div className="gate">
         <div className="gate-card">
           <h1>🛠️ 해커톤 운영 관리자</h1>
-          <p>본인 이름을 선택하거나 입력해 주세요.</p>
-          {knownCoachNames.length > 0 && (
-            <div className="gate-companies">
-              {knownCoachNames.map((name) => (
-                <button
-                  key={name}
-                  className={`setup-chip${nameInput === name ? ' on' : ''}`}
-                  onClick={() => setNameInput(name)}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-          )}
+          <p>본인 이름을 입력해 주세요.</p>
           <input
             className="gate-input"
-            placeholder="명단에 없으면 이름 직접 입력"
+            placeholder={rosterReady ? '이름 검색 (예: 김)' : '이름 입력'}
             value={nameInput}
+            autoComplete="off"
             onChange={(e) => setNameInput(e.target.value)}
+            onKeyDown={(e) => {
+              // 후보가 하나로 좁혀졌으면 엔터로 바로 입장
+              if (e.key !== 'Enter') return
+              if (matches.length === 1) enterAsCoach(matches[0])
+              else if (exact || !rosterReady) enterAsCoach(query)
+            }}
           />
-          <button
-            className="btn-primary"
-            disabled={!nameInput.trim()}
-            onClick={() => enterAsCoach(nameInput.trim())}
-          >
-            입장하기
-          </button>
+
+          {rosterReady && query && (
+            <div className="gate-suggest">
+              {matches.length > 0 ? (
+                matches.slice(0, 8).map((name) => (
+                  <button key={name} className="gate-suggest-item" onClick={() => enterAsCoach(name)}>
+                    {name}
+                  </button>
+                ))
+              ) : (
+                <p className="gate-nomatch">
+                  명단에서 찾을 수 없는 이름입니다. 오타가 없는지 확인해 주세요.
+                </p>
+              )}
+              {matches.length > 8 && (
+                <p className="gate-more">
+                  {matches.length}명 중 8명만 표시했습니다. 글자를 더 입력해 주세요.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* 명단이 아직 비어 있거나(설정 전) 명단에 없는 이름으로 들어가야 하는
+              경우를 위한 통로. 담당 팀이 연결되지 않는다는 점을 밝혀둡니다. */}
+          {!rosterReady ? (
+            <button
+              className="btn-primary"
+              disabled={!query}
+              onClick={() => enterAsCoach(query)}
+            >
+              입장하기
+            </button>
+          ) : exact ? (
+            <button className="btn-primary" onClick={() => enterAsCoach(query)}>
+              {query} 님으로 입장하기
+            </button>
+          ) : (
+            query &&
+            matches.length === 0 && (
+              <button className="btn-secondary gate-force" onClick={() => enterAsCoach(query)}>
+                명단에 없는 이름으로 입장 (담당 팀 미배정)
+              </button>
+            )
+          )}
         </div>
       </div>
     )

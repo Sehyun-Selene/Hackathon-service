@@ -39,7 +39,6 @@ body {
   border-radius: 9px; margin-bottom: 12px; background: #fbfbfc;
 }
 .gate-input:focus { outline: none; border-color: var(--primary); background: #fff; }
-.gate-companies { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; justify-content: center; }
 
 /* =====================================================================
    셸: 사이드바 + 메인 (반응형)
@@ -551,3 +550,21 @@ body {
 .profile-stat.alert { border-color: #f6c6c8; background: #fef5f5; }
 .profile-stat.alert b { color: var(--red); }
 .profile-change { width: 100%; margin-top: 14px; }
+
+/* 입장 화면 이름 검색 — 명단이 40명 규모라 칩을 전부 깔지 않고
+   입력한 글자로 좁혀가는 방식 (공백은 무시하고 비교) */
+.gate-suggest {
+  display: flex; flex-direction: column; gap: 4px; margin: 0 0 12px;
+  max-height: 240px; overflow-y: auto; text-align: left;
+}
+.gate-suggest-item {
+  border: 1px solid var(--line); background: var(--card); border-radius: 9px;
+  padding: 12px 14px; font: inherit; font-size: 15px; font-weight: 600;
+  color: var(--text); cursor: pointer; text-align: left; min-height: 44px;
+}
+.gate-suggest-item:hover { border-color: var(--primary); background: var(--violet-soft); }
+.gate-nomatch {
+  font-size: 13px; color: var(--red); line-height: 1.5; padding: 8px 2px;
+}
+.gate-more { font-size: 12px; color: var(--sub); padding: 4px 2px; }
+.gate-force { width: 100%; font-size: 13px; }
