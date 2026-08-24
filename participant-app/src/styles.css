@@ -548,6 +548,13 @@ html.dark .call-guide-title { color: #fbbf24; }
   cursor: pointer; color: var(--sub);
 }
 .setup-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+/* 등록 안내 — 호출 가이드 박스와 같은 결로 (참가자 앱의 강조 면) */
+.setup-solo-note {
+  background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;
+  padding: 11px 13px; margin-bottom: 14px;
+  font-size: 13.5px; font-weight: 700; line-height: 1.5; color: #b45309;
+}
+html.dark .setup-solo-note { background: #3a2c14; border-color: #5c451c; color: #fbbf24; }
 .setup-input {
   width: 100%; padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px;
   font-size: 16px; background: var(--card); color: var(--text);

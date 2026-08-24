@@ -126,6 +126,10 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
           팀 번호를 입력하면 주문을 시작할 수 있어요.
         </p>
 
+        {/* 여러 팀원이 각자 주문을 담으면 나중에 저장한 사람 것만 남습니다.
+            (덮어쓰기 전에 확인 창이 뜨긴 하지만, 애초에 한 명이 담는 게 안전) */}
+        <p className="setup-solo-note">👤 한 팀당 한 명씩만 팀 등록을 해주세요.</p>
+
         <div className="setup-field">
           <label className="setup-label" htmlFor="team-no">
             팀 번호

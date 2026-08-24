@@ -202,10 +202,31 @@ export default function MenuBoard({
     })
     try {
       await onSave(mealsMap)
-    } catch {
-      setSaving(false)
-      alert('네트워크 오류로 주문이 저장되지 않았습니다.\n잠시 후 "주문하기"를 다시 눌러주세요.')
-      return
+    } catch (err) {
+      // 같은 팀의 다른 기기가 그 사이에 주문을 저장한 경우 — 조용히 덮어쓰면
+      // 그 사람이 담은 것이 사라지므로 어느 쪽을 남길지 물어봅니다
+      if (err?.code === 'order-conflict') {
+        const overwrite = window.confirm(
+          '다른 팀원이 방금 주문을 저장했습니다.\n\n확인 = 지금 내 화면 내용으로 저장\n취소 = 팀원이 저장한 내역 불러오기',
+        )
+        if (!overwrite) {
+          setDirty(false)
+          setSaving(false)
+          await refreshBoard()
+          return
+        }
+        try {
+          await onSave(mealsMap, { force: true })
+        } catch {
+          setSaving(false)
+          alert('네트워크 오류로 주문이 저장되지 않았습니다.\n잠시 후 다시 눌러주세요.')
+          return
+        }
+      } else {
+        setSaving(false)
+        alert('네트워크 오류로 주문이 저장되지 않았습니다.\n잠시 후 "주문하기"를 다시 눌러주세요.')
+        return
+      }
     }
     setDirty(false)
     setSaving(false)

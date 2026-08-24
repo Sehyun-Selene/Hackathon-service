@@ -26,9 +26,24 @@
 //  운영 총괄 묶음 알림). 상세는 slack.js 참고. 미설정 시 알림만 꺼지고
 //  나머지 기능은 그대로 동작합니다.
 //
+//  ── 왜 원자적 엔드포인트가 필요한가 ───────────────────────────
+//  /api/set 은 값을 통째로 덮어씁니다. 그래서 클라이언트가
+//  "읽고 → 고치고 → 쓰는" 방식으로 공유 목록(team-roster, call:*)을
+//  수정하면, 두 명이 같은 순간에 하면 나중 쓰기가 앞 쓰기를 지웁니다
+//  (분실 갱신). 125팀이 동시에 등록하거나, 참가자가 호출을 추가하는
+//  순간 메이트가 다른 호출을 완료하면 실제로 발생합니다.
+//
+//  이 서버는 단일 스레드라, 읽기-수정-쓰기를 서버 안에서 하면
+//  경쟁이 원천적으로 사라집니다. 그래서 목록을 건드리는 동작은
+//  아래 전용 엔드포인트로 처리합니다.
+//
 //  엔드포인트:
 //    POST /api/get    body: { keys: string[] }        → { key: value, ... }
 //    POST /api/set    body: { key: string, value: * } → { ok: true }
+//    POST /api/roster-add    body: { teamId }              → 팀 목록에 원자적 추가
+//    POST /api/coach-upsert  body: { id, name }            → 메이트 목록 원자적 갱신
+//    POST /api/call-add      body: { teamId, call }        → 제한검사+호출추가+횟수증가
+//    POST /api/call-status   body: { teamId, callId, ... } → 호출 하나만 원자적 변경
 //    POST /api/reset  body: { token: string }         → 전체 삭제(행사 전 초기화용)
 //    GET  /health                                     → 상태 확인용(크론 대상)
 // =====================================================================
@@ -46,6 +61,10 @@ const REDIS_URL = (process.env.UPSTASH_REDIS_REST_URL || '').replace(/\/$/, '')
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || ''
 const REDIS_HASH = process.env.REDIS_HASH || 'torder'
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || ''
+// 팀당 호출 제한. 화면에서만 막으면 두 기기로 열어두면 넘길 수 있어
+// 서버가 최종 판단합니다. 앱 config의 CALL_LIMIT_PER_TEAM과 같은 값이어야
+// 하며, 바꿀 때는 환경변수로 함께 조정하세요.
+const CALL_LIMIT_PER_TEAM = Number(process.env.CALL_LIMIT_PER_TEAM || 5)
 const persistOn = Boolean(REDIS_URL && REDIS_TOKEN)
 
 // 마지막 영속화 상태 — /health 로 확인해 행사 전에 정상 동작을 점검합니다.
@@ -290,6 +309,139 @@ const server = http.createServer(async (req, res) => {
 
       // 알림은 응답을 보낸 뒤 뒤에서 처리 — 참가자 화면이 기다리지 않게
       if (freshCalls.length) alertNewCalls(freshCalls).catch(() => {})
+    } catch {
+      sendJson(res, 400, { error: 'invalid request' })
+    }
+    return
+  }
+
+  // ---- 원자적 목록 조작 ------------------------------------------
+  // 아래 네 개는 모두 "서버 안에서 읽고 고쳐 쓴다"는 점이 핵심입니다.
+  // Node 단일 스레드라 이 블록 실행 중에 다른 요청이 끼어들 수 없고,
+  // 따라서 동시에 들어와도 서로의 변경을 지우지 않습니다.
+
+  // 팀 등록: team-roster.ids 에 팀 번호를 중복 없이 추가
+  if (req.method === 'POST' && url.pathname === '/api/roster-add') {
+    try {
+      const { teamId } = await readBody(req)
+      if (!teamId || typeof teamId !== 'string') {
+        sendJson(res, 400, { error: 'teamId required' })
+        return
+      }
+      const current = store.get('team-roster')
+      const ids = Array.isArray(current?.ids) ? [...current.ids] : []
+      if (!ids.includes(teamId)) ids.push(teamId)
+      const next = { ids }
+      store.set('team-roster', next)
+      const persisted = await persistKey('team-roster', next)
+      sendJson(res, 200, { ok: true, count: ids.length, persisted })
+    } catch {
+      sendJson(res, 400, { error: 'invalid request' })
+    }
+    return
+  }
+
+  // 마스터 메이트 입장: coach-roster.coaches 를 id 기준으로 갱신
+  if (req.method === 'POST' && url.pathname === '/api/coach-upsert') {
+    try {
+      const { id, name } = await readBody(req)
+      if (!id || typeof id !== 'string') {
+        sendJson(res, 400, { error: 'id required' })
+        return
+      }
+      const current = store.get('coach-roster')
+      const list = Array.isArray(current?.coaches) ? current.coaches : []
+      const others = list.filter((c) => c && c.id !== id)
+      const next = { coaches: [...others, { id, name: String(name || '') }] }
+      store.set('coach-roster', next)
+      const persisted = await persistKey('coach-roster', next)
+      sendJson(res, 200, { ok: true, count: next.coaches.length, persisted })
+    } catch {
+      sendJson(res, 400, { error: 'invalid request' })
+    }
+    return
+  }
+
+  // 호출 추가: 제한 검사 → 호출 추가 → 횟수 증가를 한 번에.
+  // 예전에는 앱이 call:*, call-count:* 를 따로 썼는데, 둘째 쓰기가 실패하면
+  // "전송 실패"라고 안내하면서 실제로는 호출이 들어가 중복이 생겼습니다.
+  if (req.method === 'POST' && url.pathname === '/api/call-add') {
+    try {
+      const { teamId, call } = await readBody(req)
+      if (!teamId || typeof teamId !== 'string' || !call || typeof call !== 'object') {
+        sendJson(res, 400, { error: 'teamId and call required' })
+        return
+      }
+      const callKey = `call:${teamId}`
+      const countKey = `call-count:${teamId}`
+      const rawCount = store.get(countKey)
+      const count = typeof rawCount === 'number' ? rawCount : 0
+      const current = store.get(callKey)
+      const calls = Array.isArray(current?.calls) ? [...current.calls] : []
+      // 중복 검사를 제한 검사보다 먼저 — 마지막 호출이 성공한 뒤 네트워크
+      // 재시도가 오면, 제한을 먼저 보면 "횟수 초과"라고 답해 참가자가
+      // 호출이 안 갔다고 오해합니다. 이미 들어온 호출이면 성공으로 답합니다.
+      if (call.id && calls.some((c) => c && c.id === call.id)) {
+        sendJson(res, 200, { ok: true, duplicate: true, count })
+        return
+      }
+      if (count >= CALL_LIMIT_PER_TEAM) {
+        sendJson(res, 409, { error: 'limit', count, limit: CALL_LIMIT_PER_TEAM })
+        return
+      }
+      const record = { ...call, status: 'waiting', createdAt: call.createdAt || Date.now() }
+      calls.push(record)
+      const nextCalls = { team: teamId, calls }
+      const nextCount = count + 1
+      store.set(callKey, nextCalls)
+      store.set(countKey, nextCount)
+      const persisted =
+        (await persistKey(callKey, nextCalls)) && (await persistKey(countKey, nextCount))
+      sendJson(res, 200, { ok: true, count: nextCount, persisted })
+      // 알림은 응답 뒤에 (참가자 화면이 기다리지 않게)
+      alertNewCalls([{ ...record, team: teamId }]).catch(() => {})
+    } catch {
+      sendJson(res, 400, { error: 'invalid request' })
+    }
+    return
+  }
+
+  // 호출 상태 변경: 그 호출 하나만 고칩니다. 목록 전체를 덮어쓰지 않으므로
+  // 같은 순간에 참가자가 새 호출을 추가해도 서로를 지우지 않습니다.
+  if (req.method === 'POST' && url.pathname === '/api/call-status') {
+    try {
+      const { teamId, callId, status, handledBy, handledById, at } = await readBody(req)
+      const allowed = ['waiting', 'in_progress', 'done']
+      if (!teamId || !callId || !allowed.includes(status)) {
+        sendJson(res, 400, { error: 'teamId, callId, status required' })
+        return
+      }
+      const key = `call:${teamId}`
+      const current = store.get(key)
+      const calls = Array.isArray(current?.calls) ? current.calls : []
+      const index = calls.findIndex((c) => c && c.id === callId)
+      if (index < 0) {
+        sendJson(res, 404, { error: 'call not found' })
+        return
+      }
+      const stamp = typeof at === 'number' ? at : Date.now()
+      const call = { ...calls[index], status }
+      if (status === 'in_progress') {
+        call.handledBy = handledBy || call.handledBy || ''
+        call.handledById = handledById || call.handledById || ''
+        call.startedAt = stamp
+      }
+      if (status === 'done') {
+        call.handledBy = call.handledBy || handledBy || ''
+        call.handledById = call.handledById || handledById || ''
+        call.doneAt = stamp
+      }
+      const nextCalls = [...calls]
+      nextCalls[index] = call
+      const next = { team: teamId, calls: nextCalls }
+      store.set(key, next)
+      const persisted = await persistKey(key, next)
+      sendJson(res, 200, { ok: true, call, persisted })
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }

@@ -358,7 +358,6 @@ body {
 }
 .team-row:last-child { border-bottom: none; }
 .team-row.delivered { opacity: 0.5; }
-.team-row.delivered .team-row-slots { text-decoration: line-through; }
 /* 팀 번호 — 폭을 고정해 아래 메뉴 칸들이 항상 같은 열에서 시작하게 */
 .team-row-no { flex: 0 0 auto; min-width: 62px; font-size: 15px; }
 /* 메뉴 칸은 그 끼니의 메뉴 수만큼 균등 분할(고정) — 주문 없는 칸은 비워도

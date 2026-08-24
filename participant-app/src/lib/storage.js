@@ -79,6 +79,91 @@ export async function storageGetMany(keys) {
   return keys.map((k) => parseLocal(window.localStorage.getItem(LOCAL_PREFIX + k)))
 }
 
+
+// ---------------------------------------------------------------
+//  원자적 동작 (서버가 읽고-고쳐-쓴다)
+//
+//  공유 목록(team-roster, coach-roster, call:*)을 앱에서 읽고 고쳐 쓰면,
+//  두 명이 같은 순간에 하면 나중 쓰기가 앞 쓰기를 지웁니다. 서버는 단일
+//  스레드라 서버 안에서 처리하면 이 경쟁이 사라집니다.
+//
+//  배포 시차(앱이 먼저 갱신되고 서버가 아직 구버전) 대비로, 엔드포인트가
+//  없으면(404) 예전 방식으로 물러납니다. 서버까지 갱신되면 자동으로
+//  원자적 경로를 씁니다.
+// ---------------------------------------------------------------
+async function apiPost(path, body) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (res.status === 404) {
+    const err = new Error('구버전 서버')
+    err.code = 'endpoint-missing'
+    throw err
+  }
+  let data = {}
+  try {
+    data = await res.json()
+  } catch {
+    /* 본문 없음 */
+  }
+  if (!res.ok) {
+    const err = new Error(data.error || '요청 실패')
+    err.code = data.error || 'failed'
+    err.data = data
+    throw err
+  }
+  return data
+}
+
+// 팀 등록 — 팀 목록에 내 번호를 원자적으로 추가
+export async function rosterAddTeam(teamId) {
+  if (!API_BASE_URL) {
+    const roster = (await storageGet(TEAM_ROSTER_KEY)) || { ids: [] }
+    if (!roster.ids.includes(teamId)) {
+      roster.ids.push(teamId)
+      await storageSet(TEAM_ROSTER_KEY, roster)
+    }
+    return { ok: true }
+  }
+  try {
+    return await apiPost('/api/roster-add', { teamId })
+  } catch (err) {
+    if (err.code !== 'endpoint-missing') throw err
+    const roster = (await storageGet(TEAM_ROSTER_KEY)) || { ids: [] }
+    if (!roster.ids.includes(teamId)) {
+      roster.ids.push(teamId)
+      await storageSet(TEAM_ROSTER_KEY, roster)
+    }
+    return { ok: true, legacy: true }
+  }
+}
+
+// 호출 추가 — 제한 검사·호출 추가·횟수 증가를 서버에서 한 번에.
+// 제한을 넘겼으면 err.code === 'limit' 으로 던집니다.
+export async function callAdd(teamId, call) {
+  if (!API_BASE_URL) {
+    const current = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
+    current.calls = [...(current.calls || []), call]
+    await storageSet(callKey(teamId), current)
+    const count = (await storageGet(callCountKey(teamId))) || 0
+    await storageSet(callCountKey(teamId), (typeof count === 'number' ? count : 0) + 1)
+    return { ok: true }
+  }
+  try {
+    return await apiPost('/api/call-add', { teamId, call })
+  } catch (err) {
+    if (err.code !== 'endpoint-missing') throw err
+    const current = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
+    current.calls = [...(current.calls || []), call]
+    await storageSet(callKey(teamId), current)
+    const count = (await storageGet(callCountKey(teamId))) || 0
+    await storageSet(callCountKey(teamId), (typeof count === 'number' ? count : 0) + 1)
+    return { ok: true, legacy: true }
+  }
+}
+
 // ---- 키 빌더 ----
 export const teamKey = (teamId) => `team:${teamId}`
 export const orderKey = (teamId) => `order:${teamId}`

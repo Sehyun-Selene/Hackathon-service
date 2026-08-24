@@ -38,9 +38,16 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
     try {
       await onCall(text)
       setReason('')
-    } catch {
-      alert('네트워크 오류로 호출이 전송되지 않았습니다.\n잠시 후 다시 시도해주세요.')
-      setConfirming(true)
+    } catch (err) {
+      // 제한은 서버가 최종 판단합니다 — 다른 기기에서 이미 다 썼을 수 있음
+      if (err?.code === 'limit') {
+        alert(
+          `호출 가능 횟수(${CALL_LIMIT_PER_TEAM}회)를 모두 사용했습니다.\n급한 문의는 운영 데스크로 와주세요.`,
+        )
+      } else {
+        alert('네트워크 오류로 호출이 전송되지 않았습니다.\n잠시 후 다시 시도해주세요.')
+        setConfirming(true)
+      }
     }
     setSending(false)
   }

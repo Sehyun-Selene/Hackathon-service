@@ -6,14 +6,18 @@
 import { MEALS } from '../config.js'
 
 let offsetMs = 0
-try {
-  const param = new URLSearchParams(window.location.search).get('now')
-  if (param) {
-    const t = new Date(param).getTime()
-    if (!Number.isNaN(t)) offsetMs = t - Date.now()
+// 배포판에서는 무시합니다. 살려두면 참가자가 URL에 ?now=... 를 붙여
+// 주문 시간대를 임의로 열 수 있습니다. (로컬 개발에서만 동작)
+if (import.meta.env.DEV) {
+  try {
+    const param = new URLSearchParams(window.location.search).get('now')
+    if (param) {
+      const t = new Date(param).getTime()
+      if (!Number.isNaN(t)) offsetMs = t - Date.now()
+    }
+  } catch {
+    /* SSR 등 window 없는 환경 무시 */
   }
-} catch {
-  /* SSR 등 window 없는 환경 무시 */
 }
 
 export function now() {

@@ -79,6 +79,116 @@ export async function storageGetMany(keys) {
   return keys.map((k) => parseLocal(window.localStorage.getItem(LOCAL_PREFIX + k)))
 }
 
+
+// ---------------------------------------------------------------
+//  원자적 동작 (서버가 읽고-고쳐-쓴다)
+//
+//  공유 목록(team-roster, coach-roster, call:*)을 앱에서 읽고 고쳐 쓰면,
+//  두 명이 같은 순간에 하면 나중 쓰기가 앞 쓰기를 지웁니다. 서버는 단일
+//  스레드라 서버 안에서 처리하면 이 경쟁이 사라집니다.
+//
+//  배포 시차(앱이 먼저 갱신되고 서버가 아직 구버전) 대비로, 엔드포인트가
+//  없으면(404) 예전 방식으로 물러납니다. 서버까지 갱신되면 자동으로
+//  원자적 경로를 씁니다.
+// ---------------------------------------------------------------
+async function apiPost(path, body) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (res.status === 404) {
+    const err = new Error('구버전 서버')
+    err.code = 'endpoint-missing'
+    throw err
+  }
+  let data = {}
+  try {
+    data = await res.json()
+  } catch {
+    /* 본문 없음 */
+  }
+  if (!res.ok) {
+    const err = new Error(data.error || '요청 실패')
+    err.code = data.error || 'failed'
+    err.data = data
+    throw err
+  }
+  return data
+}
+
+// 마스터 메이트 입장 — 목록을 원자적으로 갱신 (40명이 같은 시각에 입장해도
+// 서로를 지우지 않게)
+export async function coachUpsert(id, name) {
+  if (!API_BASE_URL) {
+    const roster = (await storageGet(COACH_ROSTER_KEY)) || { coaches: [] }
+    const others = (roster.coaches || []).filter((c) => c.id !== id)
+    await storageSet(COACH_ROSTER_KEY, { coaches: [...others, { id, name }] })
+    return { ok: true }
+  }
+  try {
+    return await apiPost('/api/coach-upsert', { id, name })
+  } catch (err) {
+    if (err.code !== 'endpoint-missing') throw err
+    const roster = (await storageGet(COACH_ROSTER_KEY)) || { coaches: [] }
+    const others = (roster.coaches || []).filter((c) => c.id !== id)
+    await storageSet(COACH_ROSTER_KEY, { coaches: [...others, { id, name }] })
+    return { ok: true, legacy: true }
+  }
+}
+
+// 호출 상태 변경 — 그 호출 하나만 서버에서 고칩니다. 목록 전체를 덮어쓰지
+// 않으므로 같은 순간에 참가자가 새 호출을 넣어도 서로 지워지지 않습니다.
+// 이미 사라진 호출이면 err.code === 'call not found'.
+export async function callStatusSet(teamId, callId, status, coach) {
+  const payload = {
+    teamId,
+    callId,
+    status,
+    handledBy: coach?.name || '',
+    handledById: coach?.id || '',
+  }
+  if (!API_BASE_URL) {
+    const data = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
+    const call = (data.calls || []).find((c) => c.id === callId)
+    if (!call) return { ok: false }
+    call.status = status
+    if (status === 'in_progress') {
+      call.handledBy = payload.handledBy
+      call.handledById = payload.handledById
+      call.startedAt = Date.now()
+    }
+    if (status === 'done') {
+      call.handledBy = call.handledBy || payload.handledBy
+      call.handledById = call.handledById || payload.handledById
+      call.doneAt = Date.now()
+    }
+    await storageSet(callKey(teamId), data)
+    return { ok: true }
+  }
+  try {
+    return await apiPost('/api/call-status', payload)
+  } catch (err) {
+    if (err.code !== 'endpoint-missing') throw err
+    const data = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
+    const call = (data.calls || []).find((c) => c.id === callId)
+    if (!call) return { ok: false }
+    call.status = status
+    if (status === 'in_progress') {
+      call.handledBy = payload.handledBy
+      call.handledById = payload.handledById
+      call.startedAt = Date.now()
+    }
+    if (status === 'done') {
+      call.handledBy = call.handledBy || payload.handledBy
+      call.handledById = call.handledById || payload.handledById
+      call.doneAt = Date.now()
+    }
+    await storageSet(callKey(teamId), data)
+    return { ok: true, legacy: true }
+  }
+}
+
 // ---- 키 빌더 ----
 export const teamKey = (teamId) => `team:${teamId}`
 export const orderKey = (teamId) => `order:${teamId}`

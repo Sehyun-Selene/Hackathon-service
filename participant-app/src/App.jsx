@@ -4,11 +4,12 @@ import {
   storageGet,
   storageGetMany,
   storageSet,
+  rosterAddTeam,
+  callAdd,
   teamKey,
   orderKey,
   callKey,
   callCountKey,
-  TEAM_ROSTER_KEY,
   SOLDOUT_KEY,
 } from './lib/storage.js'
 import { now, fmtClock, getOpenMeals, getNextMeals } from './lib/time.js'
@@ -38,6 +39,9 @@ export default function App() {
 
   // 공유 저장소에서 읽어온 상태
   const [savedOrder, setSavedOrder] = useState(null)
+  // 저장 직전에 "화면이 알고 있던 주문"을 비교하려면 최신 값이 필요합니다
+  // (state는 클로저에 묶여 옛 값이 잡힐 수 있어 ref로 함께 보관)
+  const savedOrderRef = useRef(null)
   const [callData, setCallData] = useState(null)
   const [callCount, setCallCount] = useState(0)
   const [soldout, setSoldout] = useState({})
@@ -56,6 +60,7 @@ export default function App() {
         SOLDOUT_KEY,
       ])
       setSavedOrder(order)
+      savedOrderRef.current = order
       setCallData(call)
       setCallCount(typeof count === 'number' ? count : 0)
       setSoldout(sold || {})
@@ -77,11 +82,9 @@ export default function App() {
   const saveTeam = useCallback(async (t) => {
     const record = { ...t, updatedAt: now().getTime() }
     await storageSet(teamKey(t.teamId), record)
-    const roster = (await storageGet(TEAM_ROSTER_KEY)) || { ids: [] }
-    if (!roster.ids.includes(t.teamId)) {
-      roster.ids.push(t.teamId)
-      await storageSet(TEAM_ROSTER_KEY, roster)
-    }
+    // 팀 목록 추가는 서버에서 원자적으로. 앱에서 읽고-고쳐-쓰면 같은 순간에
+    // 등록한 다른 팀의 번호를 지워버려, 그 팀이 관리자 화면에서 사라집니다.
+    await rosterAddTeam(t.teamId)
     setTeam(record)
     setEditingTeam(false)
     setTab(getOpenMeals(now().getTime()).length > 0 ? 'order' : 'call')
@@ -110,9 +113,25 @@ export default function App() {
   // ---- 쓰기 동작 (통신 실패 시 throw → 호출한 컴포넌트가 잡아서 알림) ----
   // 열려 있는 식사들의 주문을 한 번에 저장 (저녁·야식·아침 통합 주문 대응)
   // mealsMap: { mealId: items[] }
+  // force: true 면 충돌 확인을 건너뛰고 내 화면 내용으로 저장합니다.
   const saveOrders = useCallback(
-    async (mealsMap) => {
+    async (mealsMap, { force = false } = {}) => {
       const current = (await storageGet(orderKey(teamId))) || { team: teamId, meals: {} }
+      // 같은 팀의 다른 기기가 그 사이에 저장했는지 — 서버 기록이 화면이 알던
+      // 것보다 새로우면 덮어쓰기 전에 물어봅니다 (조용히 지워지는 것 방지)
+      if (!force) {
+        const known = savedOrderRef.current
+        const conflicted = Object.keys(mealsMap).some((mealId) => {
+          const serverAt = current.meals?.[mealId]?.updatedAt || 0
+          const knownAt = known?.meals?.[mealId]?.updatedAt || 0
+          return serverAt > knownAt
+        })
+        if (conflicted) {
+          const err = new Error('order-conflict')
+          err.code = 'order-conflict'
+          throw err
+        }
+      }
       current.team = teamId
       current.meals = current.meals || {}
       const at = now().getTime()
@@ -131,10 +150,11 @@ export default function App() {
   // 보낼 때 쓰는데, 서버는 config를 모르기 때문에 앱이 값을 실어보냅니다.
   const sendCall = useCallback(
     async (reason) => {
-      const current = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
-      current.calls = current.calls || []
       const assigned = getAssignedCoachForTeam(teamId)
-      current.calls.push({
+      // 호출 추가 + 횟수 증가 + 제한 검사를 서버가 한 번에 처리합니다.
+      // 예전에는 두 번 나눠 써서, 둘째가 실패하면 "전송 실패"라고 안내하면서
+      // 실제로는 호출이 들어가 중복이 생겼습니다.
+      await callAdd(teamId, {
         id: `${teamId}-${now().getTime()}-${Math.floor(Math.random() * 1e6)}`,
         status: 'waiting',
         createdAt: now().getTime(),
@@ -142,9 +162,6 @@ export default function App() {
         assignedName: assigned?.name || '',
         assignedSlackId: assigned?.slackUserId || '',
       })
-      await storageSet(callKey(teamId), current)
-      const count = (await storageGet(callCountKey(teamId))) || 0
-      await storageSet(callCountKey(teamId), (typeof count === 'number' ? count : 0) + 1)
       await refresh().catch(() => {})
     },
     [teamId, refresh],

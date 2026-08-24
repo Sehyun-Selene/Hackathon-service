@@ -11,6 +11,8 @@ import {
   callCountKey,
   TEAM_ROSTER_KEY,
   COACH_ROSTER_KEY,
+  coachUpsert,
+  callStatusSet,
   SOLDOUT_KEY,
 } from './lib/storage.js'
 import { now, fmtClock, getNextMeal, getOpenMeals, getVisibleMeals } from './lib/time.js'
@@ -152,9 +154,9 @@ export default function App() {
     const record = { id, name }
     window.localStorage.setItem(MY_COACH_KEY, JSON.stringify(record))
     try {
-      const roster = (await storageGet(COACH_ROSTER_KEY)) || { coaches: [] }
-      const others = (roster.coaches || []).filter((c) => c.id !== id)
-      await storageSet(COACH_ROSTER_KEY, { coaches: [...others, record] })
+      // 목록 갱신은 서버에서 원자적으로 — 40명이 같은 시각에 입장해도
+      // 서로를 목록에서 지우지 않게
+      await coachUpsert(id, name)
     } catch {
       /* 로스터 등록 실패해도 입장은 진행 — 다음 상태 변경 시 다시 시도됨 */
     }
@@ -166,21 +168,9 @@ export default function App() {
   const updateCallStatus = useCallback(
     async (teamId, callId, nextStatus) => {
       try {
-        const data = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
-        const call = (data.calls || []).find((c) => c.id === callId)
-        if (!call) return
-        call.status = nextStatus
-        if (nextStatus === 'in_progress') {
-          call.handledBy = coach.name
-          call.handledById = coach.id
-          call.startedAt = now().getTime()
-        }
-        if (nextStatus === 'done') {
-          call.handledBy = call.handledBy || coach.name
-          call.handledById = call.handledById || coach.id
-          call.doneAt = now().getTime()
-        }
-        await storageSet(callKey(teamId), data)
+        // 그 호출 하나만 서버에서 고칩니다. 목록 전체를 덮어쓰면 같은 순간에
+        // 참가자가 넣은 새 호출이 사라질 수 있습니다.
+        await callStatusSet(teamId, callId, nextStatus, coach)
       } catch {
         alert('네트워크 오류로 호출 상태가 변경되지 않았습니다.\n잠시 후 다시 시도해주세요.')
         return
@@ -424,6 +414,28 @@ export default function App() {
       </aside>
 
       <div className="main">
+        {/* 고정 지표를 맨 위로 — 목록에 따라 바뀌지 않는 내용이라
+            화면 제목·조작부보다 앞에 두는 편이 눈이 덜 움직입니다 */}
+        {kpis.length > 0 && (
+          <div className="kpi-strip">
+            {kpis.map((k) => (
+              <button
+                key={k.label}
+                className={`kpi-card${k.tone ? ` ${k.tone}` : ''}`}
+                onClick={() => setKpiDetail(k.kind)}
+                aria-haspopup="dialog"
+                aria-label={`${k.label} 목록 보기`}
+              >
+                <div className="kpi-label">
+                  <span className="kpi-label-full">{k.label}</span>
+                  <span className="kpi-label-short">{k.short || k.label}</span>
+                </div>
+                <div className="kpi-value">{k.value}</div>
+              </button>
+            ))}
+          </div>
+        )}
+
         <header className="topbar">
           <div className="topbar-title">
             <span className="topbar-icon" aria-hidden="true">{activeTab?.icon}</span>
@@ -456,26 +468,6 @@ export default function App() {
         {syncError && (
           <div className="sync-error">
             ⚠️ 공유 서버 연결 오류 — 최신 데이터가 아닐 수 있습니다. 자동으로 재시도 중입니다.
-          </div>
-        )}
-
-        {kpis.length > 0 && (
-          <div className="kpi-strip">
-            {kpis.map((k) => (
-              <button
-                key={k.label}
-                className={`kpi-card${k.tone ? ` ${k.tone}` : ''}`}
-                onClick={() => setKpiDetail(k.kind)}
-                aria-haspopup="dialog"
-                aria-label={`${k.label} 목록 보기`}
-              >
-                <div className="kpi-label">
-                  <span className="kpi-label-full">{k.label}</span>
-                  <span className="kpi-label-short">{k.short || k.label}</span>
-                </div>
-                <div className="kpi-value">{k.value}</div>
-              </button>
-            ))}
           </div>
         )}
 
