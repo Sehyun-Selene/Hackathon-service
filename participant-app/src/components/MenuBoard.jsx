@@ -28,9 +28,9 @@ function OrderNotice() {
       <ul className="call-guide-list">
         {shared ? (
           <li>
-            {MEALS.map((m) => m.label).join(' ')}은
-            <br />
-            {fmtClock(new Date(shared.orderStart))}부터 가능합니다.
+            {MEALS.map((m) => m.shortLabel || m.label).join('과 ')} 모두{' '}
+            {dayOf(shared.label)} {fmtHM(shared.orderStart)}부터 {fmtHM(shared.orderEnd)}까지
+            신청합니다.
           </li>
         ) : (
           MEALS.map((m) => (
@@ -129,8 +129,9 @@ export default function MenuBoard({
             <>
               <p className="closed-main">지금은 주문 가능 시간이 아닙니다</p>
               <p className="closed-sub">
-                다음 주문: <b>{nextMeals.map((m) => m.label).join('·')}</b> —{' '}
-                {fmtClock(new Date(nextMeals[0].orderStart))}부터
+                <b>{nextMeals.map((m) => m.label).join(' ')}</b>은
+                <br />
+                {fmtClock(new Date(nextMeals[0].orderStart))}부터 가능합니다.
               </p>
             </>
           ) : (
