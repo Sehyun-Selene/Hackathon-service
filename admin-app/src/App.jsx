@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import logo52g from './assets/52g-logo.png'
-import { ADMIN_POLL_MS, COACH_ASSIGNMENTS, MEALS } from './config.js'
+import { ADMIN_POLL_MS, COACH_ASSIGNMENTS, DARK_MODE_HOURS, MEALS } from './config.js'
 import {
   storageGet,
   storageGetMany,
@@ -119,6 +119,16 @@ export default function App() {
   const soundOnRef = useRef(true)
   soundOnRef.current = soundOn
 
+  // 밤샘 운영이라 새벽까지 흰 화면을 보게 됩니다. 참가자 앱과 같은 시간대
+  // 규칙으로 자동 전환합니다 (config.DARK_MODE_HOURS).
+  const hour = now().getHours()
+  const { start: darkStart, end: darkEnd } = DARK_MODE_HOURS
+  const isDark =
+    darkStart > darkEnd ? hour >= darkStart || hour < darkEnd : hour >= darkStart && hour < darkEnd
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark)
+  }, [isDark])
+
   const refresh = useCallback(async () => {
     let result
     try {
@@ -147,6 +157,15 @@ export default function App() {
     const id = setInterval(refresh, ADMIN_POLL_MS)
     return () => clearInterval(id)
   }, [coach, refresh])
+
+  // 저장된 이름으로 자동 입장한 경우에도 메이트 목록에 다시 등록합니다.
+  // 입장 버튼을 거치지 않으면 목록에 안 들어가서, 행사 전 초기화 뒤에는
+  // 본인은 정상 입장한 듯 보이지만 '마스터 메이트 현황'에서 빠집니다.
+  // (서버가 id 기준으로 갱신하므로 여러 번 불러도 안전)
+  useEffect(() => {
+    if (!coach?.id) return
+    coachUpsert(coach.id, coach.name).catch(() => {})
+  }, [coach?.id, coach?.name])
 
   // 마스터 메이트 등록: 로컬 저장 + 공유 마스터 메이트 로스터에 등록/갱신
   // name이 COACH_ASSIGNMENTS의 이름과 정확히 일치해야 담당 팀이 자동 연결됨
@@ -312,7 +331,14 @@ export default function App() {
         },
         { kind: 'orders', label: '주문한 팀', short: '주문 팀', value: Object.keys(scan.orders).length },
         { kind: 'teams', label: '등록한 팀', short: '등록 팀', value: Object.keys(scan.teams).length },
-        { kind: 'coaches', label: '입장한 마스터 메이트', short: '메이트', value: scan.coaches.length },
+        {
+          kind: 'coaches',
+          label: '입장한 마스터 메이트',
+          short: '메이트',
+          // 기기 단위로 기록되므로 한 사람이 폰·노트북에서 열면 두 개가 됩니다.
+          // 세는 단위는 사람이라 이름으로 묶습니다.
+          value: new Set(scan.coaches.map((c) => c.name)).size,
+        },
       ]
     : []
 

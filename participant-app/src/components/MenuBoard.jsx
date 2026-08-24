@@ -149,6 +149,15 @@ export default function MenuBoard({
   const activeMeal = openMeals.find((m) => m.id === activeMealId) || openMeals[0]
   const { end } = mealTimes(activeMeal)
   const remain = end - now().getTime()
+  // 마감 임박 경고 — 담아만 두고 '주문하기'를 누르지 않으면 그대로 사라집니다
+  const DEADLINE_WARN_MS = 5 * 60 * 1000
+  const nearDeadline = remain > 0 && remain <= DEADLINE_WARN_MS
+  // 이미 주문한 메뉴가 뒤늦게 품절된 경우 — 참가자에게 알려줍니다
+  const soldoutOrdered = MEALS.flatMap((meal) =>
+    (savedOrder?.meals?.[meal.id]?.items || [])
+      .filter((it) => soldout[it.menuId])
+      .map((it) => MENU_BY_ID[it.menuId]?.baseName || it.menuId),
+  )
   const menus = MENUS[activeMeal.id] || []
   const multiMeal = openMeals.length > 1
 
@@ -295,6 +304,22 @@ export default function MenuBoard({
       </div>
 
       <OrderNotice />
+
+      {/* 담아두기만 하면 저장되지 않으므로, 마감 임박에는 눈에 띄게 알립니다 */}
+      {nearDeadline && dirty && (
+        <div className="deadline-warn">
+          ⏰ 마감까지 <b>{fmtCountdown(remain)}</b> — 아직 주문하지 않았습니다. 아래{' '}
+          <b>주문하기</b>를 눌러주세요.
+        </div>
+      )}
+
+      {/* 주문한 메뉴가 뒤늦게 품절된 경우 */}
+      {soldoutOrdered.length > 0 && (
+        <div className="soldout-warn">
+          🚫 주문하신 <b>{[...new Set(soldoutOrdered)].join(', ')}</b>이(가) 품절되었습니다. 운영진이
+          대체 메뉴로 안내드립니다.
+        </div>
+      )}
 
       {/* 식사 탭 (저녁/야식/아침처럼 여러 식사를 함께 주문할 때) */}
       {multiMeal && (

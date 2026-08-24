@@ -96,6 +96,16 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                         <span className="status-pill in-progress">
                           처리중{c.handledById === coach.id ? ' (나)' : ''}
                         </span>
+                        {/* 잘못 누른 '처리 시작'을 되돌립니다. 되돌리지 못하면 그
+                            호출이 대기 목록에서 사라지고, 슬랙 미처리 알림도
+                            대기 상태만 보므로 아무 알림 없이 묻힙니다. */}
+                        <button
+                          className="btn-ghost sm call-revert"
+                          onClick={() => onUpdateStatus(c.team, c.id, 'waiting')}
+                          title="대기 상태로 되돌립니다"
+                        >
+                          대기로
+                        </button>
                         <button
                           className="btn-secondary sm"
                           onClick={() => onUpdateStatus(c.team, c.id, 'done')}

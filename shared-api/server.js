@@ -49,6 +49,7 @@
 //    GET  /health                                     → 상태 확인용(크론 대상)
 // =====================================================================
 const http = require('http')
+const zlib = require('zlib')
 const slack = require('./slack.js')
 
 const store = new Map()
@@ -230,14 +231,37 @@ async function sweepAlerts() {
   if (changed) await saveAlertMarkers(markers)
 }
 
+// 응답 압축 기준 크기. 이보다 작으면 압축 이득이 없어 그냥 보냅니다.
+const GZIP_MIN_BYTES = 1024
+
+// 관리자 화면은 3초마다 전 팀의 주문·호출을 통째로 받아갑니다. 125팀이 꽉
+// 차면 한 번에 258KB, 메이트 40명이면 초당 3.4MB — 무료 인스턴스가 감당하기
+// 어렵고 대역폭도 빠르게 소진됩니다. 반복이 많은 JSON이라 gzip이 97% 줄여줍니다.
 function sendJson(res, status, body) {
-  res.writeHead(status, {
+  const json = JSON.stringify(body)
+  const headers = {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+  }
+  const raw = Buffer.from(json)
+  // res.gzipOk: 요청 헤더에서 미리 판단해 둔 값 (요청 객체를 여기까지 넘기지
+  // 않으려고 응답 객체에 실어둡니다)
+  if (!res.gzipOk || raw.length < GZIP_MIN_BYTES) {
+    res.writeHead(status, headers)
+    res.end(raw)
+    return
+  }
+  zlib.gzip(raw, (err, packed) => {
+    if (err) {
+      res.writeHead(status, headers)
+      res.end(raw)
+      return
+    }
+    res.writeHead(status, { ...headers, 'Content-Encoding': 'gzip', Vary: 'Accept-Encoding' })
+    res.end(packed)
   })
-  res.end(JSON.stringify(body))
 }
 
 function readBody(req) {
@@ -259,6 +283,10 @@ function readBody(req) {
 }
 
 const server = http.createServer(async (req, res) => {
+  // 클라이언트가 gzip을 받을 수 있는지 (브라우저는 기본으로 보냅니다)
+  const acceptEnc = String(req.headers['accept-encoding'] || '').toLowerCase()
+  res.gzipOk = acceptEnc.includes('gzip')
+
   if (req.method === 'OPTIONS') {
     sendJson(res, 204, {})
     return
@@ -427,6 +455,13 @@ const server = http.createServer(async (req, res) => {
       }
       const stamp = typeof at === 'number' ? at : Date.now()
       const call = { ...calls[index], status }
+      if (status === 'waiting') {
+        // 잘못 누른 '처리 시작'을 되돌리는 경우 — 담당자 흔적을 지워 아무도
+        // 잡지 않은 상태로 되돌립니다 (남아 있으면 처리중으로 보임)
+        delete call.handledBy
+        delete call.handledById
+        delete call.startedAt
+      }
       if (status === 'in_progress') {
         call.handledBy = handledBy || call.handledBy || ''
         call.handledById = handledById || call.handledById || ''

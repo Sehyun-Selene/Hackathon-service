@@ -549,6 +549,26 @@ html.dark .call-guide-title { color: #fbbf24; }
 .setup-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
 /* 저장된 팀을 확인하는 사이의 빈 화면 — 깜빡임만 막는 용도 */
 .boot-wait { min-height: 100vh; }
+/* 마감 임박 — 담아만 두면 사라지므로 눈에 띄게 */
+.deadline-warn {
+  background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b;
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
+  font-size: 13.5px; font-weight: 700; line-height: 1.55;
+}
+html.dark .deadline-warn { background: #4a1d1d; border-color: #7f2d2d; color: #fecaca; }
+/* 주문한 메뉴가 뒤늦게 품절된 경우 */
+.soldout-warn {
+  background: #fff7ed; border: 1px solid #fed7aa; color: #b45309;
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
+  font-size: 13.5px; font-weight: 700; line-height: 1.55;
+}
+html.dark .soldout-warn { background: #3a2c14; border-color: #5c451c; color: #fbbf24; }
+/* 이미 등록된 팀 번호 경고 — 오타로 남의 팀을 덮어쓰지 않게 */
+.setup-exists {
+  margin-top: 8px; font-size: 13px; line-height: 1.5; font-weight: 700; color: #b45309;
+}
+html.dark .setup-exists { color: #fbbf24; }
+.add-person-btn:disabled { opacity: 0.55; cursor: default; }
 /* 등록 안내 — 호출 가이드 박스와 같은 결로 (참가자 앱의 강조 면) */
 .setup-solo-note {
   background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;

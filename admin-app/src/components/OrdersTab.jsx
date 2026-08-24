@@ -294,6 +294,24 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   const printChecklist = () => {
     const label = mealFilter === 'all' ? '전체' : MEAL_BY_ID[mealFilter].label
     const rangeLabel = selectedRange ? `${selectedRange.label}번` : '전체 팀'
+    // 배부 현장에서 대체식이 필요한 팀을 종이만 보고 알 수 있어야 합니다.
+    // 화면의 알러지 시트를 따로 열어봐야 하면 놓치게 됩니다.
+    const altInfoOf = (teamId) => {
+      const people = (scan.teams[teamId]?.allergies || []).map((x) => (Array.isArray(x) ? x : [x]))
+      let need = 0
+      const combos = []
+      people.forEach((personList) => {
+        const { needsAlt } = personDiet(personList)
+        const hit = mealFilter === 'all' ? needsAlt.length > 0 : needsAlt.includes(mealFilter)
+        if (hit) {
+          need += 1
+          const combo = [...personList].filter(Boolean).sort().join('·')
+          if (combo) combos.push(combo)
+        }
+      })
+      return { need, combos }
+    }
+    let altTotal = 0
     const rowsHtml = rangedRows
       .map((r) => {
         const items = r.items
@@ -304,7 +322,12 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
           })
           .join(', ')
         const coach = r.assignedName ? ` (${r.assignedName})` : ''
-        return `<tr><td class="c">☐</td><td class="t">팀 ${r.teamId}${coach}</td><td>${items}</td></tr>`
+        const { need, combos } = altInfoOf(r.teamId)
+        altTotal += need
+        const alt = need
+          ? `<b>대체식 ${need}</b><span class="cmb"> ${combos.join(' / ')}</span>`
+          : ''
+        return `<tr><td class="c">☐</td><td class="t">팀 ${r.teamId}${coach}</td><td>${items}</td><td class="a">${alt}</td></tr>`
       })
       .join('')
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>배부 체크리스트 — ${label}</title>
@@ -317,12 +340,17 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   th { background:#eee; }
   td.c { width:28px; text-align:center; font-size:16px; }
   td.t { white-space:nowrap; font-weight:700; }
+  td.a { white-space:nowrap; }
+  td.a b { color:#b45309; }
+  .cmb { color:#666; font-size:11px; }
   @media print { .noprint { display:none; } }
 </style></head><body>
 <h1>배부 체크리스트 — ${label} · ${rangeLabel}</h1>
-<div class="sub">총 ${rangedRows.length}팀 · 배부 시 왼쪽 칸에 체크</div>
+<div class="sub">총 ${rangedRows.length}팀 · 배부 시 왼쪽 칸에 체크${
+      altTotal ? ` · <b>대체식 ${altTotal}개 필요</b>` : ''
+    }</div>
 <button class="noprint" onclick="window.print()" style="margin-bottom:12px;padding:8px 14px;">🖨 인쇄</button>
-<table><thead><tr><th>완료</th><th>팀</th><th>주문 내역</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+<table><thead><tr><th>완료</th><th>팀</th><th>주문 내역</th><th>대체식</th></tr></thead><tbody>${rowsHtml}</tbody></table>
 </body></html>`
     const w = window.open('', '_blank')
     if (!w) {

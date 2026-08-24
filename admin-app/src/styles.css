@@ -403,6 +403,8 @@ body {
   .deliver-check { gap: 0; }
   .tiny-hide { display: none; }
 }
+/* 되돌리기 — 자주 쓰지 않는 조작이라 완료 버튼보다 조용하게 */
+.call-revert { padding: 8px 12px; min-height: 44px; font-size: 13px; }
 .deliver-hint { font-size: 12.5px; color: var(--sub); margin-bottom: 8px; }
 /* 배부 조작부 — 구간과 미배부/완료 탭을 한 구역에 (구간 선택이 아래 목록을
    걸러내는 관계이므로 섹션을 나누지 않음) */
@@ -799,3 +801,93 @@ body {
 }
 .nav-subitem:hover { color: var(--text); }
 .nav-subitem.active { background: var(--violet-soft); color: var(--primary-dark); }
+
+/* =====================================================================
+   다크 모드 (밤샘 운영용)
+   참가자 앱과 같은 규칙으로 config.DARK_MODE_HOURS 시간대에 자동 전환됩니다.
+   빛나는 흰 화면을 새벽까지 보게 되는 것을 막는 것이 목적이라, 색의 역할
+   (붉은=주의, 초록=대기, 보라=활성)은 그대로 두고 밝기만 뒤집습니다.
+   ===================================================================== */
+html.dark {
+  --primary: #7c6bf0;
+  --primary-dark: #a99df7;   /* 어두운 면 위의 글씨용이라 밝게 */
+  --violet-soft: #2a2450;
+  --bg: #14161b;
+  --card: #1c1f26;
+  --text: #e8eaed;
+  --sub: #969ca6;
+  --line: #2e333d;
+  --green: #3ecf7d;
+  --amber: #e8a93a;
+  --red: #ff6f73;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* 입장 화면 */
+html.dark .gate-input { background: #171a20; color: var(--text); border-color: var(--line); }
+html.dark .gate-input:focus { background: #1c1f26; }
+
+/* 상단 지표 */
+html.dark .kpi-card { background: #2a2450; border-color: #3d3572; }
+html.dark .kpi-card:hover { border-color: #564a9b; }
+html.dark .kpi-label { color: #b4abee; }
+html.dark .kpi-card.alert { background: #3a1f22; border-color: #6b3034; }
+html.dark .kpi-card.alert:hover { border-color: #8d3d43; }
+
+/* 버튼 */
+html.dark .btn-primary:disabled { background: #3a3660; }
+html.dark .btn-secondary { background: #14301f; border-color: #245c3a; }
+html.dark .btn-secondary:hover { background: #1a3d28; }
+html.dark .btn-ghost { background: #23272f; border-color: #343a45; color: #c4c9d2; }
+html.dark .btn-ghost:hover { background: #2b303a; border-color: #414855; }
+
+/* 검색 · 칩 */
+html.dark .table-search { background: #171a20; border-color: #3a3568; color: var(--text); }
+html.dark .table-search::placeholder { color: #79749c; }
+html.dark .table-search:focus { background: #1c1f26; }
+html.dark .chip { background: #23272f; }
+html.dark .chip:hover { border-color: #414855; }
+html.dark .chip.soldout-on { background: #3a1f22; border-color: #6b3034; }
+
+/* 상태 면 — 붉은=주의, 초록=여유 */
+html.dark .sync-error { background: #3a1f22; border-color: #6b3034; color: #ffb9bb; }
+html.dark .total-item.limit-hit { background: #3a1f22; border-color: #6b3034; }
+html.dark .total-item.limit-near { background: #332a16; border-color: #63512a; }
+html.dark .call-card.waiting { background: #3a1f22; border-color: #6b3034; }
+html.dark .call-card.in_progress { border-color: #453d80; }
+html.dark .status-pill { background: #23272f; }
+html.dark .status-pill.waiting { background: #3a1f22; }
+html.dark .coach-item.busy { background: #3a1f22; border-color: #6b3034; }
+html.dark .coach-item.idle { background: #16301f; border-color: #2c5c3c; }
+html.dark .coach-range { background: #23272f; }
+html.dark .allergy-person-chip { background: #332a16; }
+html.dark .allergy-person-chip b { color: #f0c060; }
+html.dark .bar-track { background: #23272f; }
+html.dark .profile-warn { background: #3a1f22; border-color: #6b3034; }
+html.dark .profile-stat.alert { background: #3a1f22; border-color: #6b3034; }
+
+/* 탭 */
+html.dark .coach-tab { border-color: #3b4250; color: #c4c9d2; }
+html.dark .coach-tab:hover { border-color: var(--primary); color: #b4abee; }
+html.dark .coach-tab.tone-idle { background: #16301f; border-color: #2c5c3c; color: #7ad79f; }
+html.dark .coach-tab.tone-idle .tab-count { background: #1e3f2a; color: #7ad79f; }
+html.dark .coach-tab.tone-idle:hover { background: #1b3a26; border-color: #3d7a52; color: #7ad79f; }
+html.dark .coach-tab.tone-idle.on { background: #17864a; border-color: #17864a; color: #fff; }
+html.dark .coach-tab.tone-busy { background: #3a1f22; border-color: #6b3034; color: #ff9fa2; }
+html.dark .coach-tab.tone-busy .tab-count { background: #4a2529; color: #ff9fa2; }
+html.dark .coach-tab.tone-busy:hover { background: #46252a; border-color: #8d3d43; color: #ff9fa2; }
+html.dark .coach-tab.tone-busy.on { background: #c92f35; border-color: #c92f35; color: #fff; }
+
+/* 격자 */
+html.dark .check-cell { background: #171a20; }
+html.dark .check-cell.done { background: #16301f; border-color: #2c5c3c; }
+html.dark .check-name { background: #171a20; }
+html.dark .check-name.done { background: #16301f; border-color: #2c5c3c; }
+html.dark .call-count-cell { background: #171a20; }
+html.dark .call-count-cell.used { border-color: #453d80; }
+html.dark .call-count-cell.full { background: #3a1f22; border-color: #6b3034; }
+
+/* 시트 */
+html.dark .sheet-handle { background: #3b4250; }
+html.dark .menu-toggle:hover { border-color: #414855; }
+html.dark .side-coach:hover { border-color: #414855; }

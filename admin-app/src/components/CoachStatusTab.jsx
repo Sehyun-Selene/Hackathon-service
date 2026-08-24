@@ -26,14 +26,26 @@ export default function CoachStatusTab({ scan, coach }) {
   }, [scan.calls])
 
   // 담당 팀 번호(가장 작은 번호) 기준 정렬. 미배정은 뒤로.
+  //
+  // 입장 기록은 기기 단위입니다. 한 사람이 폰과 노트북에서 열면 두 줄이 되어
+  // 인원이 부풀고, 한쪽만 대응 중으로 잡히면 같은 사람이 대기·대응에 동시에
+  // 뜹니다. 그래서 이름으로 묶고, 그 사람의 어느 기기든 대응 중이면 대응 중으로
+  // 봅니다.
   const rows = useMemo(() => {
-    return scan.coaches
-      .map((c) => {
-        const assigned = COACH_ASSIGNMENTS.find((a) => a.name === c.name)
+    const byName = new Map()
+    scan.coaches.forEach((c) => {
+      const entry = byName.get(c.name) || { name: c.name, ids: [] }
+      entry.ids.push(c.id)
+      byName.set(c.name, entry)
+    })
+    return [...byName.values()]
+      .map((person) => {
+        const assigned = COACH_ASSIGNMENTS.find((a) => a.name === person.name)
         const teams = assigned?.teamNumbers || []
         return {
-          coach: c,
-          busy: busyByCoachId[c.id] || [],
+          coach: { id: person.ids[0], name: person.name },
+          ids: person.ids,
+          busy: person.ids.flatMap((id) => busyByCoachId[id] || []),
           range: formatTeamRange(teams),
           sortKey: teams.length ? Math.min(...teams) : Number.MAX_SAFE_INTEGER,
         }
@@ -108,8 +120,9 @@ export default function CoachStatusTab({ scan, coach }) {
                 </p>
               ) : (
                 <div className="coach-list">
-                  {g.rows.map(({ coach: c, busy: b, range }) => {
-                    const isMe = c.id === coach.id
+                  {g.rows.map(({ coach: c, busy: b, range, ids }) => {
+                    // 내 기기가 그 사람의 기기 목록에 있으면 '나'
+                    const isMe = ids.includes(coach.id) || c.name === coach.name
                     return (
                       <div key={c.id} className={`coach-item${b.length ? ' busy' : ' idle'}`}>
                         <span className="coach-name">

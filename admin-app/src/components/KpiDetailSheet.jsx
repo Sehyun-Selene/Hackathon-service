@@ -48,7 +48,12 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
               sortKey: c.teamNumbers.length ? Math.min(...c.teamNumbers) : Number.MAX_SAFE_INTEGER,
             }))
             .sort((a, b) => a.sortKey - b.sortKey || a.label.localeCompare(b.label))
-        : scan.coaches.map((c) => ({ key: c.id, label: c.name, note: '명단 외', done: true }))
+        : [...new Set(scan.coaches.map((c) => c.name))].map((name) => ({
+            key: name,
+            label: name,
+            note: '명단 외',
+            done: true,
+          }))
       return {
         mode: 'name-grid',
         title: '마스터 메이트 입장 현황',
