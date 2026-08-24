@@ -64,7 +64,8 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   const [showAllergyPanel, setShowAllergyPanel] = useState(false)
   const [teamQuery, setTeamQuery] = useState('')
   const [teamRange, setTeamRange] = useState('all')
-  const [showDelivered, setShowDelivered] = useState(false)
+  // 배부 목록 탭 — 'pending'(미배부) 기본, 'done'(배부 완료)
+  const [deliveryTab, setDeliveryTab] = useState('pending')
 
   const closeUtilityPanels = () => {
     setShowAllergyPanel(false)
@@ -162,6 +163,14 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   const visibleRows = hasQuery
     ? teamRows.filter((row) => parseInt(row.teamId, 10) === queryNum)
     : pendingRows
+  // 검색 중에는 검색 결과를, 아니면 선택한 배부 탭의 목록을 보여줍니다
+  const shownRows = hasQuery
+    ? visibleRows
+    : !singleMeal
+      ? rangedRows
+      : deliveryTab === 'done'
+        ? completedRows
+        : pendingRows
 
   // 알러지 현황: 같은 알러지 조합을 가진 사람끼리 팀 안에서 묶어 표시
   const allergyInfo = useMemo(() => {
@@ -538,7 +547,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       <section className="panel delivery-team-panel">
         <div className="panel-head-row">
           <h3>
-            {singleMeal && !hasQuery ? '미배부 팀' : '팀별 주문'}
+            {singleMeal && !hasQuery ? '배부' : '팀별 주문'}
             {!singleMeal && ` (${visibleRows.length}팀)`}
             {hasQuery && ` — "${queryNum}번" 검색 중`}
           </h3>
@@ -549,49 +558,49 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
           )}
         </div>
 
+        {/* 미배부 / 배부 완료를 탭으로 — 완료 목록을 접었다 펴는 방식보다
+            "지금 어느 목록을 보는지"가 분명해짐 */}
+        {singleMeal && !hasQuery && (
+          <div className="coach-tabs">
+            <button
+              className={`coach-tab${deliveryTab === 'pending' ? ' on' : ''}`}
+              onClick={() => setDeliveryTab('pending')}
+            >
+              미배부 팀 {pendingRows.length}
+            </button>
+            <button
+              className={`coach-tab${deliveryTab === 'done' ? ' on' : ''}`}
+              onClick={() => setDeliveryTab('done')}
+            >
+              배부 완료 팀 {completedRows.length}
+            </button>
+          </div>
+        )}
+
         {!singleMeal && teamRows.length > 0 && (
           <p className="deliver-hint">
             끼니({MEALS.map((m) => m.label).join('/')})를 선택하면 팀별 <b>완료 체크</b>를 쓸 수 있어요.
           </p>
         )}
 
-        {visibleRows.length === 0 ? (
+        {shownRows.length === 0 ? (
           <p className="empty-text">
             {hasQuery
               ? `팀 ${String(queryNum).padStart(2, '0')}의 주문 내역이 없습니다.`
-              : singleMeal
-                ? '선택한 구간의 배부가 모두 완료됐습니다.'
-                : '아직 주문이 없습니다.'}
+              : !singleMeal
+                ? '아직 주문이 없습니다.'
+                : deliveryTab === 'done'
+                  ? '아직 배부 완료한 팀이 없습니다.'
+                  : '선택한 구간의 배부가 모두 완료됐습니다.'}
           </p>
         ) : (
           <TeamRowList
-            rows={visibleRows}
+            rows={shownRows}
             mealFilter={mealFilter}
             singleMeal={singleMeal}
             isDelivered={isDelivered}
             onToggleDelivered={onToggleDelivered}
           />
-        )}
-
-        {singleMeal && !hasQuery && completedRows.length > 0 && (
-          <div className="completed-deliveries">
-            <button
-              className="completed-toggle"
-              onClick={() => setShowDelivered((current) => !current)}
-              aria-expanded={showDelivered}
-            >
-              배부 완료 팀 {completedRows.length}팀 {showDelivered ? '접기' : '보기'}
-            </button>
-            {showDelivered && (
-              <TeamRowList
-                rows={completedRows}
-                mealFilter={mealFilter}
-                singleMeal={singleMeal}
-                isDelivered={isDelivered}
-                onToggleDelivered={onToggleDelivered}
-              />
-            )}
-          </div>
         )}
       </section>
     </div>

@@ -101,11 +101,11 @@ export default function CoachProfileSheet({ scan, coach, onClose, onChangeName }
               </div>
               <div className="profile-stat">
                 <b>{stats.inProgressByMe}</b>
-                <span>내가 처리 중</span>
+                <span>대응 중</span>
               </div>
               <div className="profile-stat">
                 <b>{stats.doneByMe}</b>
-                <span>내가 완료</span>
+                <span>완료</span>
               </div>
             </div>
           </div>

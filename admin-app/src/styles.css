@@ -346,12 +346,6 @@ body {
 .delivery-range-head .pending-count { color: var(--red); font-size: 13px; font-weight: 700; }
 .delivery-ranges { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
 .delivery-ranges .chip { flex: 0 0 auto; }
-.completed-deliveries { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
-.completed-toggle {
-  width: 100%; min-height: 44px; border: 0; border-radius: 8px;
-  background: #f2f3f5; color: var(--sub); font-size: 13px; font-weight: 700; cursor: pointer;
-}
-.completed-deliveries .team-rows { margin-top: 8px; }
 .delivery-team-panel { border: 1px solid var(--line); }
 .meal-tag {
   font-size: 11px; background: var(--violet-soft); color: var(--primary-dark); border-radius: 999px; padding: 1px 7px;
