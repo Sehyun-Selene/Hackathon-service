@@ -352,6 +352,17 @@ body {
 
 /* 팀별 주문 (한 줄 압축) */
 .team-rows { display: flex; flex-direction: column; }
+/* 넓은 화면: 한 줄에 팀·메뉴·체크만 있으면 오른쪽이 크게 남으므로 두 칼럼으로.
+   grid가 아니라 columns를 쓰는 이유 — 왼쪽 칼럼을 위에서 아래로 다 채운 뒤
+   오른쪽으로 넘어가서, 팀 번호를 순서대로 훑기 좋습니다
+   (grid는 좌우로 번갈아 채워져 번호가 지그재그로 읽힘) */
+@media (min-width: 900px) {
+  .team-rows {
+    display: block; columns: 2; column-gap: 30px;
+    column-rule: 1px solid var(--line);
+  }
+  .team-row { break-inside: avoid; }
+}
 .team-row {
   display: flex; align-items: center; gap: 10px; padding: 10px 4px;
   border-bottom: 1px solid var(--line);
