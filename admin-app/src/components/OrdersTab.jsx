@@ -517,39 +517,34 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
         </div>
       )}
 
-      {singleMeal && (
-        <section className="delivery-range-bar" aria-label="배부할 팀 번호 구간">
-          <div className="delivery-range-head">
-            <b className="delivery-range-title">배부 구간</b>
-            <span className="pending-count">미배부 {pendingRows.length}팀</span>
-          </div>
-          <div className="coach-tabs delivery-ranges">
-            <button
-              className={`coach-tab${teamRange === 'all' ? ' on' : ''}`}
-              onClick={() => setTeamRange('all')}
-            >
-              전체
-            </button>
-            {rangeOptions.map((range) => (
-              <button
-                key={range.id}
-                className={`coach-tab${teamRange === range.id ? ' on' : ''}`}
-                onClick={() => setTeamRange(range.id)}
-              >
-                {range.label}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
       <section className="panel delivery-team-panel">
-        {/* 제목 자리에 탭을 둡니다 — 목록 구분은 탭이 담당하므로 별도 제목이
-            필요하지 않고, 진행 표시와 같은 줄에 좌/우로 놓입니다.
-            검색 중이거나 끼니 '전체'일 때는 탭이 의미가 없어 제목을 씁니다. */}
-        <div className="panel-head-row">
-          {singleMeal && !hasQuery ? (
-            <div className="coach-tabs">
+        {/* 구간을 고르면 아래 목록이 그 구간으로 걸러지므로 한 구역에 둡니다.
+            위: 구간(오래 유지되는 상위 맥락) → 아래: 미배부/완료(자주 왕복).
+            검색 중이거나 끼니 '전체'일 때는 구간·탭이 의미가 없어 제목만 씁니다. */}
+        {singleMeal && !hasQuery ? (
+          <div className="delivery-controls">
+            <div className="panel-head-row">
+              <b className="delivery-range-title">배부 구간</b>
+              <span className="pending-count">미배부 {pendingRows.length}팀</span>
+            </div>
+            <div className="coach-tabs delivery-ranges">
+              <button
+                className={`coach-tab${teamRange === 'all' ? ' on' : ''}`}
+                onClick={() => setTeamRange('all')}
+              >
+                전체
+              </button>
+              {rangeOptions.map((range) => (
+                <button
+                  key={range.id}
+                  className={`coach-tab${teamRange === range.id ? ' on' : ''}`}
+                  onClick={() => setTeamRange(range.id)}
+                >
+                  {range.label}
+                </button>
+              ))}
+            </div>
+            <div className="coach-tabs delivery-status-tabs">
               <button
                 className={`coach-tab${deliveryTab === 'pending' ? ' on' : ''}`}
                 onClick={() => setDeliveryTab('pending')}
@@ -563,14 +558,16 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
                 배부 완료 팀 {completedRows.length}
               </button>
             </div>
-          ) : (
+          </div>
+        ) : (
+          <div className="panel-head-row">
             <h3>
               {'팀별 주문'}
               {!singleMeal && ` (${visibleRows.length}팀)`}
               {hasQuery && ` — "${queryNum}번" 검색 중`}
             </h3>
-          )}
-        </div>
+          </div>
+        )}
 
         {!singleMeal && teamRows.length > 0 && (
           <p className="deliver-hint">
