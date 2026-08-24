@@ -582,6 +582,13 @@ body {
 }
 .coach-tab:hover { border-color: #d9dce1; }
 .coach-tab.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+/* 상태 색 점 — '대기 중'과 '대응 중'이 글자만으로는 헷갈리므로 색을 함께 */
+.tab-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 999px;
+  margin-right: 6px; vertical-align: 1px;
+}
+.tab-dot.idle { background: var(--green); }
+.tab-dot.busy { background: var(--red); }
 /* 대기/대응 그룹 구분 — '전체'에서도 두 상태가 섞이지 않게 */
 .coach-group + .coach-group { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
 .coach-group-head {

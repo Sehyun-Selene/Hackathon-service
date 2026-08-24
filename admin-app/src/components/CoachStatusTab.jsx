@@ -57,10 +57,12 @@ export default function CoachStatusTab({ scan, coach }) {
           ]
   const shownCount = groups.reduce((s, g) => s + g.rows.length, 0)
 
+  // '대기 중'과 '대응 중'은 글자가 비슷해 색 점을 함께 붙입니다
+  // (초록=대기, 빨강=대응). 목록의 상태 표시와 같은 색 규칙.
   const TABS = [
-    { id: 'idle', label: '대기 중', count: idle.length },
-    { id: 'busy', label: '대응 중', count: busy.length },
-    { id: 'all', label: '전체', count: rows.length },
+    { id: 'all', label: '전체', count: rows.length, dot: null },
+    { id: 'busy', label: '대응 중', count: busy.length, dot: 'busy' },
+    { id: 'idle', label: '대기 중', count: idle.length, dot: 'idle' },
   ]
 
   return (
@@ -75,6 +77,7 @@ export default function CoachStatusTab({ scan, coach }) {
               className={`coach-tab${filter === t.id ? ' on' : ''}`}
               onClick={() => setFilter(t.id)}
             >
+              {t.dot && <i className={`tab-dot ${t.dot}`} aria-hidden="true" />}
               {t.label} {t.count}
             </button>
           ))}
@@ -134,7 +137,7 @@ export default function CoachStatusTab({ scan, coach }) {
 
       <p className="coach-note">
         💡 담당 마스터 메이트가 대응 중(🔴)이면, 그 담당 팀의 대기 호출을 대기 중(🟢)인
-        다른 마스터 메이트가 대신 처리할 수 있습니다. 목록은 담당 팀 번호 순입니다.
+        다른 마스터 메이트가 대신 처리할 수 있습니다.
       </p>
     </div>
   )
