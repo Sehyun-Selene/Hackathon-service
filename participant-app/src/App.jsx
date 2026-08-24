@@ -157,18 +157,6 @@ export default function App() {
     }
   }, [])
 
-  // 이 기기를 다른 팀이 쓰게 될 때 — 기억을 지우고 등록 화면으로
-  const forgetTeam = useCallback(() => {
-    try {
-      window.localStorage.removeItem(MY_TEAM_KEY)
-    } catch {
-      /* 무시 */
-    }
-    setShowTeamInfo(false)
-    setPrefill(null)
-    setTeam(null)
-  }, [])
-
   const closeTeamInfo = useCallback(() => setShowTeamInfo(false), [])
   const editTeamInfo = useCallback(() => {
     setShowTeamInfo(false)
@@ -347,12 +335,7 @@ export default function App() {
       )}
 
       {showTeamInfo && (
-        <TeamInfoSheet
-          team={team}
-          onClose={closeTeamInfo}
-          onEdit={editTeamInfo}
-          onForget={forgetTeam}
-        />
+        <TeamInfoSheet team={team} onClose={closeTeamInfo} onEdit={editTeamInfo} />
       )}
     </div>
   )

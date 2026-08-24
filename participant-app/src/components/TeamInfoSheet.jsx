@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 
-export default function TeamInfoSheet({ team, onClose, onEdit, onForget }) {
+export default function TeamInfoSheet({ team, onClose, onEdit }) {
   const allergyGroups = (team.allergies || []).filter(
     (group) => Array.isArray(group) && group.length > 0,
   )
@@ -65,12 +65,6 @@ export default function TeamInfoSheet({ team, onClose, onEdit, onForget }) {
         <button className="btn-primary team-sheet-edit" onClick={onEdit}>
           팀 정보 편집
         </button>
-        {/* 이 기기는 등록한 팀을 기억합니다. 다른 팀이 쓰게 될 때만 필요한 버튼 */}
-        {onForget && (
-          <button className="team-sheet-forget" onClick={onForget}>
-            다른 팀으로 등록하기
-          </button>
-        )}
       </section>
     </div>
   )

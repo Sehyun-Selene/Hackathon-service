@@ -549,12 +549,6 @@ html.dark .call-guide-title { color: #fbbf24; }
 .setup-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
 /* 저장된 팀을 확인하는 사이의 빈 화면 — 깜빡임만 막는 용도 */
 .boot-wait { min-height: 100vh; }
-/* 팀 기억 해제 — 평소엔 쓰지 않는 조작이라 눈에 덜 띄게 */
-.team-sheet-forget {
-  width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px;
-  border: 1px solid var(--line); background: transparent;
-  font-size: 13.5px; font-weight: 700; color: var(--sub); cursor: pointer;
-}
 /* 등록 안내 — 호출 가이드 박스와 같은 결로 (참가자 앱의 강조 면) */
 .setup-solo-note {
   background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;
