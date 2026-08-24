@@ -318,15 +318,26 @@ body {
 }
 .team-row:last-child { border-bottom: none; }
 .team-row.delivered { opacity: 0.5; }
-.team-row.delivered .team-row-items { text-decoration: line-through; }
-.team-row-body { flex: 1; min-width: 0; }
-.team-row-head { display: flex; align-items: baseline; gap: 6px; }
-.team-row-head b { font-size: 15px; }
-.team-row-items {
-  display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 3px; font-size: 13px; color: var(--text);
+.team-row.delivered .team-row-slots { text-decoration: line-through; }
+/* 팀 번호 — 폭을 고정해 아래 메뉴 칸들이 항상 같은 열에서 시작하게 */
+.team-row-no { flex: 0 0 auto; min-width: 62px; font-size: 15px; }
+/* 메뉴 칸은 그 끼니의 메뉴 수만큼 균등 분할(고정) — 주문 없는 칸은 비워도
+   열이 유지되므로 수량이 항상 같은 자리에 옵니다 */
+.team-row-slots {
+  flex: 1; min-width: 0; display: grid;
+  grid-template-columns: repeat(var(--slots, 2), minmax(0, 1fr)); gap: 6px;
 }
-.team-row-items .ti { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
-.team-row-items .ti b { color: var(--primary-dark); font-variant-numeric: tabular-nums; }
+.team-row-slots.wrap { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.slot {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0;
+  font-size: 13px; color: var(--sub);
+}
+.slot-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 배부에서 실제로 세는 값이라 가장 크게 */
+.slot-qty {
+  flex: 0 0 auto; font-size: 18px; font-weight: 800; color: var(--primary-dark);
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
 .deliver-check {
   flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
   font-size: 12px; font-weight: 700; color: var(--green); cursor: pointer; white-space: nowrap;
@@ -398,7 +409,6 @@ body {
 .call-card.mine-company { border-left: 3px solid var(--primary); }
 
 .count-company { font-size: 12px; color: var(--sub); font-weight: 500; }
-.member-count { font-size: 12px; color: var(--sub); font-weight: 500; }
 
 /* =====================================================================
    마스터 메이트 현황

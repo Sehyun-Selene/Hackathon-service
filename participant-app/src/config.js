@@ -124,6 +124,7 @@ export const DARK_MODE_HOURS = { start: 20, end: 7 }
 //    음료는 냉장고 자율 이용이라 메뉴에 없습니다. 전부 음식이며,
 //    식사(끼니)마다 팀 인원수만큼만 담을 수 있습니다.
 //    badges     : 메뉴 카드에 표시되는 식이 정보 뱃지 (예: '⚠️ 밀', '🌱 비건')
+//    shortLabel : 관리자 배부 목록처럼 좁은 칸에서 쓰는 짧은 이름. 없으면 name.
 //    name       : 메뉴 이름. 줄바꿈 문자(\n)를 넣으면 메뉴 카드에서 그 위치에서
 //                 줄이 나뉩니다 (카드 이름에만 적용 — 장바구니·관리자 표기와
 //                 CSV에서는 공백으로 눕혀 한 줄로 나옵니다).
@@ -144,6 +145,7 @@ export const MENUS = {
     {
       id: 'md-a',
       name: '페퍼로니 딜라이트 (1인)',
+      shortLabel: '페퍼로니',
       badges: [],
       image: './menu/pepperoni-delight.png',
       allergyNote: '',
@@ -152,6 +154,7 @@ export const MENUS = {
     {
       id: 'md-b',
       name: '수퍼잭슨 (1인)',
+      shortLabel: '수퍼잭슨',
       badges: [],
       image: './menu/super-jackson.png',
       // 성분이 5개라 카드 폭에서 줄이 어색하게 끊겨, 줄바꿈 위치를 직접 지정.
@@ -164,6 +167,7 @@ export const MENUS = {
     {
       id: 'bf-a',
       name: '잠봉뵈르 샌드위치',
+      shortLabel: '잠봉뵈르',
       badges: [],
       image: './menu/jambon-beurre.jpg',
       allergyNote: '',
@@ -172,6 +176,7 @@ export const MENUS = {
     {
       id: 'bf-b',
       name: '햄&치즈 샌드위치',
+      shortLabel: '햄&치즈',
       badges: [],
       image: './menu/ham-cheese.jpg',
       allergyNote: '',

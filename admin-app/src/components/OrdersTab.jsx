@@ -12,30 +12,53 @@ import {
 import { getOpenMeals, now } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 
+// 배부 목록의 한 줄.
+//
+// 배부하는 사람이 읽는 것은 "팀 번호 → 메뉴별 개수"뿐이라, 수량을 가장 크게
+// 두고 한 줄에 담습니다. 메뉴 칸은 그 끼니의 메뉴 수만큼 **고정**해서, 한 메뉴만
+// 주문한 팀이 섞여 있어도 숫자가 항상 같은 열에 옵니다(주문 없는 칸은 비움).
+// 인원수는 배부에 쓰이지 않아 표시하지 않습니다.
 function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelivered }) {
+  const slots = singleMeal ? MENUS[mealFilter] || [] : []
   return (
     <div className="team-rows">
       {rows.map((row) => {
         const done = isDelivered(row.teamId)
+        const qtyOf = (menuId) =>
+          row.items.filter((it) => it.menuId === menuId).reduce((sum, it) => sum + it.qty, 0)
         return (
           <div key={row.teamId} className={`team-row${done ? ' delivered' : ''}`}>
-            <div className="team-row-body">
-              <div className="team-row-head">
-                <b>팀 {row.teamId}</b>
-                {row.assignedName && <span className="count-company">{row.assignedName}</span>}
-                {row.memberCount && <span className="member-count">{row.memberCount}명</span>}
+            <b className="team-row-no">팀 {row.teamId}</b>
+            {slots.length ? (
+              <div className="team-row-slots" style={{ '--slots': slots.length }}>
+                {slots.map((menu) => {
+                  const qty = qtyOf(menu.id)
+                  return (
+                    <span key={menu.id} className={`slot${qty ? '' : ' empty'}`}>
+                      {qty > 0 && (
+                        <>
+                          <span className="slot-name">{menu.shortLabel || menu.name}</span>
+                          <b className="slot-qty">{qty}</b>
+                        </>
+                      )}
+                    </span>
+                  )
+                })}
               </div>
-              <div className="team-row-items">
+            ) : (
+              /* 끼니 '전체' 보기 — 고정 칸이 성립하지 않아 나열합니다 */
+              <div className="team-row-slots wrap">
                 {row.items.map((item, index) => (
-                  <span key={index} className="ti">
-                    {mealFilter === 'all' && (
-                      <span className="meal-tag">{MEAL_BY_ID[item.mealId]?.label}</span>
-                    )}
-                    {MENU_BY_ID[item.menuId]?.name || item.menuId} <b>{item.qty}</b>
+                  <span key={index} className="slot">
+                    <span className="meal-tag">{MEAL_BY_ID[item.mealId]?.label}</span>
+                    <span className="slot-name">
+                      {MENU_BY_ID[item.menuId]?.shortLabel || MENU_BY_ID[item.menuId]?.name}
+                    </span>
+                    <b className="slot-qty">{item.qty}</b>
                   </span>
                 ))}
               </div>
-            </div>
+            )}
             {singleMeal && (
               <label className="deliver-check">
                 <input
