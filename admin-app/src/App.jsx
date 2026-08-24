@@ -318,12 +318,13 @@ export default function App() {
         {
           kind: 'waiting',
           label: '대기 중 호출',
+          short: '대기 호출',
           value: waitingCount,
           tone: waitingCount > 0 ? 'alert' : undefined,
         },
-        { kind: 'orders', label: '주문한 팀', value: Object.keys(scan.orders).length },
-        { kind: 'teams', label: '등록한 팀', value: Object.keys(scan.teams).length },
-        { kind: 'coaches', label: '입장한 마스터 메이트', value: scan.coaches.length },
+        { kind: 'orders', label: '주문한 팀', short: '주문 팀', value: Object.keys(scan.orders).length },
+        { kind: 'teams', label: '등록한 팀', short: '등록 팀', value: Object.keys(scan.teams).length },
+        { kind: 'coaches', label: '입장한 마스터 메이트', short: '메이트', value: scan.coaches.length },
       ]
     : []
 
@@ -440,9 +441,14 @@ export default function App() {
               />
               알림음
             </label>
-            {scan && <span className="sync-time">동기화 {fmtClock(new Date(scan.at))}</span>}
-            <button className="btn-ghost" onClick={refresh}>
-              ⟳ 새로고침
+            {scan && (
+              <span className="sync-time">
+                <span className="narrow-hide">동기화 </span>
+                {fmtClock(new Date(scan.at))}
+              </span>
+            )}
+            <button className="btn-ghost" onClick={refresh} aria-label="새로고침">
+              ⟳<span className="narrow-hide"> 새로고침</span>
             </button>
           </div>
         </header>
@@ -463,7 +469,10 @@ export default function App() {
                 aria-haspopup="dialog"
                 aria-label={`${k.label} 목록 보기`}
               >
-                <div className="kpi-label">{k.label}</div>
+                <div className="kpi-label">
+                  <span className="kpi-label-full">{k.label}</span>
+                  <span className="kpi-label-short">{k.short || k.label}</span>
+                </div>
                 <div className="kpi-value">{k.value}</div>
               </button>
             ))}

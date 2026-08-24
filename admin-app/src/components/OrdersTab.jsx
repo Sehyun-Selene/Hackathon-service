@@ -68,7 +68,9 @@ function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelive
                     onToggleDelivered(row.teamId, mealFilter, event.target.checked)
                   }
                 />
-                완료
+                {/* 아주 좁은 폰에서는 메뉴명이 잘리지 않게 이 글자를 접습니다
+                    (체크박스만으로도 뜻이 통함) */}
+                <span className="tiny-hide">완료</span>
               </label>
             )}
           </div>

@@ -38,6 +38,10 @@ body {
   background: var(--bg);
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
+  /* 폰에서 화면이 좌우로 밀리며 흰 여백이 보이는 것을 막습니다.
+     clip은 hidden과 달리 스크롤 컨테이너를 만들지 않아 sticky를 깨지 않음 */
+  overflow-x: clip;
+  overscroll-behavior-x: none;
 }
 
 /* 공유 서버 연결 오류 배너 */
