@@ -335,6 +335,44 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
 
   return (
     <div>
+      <section className="panel">
+        <h3>메뉴별 합산 수량</h3>
+        {Object.keys(totals.total).length === 0 ? (
+          <p className="empty-text">아직 주문이 없습니다.</p>
+        ) : (
+          <div className="totals-grid">
+            {Object.entries(totals.total)
+              .sort(([, a], [, b]) => b - a)
+              .map(([menuId, total]) => {
+                const remain = totals.remaining[menuId]
+                const allDone = anyDelivered && remain === 0
+                return (
+                  <div key={menuId} className={`total-item${allDone ? ' done' : ''}`}>
+                    {/* '(1인)'은 여기서 군더더기라 뺍니다. 좁은 화면에서는 두 메뉴를
+                        한 줄에 담기 위해 배부 목록과 같은 짧은 이름을 씁니다 */}
+                    <span className="total-name">
+                      <span className="total-name-full">
+                        {MENU_BY_ID[menuId]?.baseName || menuId}
+                      </span>
+                      <span className="total-name-short">
+                        {MENU_BY_ID[menuId]?.shortLabel || MENU_BY_ID[menuId]?.baseName || menuId}
+                      </span>
+                    </span>
+                    <b>
+                      {remain}개
+                      {anyDelivered && remain !== total && (
+                        <span className="total-of"> / 총 {total}</span>
+                      )}
+                    </b>
+                  </div>
+                )
+              })}
+          </div>
+        )}
+      </section>
+
+      {/* 검색·도구는 아래 팀별 목록에 걸리는 조작이라 목록 바로 위에 둡니다.
+          (합산 수량은 목록과 무관한 총계라 맨 위) */}
       <div className="toolbar">
         <div className="toolbar-actions">
           <label className="table-search-wrap">
@@ -386,41 +424,6 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
         </div>
       </div>
 
-      <section className="panel">
-        <h3>메뉴별 합산 수량</h3>
-        {Object.keys(totals.total).length === 0 ? (
-          <p className="empty-text">아직 주문이 없습니다.</p>
-        ) : (
-          <div className="totals-grid">
-            {Object.entries(totals.total)
-              .sort(([, a], [, b]) => b - a)
-              .map(([menuId, total]) => {
-                const remain = totals.remaining[menuId]
-                const allDone = anyDelivered && remain === 0
-                return (
-                  <div key={menuId} className={`total-item${allDone ? ' done' : ''}`}>
-                    {/* '(1인)'은 여기서 군더더기라 뺍니다. 좁은 화면에서는 두 메뉴를
-                        한 줄에 담기 위해 배부 목록과 같은 짧은 이름을 씁니다 */}
-                    <span className="total-name">
-                      <span className="total-name-full">
-                        {MENU_BY_ID[menuId]?.baseName || menuId}
-                      </span>
-                      <span className="total-name-short">
-                        {MENU_BY_ID[menuId]?.shortLabel || MENU_BY_ID[menuId]?.baseName || menuId}
-                      </span>
-                    </span>
-                    <b>
-                      {remain}개
-                      {anyDelivered && remain !== total && (
-                        <span className="total-of"> / 총 {total}</span>
-                      )}
-                    </b>
-                  </div>
-                )
-              })}
-          </div>
-        )}
-      </section>
 
       {showAllergyPanel && (
         <div className="bottom-sheet-backdrop" onClick={closeUtilityPanels}>
