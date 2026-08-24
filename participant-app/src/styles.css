@@ -251,7 +251,7 @@ html.dark .folder-tab { background: #2c2721; }
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   flex: 1 1 0; min-width: 0; white-space: nowrap;
   border: none; background: var(--card); border: 1px solid var(--line);
-  color: var(--sub); border-radius: 999px; padding: 9px 12px;
+  color: var(--sub); border-radius: 12px; padding: 9px 12px;
   font-size: 15px; font-weight: 700; cursor: pointer;
 }
 /* 그보다 좁은 폰에서는 줄을 옆으로 밀어 봅니다 (글자를 자르지 않도록) */
