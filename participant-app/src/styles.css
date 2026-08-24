@@ -245,11 +245,19 @@ html.dark .folder-tab { background: #2c2721; }
 }
 
 .cat-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+/* 라벨에 [DAY 1]이 붙어 길어졌으므로 두 탭이 한 줄을 나눠 갖게 합니다
+   (카드 안쪽 폭은 375px 화면에서 319px뿐) */
 .cat-tab {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  flex: 1 1 0; min-width: 0; white-space: nowrap;
   border: none; background: var(--card); border: 1px solid var(--line);
-  color: var(--sub); border-radius: 999px; padding: 9px 20px;
+  color: var(--sub); border-radius: 999px; padding: 9px 12px;
   font-size: 15px; font-weight: 700; cursor: pointer;
+}
+/* 그보다 좁은 폰에서는 줄을 옆으로 밀어 봅니다 (글자를 자르지 않도록) */
+@media (max-width: 359px) {
+  .cat-tabs { overflow-x: auto; overscroll-behavior-x: contain; }
+  .cat-tab { flex: 0 0 auto; }
 }
 .cat-tab.on { background: #262220; border-color: #262220; color: #fff; }
 .cat-tab-count {

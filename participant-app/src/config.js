@@ -40,7 +40,7 @@ export const API_BASE_URL = 'https://hackathon-api-hi55.onrender.com'
 export const MEALS = [
   {
     id: 'midnight',
-    label: 'DAY 1 야식',
+    label: '[DAY 1] 야식',
     shortLabel: '야식',
     orderStart: '2026-09-21T13:30:00',
     orderEnd: '2026-09-21T14:30:00',
@@ -48,7 +48,7 @@ export const MEALS = [
   },
   {
     id: 'breakfast',
-    label: 'DAY 2 아침',
+    label: '[DAY 2] 아침',
     shortLabel: '아침',
     orderStart: '2026-09-21T13:30:00',
     orderEnd: '2026-09-21T14:30:00',

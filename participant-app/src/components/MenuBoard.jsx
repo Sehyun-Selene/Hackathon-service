@@ -10,8 +10,8 @@ const fmtHM = (iso) => {
   const m = d.getMinutes()
   return m ? `${h}시 ${m}분` : `${h}시`
 }
-// label 'DAY 1 야식' → 'DAY 1' (없으면 빈 문자열)
-const dayOf = (label) => (label || '').match(/^DAY\s*\d+/)?.[0] || ''
+// label '[DAY 1] 야식' → '[DAY 1]' (없으면 빈 문자열)
+const dayOf = (label) => (label || '').match(/^\[?\s*DAY\s*\d+\s*\]?/)?.[0] || ''
 
 // 주문 시간 공지 — 호출 탭의 가이드 박스(.call-guide)와 같은 형태로 노출.
 // 주문 가능 시간대일 때와 마감/대기 상태일 때 모두 보여줍니다.
