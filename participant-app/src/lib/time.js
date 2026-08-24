@@ -46,7 +46,7 @@ export function fmtCountdown(ms) {
 }
 
 export function fmtAgo(ms) {
-  const s = Math.floor(ms / 1000)
+  const s = Math.max(0, Math.floor(ms / 1000))
   if (s < 60) return `${s}초 전`
   const m = Math.floor(s / 60)
   if (m < 60) return `${m}분 전`

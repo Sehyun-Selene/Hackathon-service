@@ -11,7 +11,7 @@ import {
 import { normalizeTeam } from '../lib/storage.js'
 import GuideSection from './GuideSection.jsx'
 
-// 알러지 인원 블록의 React key 겸 식별자 생성 (사람별로 별개 목록을 구분하기 위함)
+// 알레르기 인원 블록의 React key 겸 식별자 생성 (사람별로 별개 목록을 구분하기 위함)
 let blockSeq = 0
 const newBlock = (list = []) => ({ id: `p${blockSeq++}`, list })
 
@@ -21,7 +21,7 @@ const newBlock = (list = []) => ({ id: `p${blockSeq++}`, list })
 const toAllergyBlocks = (allergies) =>
   (allergies || []).map((p) => newBlock(Array.isArray(p) ? p : [p]))
 
-// 한 사람의 알러지 선택 결과를 사람이 읽을 수 있는 안내로 바꿔 보여줌.
+// 한 사람의 알레르기 선택 결과를 사람이 읽을 수 있는 안내로 바꿔 보여줌.
 // 판정 자체는 config.personDiet 한 곳에서만 하므로 화면끼리 어긋나지 않습니다.
 function DietSummary({ allergies }) {
   const { byMeal, needsAlt } = personDiet(allergies)
@@ -55,7 +55,7 @@ function DietSummary({ allergies }) {
 }
 
 // QR은 모든 팀이 공유 → 첫 진입 시 팀 정보를 직접 입력 (PRD 요청 #2)
-// 팀 번호 / 인원수 / 알러지(인원별로 구분 입력 — 1명이 여러 개인지,
+// 팀 번호 / 인원수 / 알레르기(인원별로 구분 입력 — 1명이 여러 개인지,
 // 여러 명이 각각 하나씩인지에 따라 대체 메뉴 준비량이 달라지므로 사람 단위로 관리)
 // ※ 계열사는 더 이상 참가자가 선택하지 않음 — 마스터 메이트 담당은 팀 번호 기준
 //   개인별 배정(config.COACH_ASSIGNMENTS)으로 대체됨
@@ -65,7 +65,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
   const [allergyBlocks, setAllergyBlocks] = useState(() => toAllergyBlocks(initial?.allergies))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  // 사용자가 인원수·알러지를 건드렸는지 — 건드린 뒤에는 서버 값으로 덮어쓰지
+  // 사용자가 인원수·알레르기를 건드렸는지 — 건드린 뒤에는 서버 값으로 덮어쓰지
   // 않습니다 (팀 번호 칸을 다시 눌렀다 나오면 입력이 되돌아가던 문제)
   const [touched, setTouched] = useState(false)
   // 입력한 번호가 이미 등록된 팀일 때 알려줍니다 (오타로 남의 팀을 덮어쓰는 것 방지)
@@ -115,12 +115,20 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     if (parseInt(teamNo, 10) > TOTAL_TEAMS) return setError(`팀 번호는 1~${TOTAL_TEAMS} 사이여야 합니다.`)
     if (!memberCount || memberCount < 1) return setError('인원수를 1명 이상 입력해 주세요.')
 
-    // 알러지를 하나도 선택 안 한 빈 블록은 제외하고 저장 (사람별 배열)
+    if (existingInfo?.teamId === teamId && initial?.teamId !== teamId) {
+      const confirmed = window.confirm(
+        `팀 ${teamId}은 이미 등록되어 있습니다.\n\n` +
+          '내 팀 번호가 맞으면 확인을 눌러주세요. 입력한 인원수·알레르기 정보로 기존 팀 정보가 갱신됩니다.',
+      )
+      if (!confirmed) return
+    }
+
+    // 알레르기를 하나도 선택 안 한 빈 블록은 제외하고 저장 (사람별 배열)
     const allergies = allergyBlocks.map((b) => b.list).filter((list) => list.length > 0)
-    // 알러지 인원이 팀 인원수를 넘으면 대체식 준비 수량이 실제보다 많아집니다
+    // 알레르기 인원이 팀 인원수를 넘으면 대체식 준비 수량이 실제보다 많아집니다
     if (allergies.length > memberCount) {
       return setError(
-        '알러지 인원(' + allergies.length + '명)이 팀 인원수(' + memberCount +
+        '알레르기 인원(' + allergies.length + '명)이 팀 인원수(' + memberCount +
           '명)보다 많습니다. 인원수를 확인해 주세요.',
       )
     }
@@ -167,7 +175,10 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
             max={TOTAL_TEAMS}
             placeholder={`1 ~ ${TOTAL_TEAMS}`}
             value={teamNo}
-            onChange={(e) => setTeamNo(e.target.value)}
+            onChange={(e) => {
+              setTeamNo(e.target.value)
+              setExistingInfo(null)
+            }}
             onBlur={onTeamNoBlur}
           />
           {/* 오타로 다른 팀 번호를 넣으면 그 팀 정보를 덮어쓰게 되므로 알려줍니다 */}
@@ -208,10 +219,10 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">알러지가 있다면 알려주세요!</label>
+          <label className="setup-label">알레르기가 있다면 알려주세요!</label>
 
           {allergyBlocks.length === 0 && (
-            <p className="empty-text">알러지가 있는 팀원이 없으면 비워두셔도 됩니다.</p>
+            <p className="empty-text">알레르기가 있는 팀원이 없으면 비워두셔도 됩니다.</p>
           )}
 
           {allergyBlocks.map((block, i) => (
@@ -237,7 +248,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
                   </button>
                 ))}
               </div>
-              {/* 고른 알러지가 실제로 어떤 결과가 되는지 즉시 보여줌 —
+              {/* 고른 알레르기가 실제로 어떤 결과가 되는지 즉시 보여줌 —
                   같은 끼니의 메뉴들이 성분을 거의 공유해서, 항목 하나로
                   "다른 메뉴 선택 가능"과 "대체식 필요"가 갈립니다.
                   잘못 체크한 경우도 이 자리에서 바로 알아챌 수 있음. */}
@@ -252,7 +263,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
           >
             {allergyFull
               ? '팀 인원수(' + memberCount + '명)만큼 추가했습니다'
-              : '+ 알러지 있는 인원 추가'}
+              : '+ 알레르기 있는 인원 추가'}
           </button>
         </div>
 

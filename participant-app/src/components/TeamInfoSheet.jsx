@@ -1,32 +1,22 @@
-import { useEffect } from 'react'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
+import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 export default function TeamInfoSheet({ team, onClose, onEdit }) {
   const allergyGroups = (team.allergies || []).filter(
     (group) => Array.isArray(group) && group.length > 0,
   )
   const drag = useSheetDrag(onClose)
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow
-    const closeOnEscape = (event) => event.key === 'Escape' && onClose()
-
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', closeOnEscape)
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [onClose])
+  const dialogRef = useDialogFocus(true, onClose)
 
   return (
     <div className="team-sheet-backdrop" onClick={onClose}>
       <section
+        ref={dialogRef}
         className="team-sheet"
         role="dialog"
         aria-modal="true"
         aria-labelledby="team-sheet-title"
+        tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
         style={drag.sheetStyle}
       >
@@ -46,7 +36,7 @@ export default function TeamInfoSheet({ team, onClose, onEdit }) {
             <strong>{team.memberCount}명</strong>
           </div>
           <div className="team-sheet-allergies">
-            <span>알러지 정보</span>
+            <span>알레르기 정보</span>
             {allergyGroups.length === 0 ? (
               <strong>없음</strong>
             ) : (

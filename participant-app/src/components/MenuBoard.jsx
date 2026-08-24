@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MEALS, MENUS, MENU_BY_ID, MEAL_BY_ID, teamDiet } from '../config.js'
 import { now, fmtClock, fmtCountdown, mealTimes } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
+import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 // '2026-09-21T13:30:00' → '13시 30분' (정시는 '21시')
 const fmtHM = (iso) => {
@@ -55,8 +56,8 @@ function OrderNotice() {
 // 한 장바구니에 담아 한 번에 주문합니다.
 // 각 식사(끼니)마다 팀 인원수(memberCount)만큼만 담을 수 있습니다.
 //
-// 여기에 알러지 제한이 더 붙습니다. 같은 끼니의 메뉴들이 성분을 거의
-// 공유해서, 알러지가 있는 팀원은 특정 메뉴를 아예 못 먹습니다. 그대로
+// 여기에 알레르기 제한이 더 붙습니다. 같은 끼니의 메뉴들이 성분을 거의
+// 공유해서, 알레르기가 있는 팀원은 특정 메뉴를 아예 못 먹습니다. 그대로
 // 인원수만큼 담게 두면 확실히 버려지는 몫이 생기므로,
 //   - 메뉴별 상한 = 그 메뉴를 먹을 수 있는 팀원 수
 //   - 끼니별 상한 = 그 끼니에서 하나라도 먹을 수 있는 팀원 수
@@ -80,7 +81,9 @@ export default function MenuBoard({
   const [activeMealId, setActiveMealId] = useState(openMeals[0]?.id || null)
   const [showCart, setShowCart] = useState(false) // 하단 장바구니 시트
   const [refreshing, setRefreshing] = useState(false)
-  const cartDrag = useSheetDrag(() => setShowCart(false))
+  const closeCart = useCallback(() => setShowCart(false), [])
+  const cartDrag = useSheetDrag(closeCart)
+  const cartDialogRef = useDialogFocus(showCart, closeCart)
 
   // openMeals는 매 렌더마다 새 배열 → id 목록 문자열로 변화 감지
   const mealsKey = openMeals.map((m) => m.id).join(',')
@@ -161,7 +164,7 @@ export default function MenuBoard({
   const menus = MENUS[activeMeal.id] || []
   const multiMeal = openMeals.length > 1
 
-  // 알러지를 반영한 상한 (알러지가 없으면 전부 memberCount 와 같음)
+  // 알레르기를 반영한 상한 (알레르기가 없으면 전부 memberCount 와 같음)
   const diet = teamDiet(memberCount, allergies)
   const mealCap = (mealId) => Math.min(memberCount, diet.eatableByMeal[mealId] ?? memberCount)
   const menuCap = (menuId) => diet.eatableByMenu[menuId] ?? memberCount
@@ -347,12 +350,12 @@ export default function MenuBoard({
         </p>
       )}
 
-      {/* 알러지로 상한이 줄어든 경우 그 이유를 밝혀줌 — 그냥 버튼이 막히면
+      {/* 알레르기로 상한이 줄어든 경우 그 이유를 밝혀줌 — 그냥 버튼이 막히면
           품절이나 오류로 오해하기 때문. 줄어든 몫은 대체 메뉴로 준비됨을 명시 */}
       {(mealCap(activeMeal.id) < memberCount ||
         menus.some((m) => menuCap(m.id) < memberCount)) && (
         <div className="diet-cap-hint">
-          <b>🥗 알러지 반영 안내</b>
+          <b>🥗 알레르기 반영 안내</b>
           {mealCap(activeMeal.id) < memberCount && (
             <p>
               {activeMeal.label}은 <b>{mealCap(activeMeal.id)}개</b>까지 담을 수 있어요. 남은{' '}
@@ -363,7 +366,7 @@ export default function MenuBoard({
             .filter((m) => menuCap(m.id) < memberCount && menuCap(m.id) > mealCap(activeMeal.id))
             .map((m) => (
               <p key={m.id}>
-                {m.name.replace('\n', ' ')} — 알러지가 있는 팀원이 있어{' '}
+                {m.name.replace('\n', ' ')} — 알레르기가 있는 팀원이 있어{' '}
                 <b>{menuCap(m.id)}개</b>까지 담을 수 있어요.
               </p>
             ))}
@@ -388,10 +391,10 @@ export default function MenuBoard({
                 <div className="food-card-info">
                   <div className="food-card-name">{m.name}</div>
                 </div>
-                {/* 알러지·식이 표기는 담기 버튼과 같은 줄에 두면 폭이 80px 남짓으로
+                {/* 알레르기·식이 표기는 담기 버튼과 같은 줄에 두면 폭이 80px 남짓으로
                     좁아져 성분이 여러 줄로 잘립니다. 카드 전체 폭을 쓰도록 버튼과
                     형제로 두고, 배치는 styles.css의 order로 조정합니다.
-                    (DOM 순서는 이름 → 알러지 → 버튼 — 읽는 순서와 맞춤) */}
+                    (DOM 순서는 이름 → 알레르기 → 버튼 — 읽는 순서와 맞춤) */}
                 {(m.badges.length > 0 || m.allergyNote) && (
                   <div className="food-badges">
                     {m.badges.map((b) => (
@@ -443,7 +446,7 @@ export default function MenuBoard({
         <p className="limit-hint">
           {activeMeal.label}은 {mealCap(activeMeal.id)}개까지 담을 수 있어요
           {mealCap(activeMeal.id) < memberCount
-            ? ' (알러지 반영)'
+            ? ' (알레르기 반영)'
             : ` (팀 인원수 ${memberCount}명)`}
           .
         </p>
@@ -465,12 +468,21 @@ export default function MenuBoard({
 
       {/* 장바구니 하단 시트 */}
       {showCart && (
-        <div className="sheet-overlay" onClick={() => setShowCart(false)}>
-          <div className="sheet" onClick={(e) => e.stopPropagation()} style={cartDrag.sheetStyle}>
-            <div className="sheet-handle" {...cartDrag.handleHandlers} />
+        <div className="sheet-overlay" onClick={closeCart}>
+          <div
+            ref={cartDialogRef}
+            className="sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cart-sheet-title"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+            style={cartDrag.sheetStyle}
+          >
+            <div className="sheet-handle" aria-hidden="true" {...cartDrag.handleHandlers} />
             <div className="sheet-head">
-              <h3>🛒 장바구니 ({totalQty})</h3>
-              <button className="sheet-close" onClick={() => setShowCart(false)} aria-label="닫기">
+              <h3 id="cart-sheet-title">🛒 장바구니 ({totalQty})</h3>
+              <button className="sheet-close" onClick={closeCart} aria-label="닫기">
                 ✕
               </button>
             </div>

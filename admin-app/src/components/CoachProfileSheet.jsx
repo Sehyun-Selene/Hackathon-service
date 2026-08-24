@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { COACH_ASSIGNMENTS, formatTeamRange } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
+import { useDialogFocus } from '../lib/useDialogFocus.js'
 import { isHandledByMe } from '../lib/storage.js'
 
 // 내 프로필 — 사이드바(좁은 화면은 상단바)의 이름을 누르면 열립니다.
@@ -14,6 +15,7 @@ import { isHandledByMe } from '../lib/storage.js'
 //      관리자 페이지를 계속 보고 있지 않으면 놓치게 되므로 미리 알려줍니다.
 export default function CoachProfileSheet({ scan, coach, onClose, onChangeName }) {
   const drag = useSheetDrag(onClose)
+  const dialogRef = useDialogFocus(true, onClose)
 
   // 명단에서 내 항목 찾기 — 이름이 정확히 같아야 연결됩니다
   const assignment = useMemo(
@@ -42,10 +44,12 @@ export default function CoachProfileSheet({ scan, coach, onClose, onChangeName }
   return (
     <div className="bottom-sheet-backdrop" onClick={onClose}>
       <section
+        ref={dialogRef}
         className="bottom-sheet"
         role="dialog"
         aria-modal="true"
         aria-labelledby="profile-sheet-title"
+        tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
         style={drag.sheetStyle}
       >

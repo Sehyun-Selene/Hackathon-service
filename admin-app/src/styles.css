@@ -3,6 +3,21 @@
    같은 화면이 폰에서만 파랗게 보이던 원인이라, 기본값을 본문 색으로 되돌립니다.
    (색을 직접 지정한 버튼은 클래스 규칙이 이깁니다) */
 button { color: inherit; }
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 3px solid rgba(109, 90, 230, 0.32);
+  outline-offset: 2px;
+}
+
+@font-face {
+  font-family: 'Pretendard Variable';
+  src: url('./assets/PretendardVariable.woff2') format('woff2-variations');
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --primary: #6d5ae6;       /* 보라 액센트 */
@@ -13,7 +28,7 @@ button { color: inherit; }
   --bg: #e9ebf0;
   --card: #ffffff;
   --text: #1a1d24;
-  --sub: #8b909a;
+  --sub: #6b7280;
   --line: #e1e4ea;          /* 카드 경계·구분선 (배경보다 진해야 보임) */
   --green: #12a150;
   --amber: #d98a08;
@@ -50,7 +65,7 @@ body {
   width: 100%; padding: 13px 14px; font-size: 16px; border: 1px solid var(--line);
   border-radius: 9px; margin-bottom: 12px; background: #fbfbfc;
 }
-.gate-input:focus { outline: none; border-color: var(--primary); background: #fff; }
+.gate-input:focus { outline: 3px solid rgba(109, 90, 230, 0.25); outline-offset: 2px; border-color: var(--primary); background: #fff; }
 
 /* =====================================================================
    셸: 사이드바 + 메인 (반응형)
@@ -235,7 +250,27 @@ body {
 
 .sync-error {
   background: #fef5f5; color: #b42318; border: 1px solid #f6c6c8; padding: 11px 14px;
-  border-radius: 9px; margin-bottom: 14px; font-size: 13px; font-weight: 600; text-align: center;
+  border-radius: 9px; margin-bottom: 14px; font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.sync-error span { min-width: 0; }
+.sync-error small { display: block; margin-top: 3px; font-size: 11px; font-weight: 600; }
+.sync-error button {
+  flex: 0 0 auto; min-height: 38px; border: 1px solid currentColor; border-radius: 8px;
+  background: transparent; color: inherit; padding: 6px 11px; font: inherit; cursor: pointer;
+}
+
+.undo-toast {
+  position: fixed; z-index: 1600; left: 50%; bottom: max(24px, env(safe-area-inset-bottom));
+  transform: translateX(-50%); width: min(calc(100% - 28px), 520px); min-height: 52px;
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 10px 12px 10px 16px; border-radius: 12px; background: #20232a; color: #fff;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28); font-size: 13px; font-weight: 700;
+}
+.undo-toast span { min-width: 0; }
+.undo-toast button {
+  flex: 0 0 auto; min-height: 38px; border: 0; border-radius: 8px; padding: 7px 11px;
+  background: #fff; color: #3730a3; font: inherit; font-weight: 800; cursor: pointer;
 }
 
 /* =====================================================================
@@ -283,7 +318,7 @@ body {
 .toolbar-tool { min-height: 40px; padding: 8px 10px; white-space: nowrap; font-size: 12px; }
 .toolbar-tool.active { border-color: var(--primary); background: var(--violet-soft); color: var(--primary-dark); }
 
-/* 알러지·품절 하단 시트 */
+/* 알레르기·품절 하단 시트 */
 .bottom-sheet-backdrop {
   position: fixed; inset: 0; z-index: 1200; display: flex; align-items: flex-end;
   justify-content: center; background: rgba(20, 22, 30, 0.4); animation: sheet-fade-in 160ms ease-out;
@@ -493,7 +528,7 @@ body {
 .coach-note { font-size: 13px; color: var(--sub); line-height: 1.5; padding: 6px 2px 0; }
 
 /* =====================================================================
-   알러지 현황
+   알레르기 현황
    ===================================================================== */
 .allergy-teams { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
 .allergy-team-row {

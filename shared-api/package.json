@@ -5,7 +5,9 @@
   "description": "참가자 앱 · 관리자 앱이 공유하는 초경량 KV API (PRD 3.3 키 설계 그대로 저장)",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test server.test.js",
+    "validate-config": "node validate-config.js"
   },
   "engines": {
     "node": ">=18"

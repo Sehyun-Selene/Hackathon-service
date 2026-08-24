@@ -22,8 +22,8 @@ export default function GuideSection({ defaultOpen = false }) {
           <p>각 식사마다 등록한 팀 인원수만큼만 담을 수 있어요.</p>
         </div>
         <div className="guide-block">
-          <b>🥗 알러지</b>
-          <p>메뉴에 포함된 알러지 유발 물질 중 해당 사항이 있다면 하단에 표기해주세요.</p>
+          <b>🥗 알레르기</b>
+          <p>메뉴에 포함된 알레르기 유발 물질 중 해당 사항이 있다면 하단에 표기해주세요.</p>
         </div>
       </div>
     </details>

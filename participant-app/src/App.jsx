@@ -12,7 +12,7 @@ import {
   callCountKey,
   SOLDOUT_KEY,
 } from './lib/storage.js'
-import { now, fmtClock, getOpenMeals, getNextMeals } from './lib/time.js'
+import { now, fmtAgo, fmtClock, getOpenMeals, getNextMeals } from './lib/time.js'
 import TeamSetup from './components/TeamSetup.jsx'
 import MenuBoard from './components/MenuBoard.jsx'
 import CallSection from './components/CallSection.jsx'
@@ -54,6 +54,7 @@ export default function App() {
   const [soldout, setSoldout] = useState({})
   const [lastSync, setLastSync] = useState(null)
   const [syncError, setSyncError] = useState(false)
+  const refreshRunning = useRef(false)
 
   const teamId = team?.teamId || null
 
@@ -102,6 +103,8 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     if (!teamId) return
+    if (refreshRunning.current) return
+    refreshRunning.current = true
     try {
       const [order, call, count, sold] = await storageGetMany([
         orderKey(teamId),
@@ -118,14 +121,24 @@ export default function App() {
       setSyncError(false)
     } catch {
       setSyncError(true)
+    } finally {
+      refreshRunning.current = false
     }
   }, [teamId])
 
   useEffect(() => {
     if (!teamId) return
-    refresh()
-    const id = setInterval(refresh, PARTICIPANT_POLL_MS)
-    return () => clearInterval(id)
+    let stopped = false
+    let timer
+    const run = async () => {
+      await refresh()
+      if (!stopped) timer = window.setTimeout(run, PARTICIPANT_POLL_MS + Math.random() * 1000)
+    }
+    run()
+    return () => {
+      stopped = true
+      window.clearTimeout(timer)
+    }
   }, [teamId, refresh])
 
   // 팀 정보 저장: 공유 저장소(team:{id}) + 팀 로스터 등록 + 로컬 캐시
@@ -270,8 +283,16 @@ export default function App() {
   return (
     <div className={`app${tab === 'order' && openMeals.length ? ' has-sticky-bar' : ''}`}>
       {syncError && (
-        <div className="sync-error">
-          ⚠️ 서버 연결 오류 — 최신 정보가 아닐 수 있습니다. 자동으로 재시도 중입니다.
+        <div className="sync-error" role="status">
+          <span>
+            ⚠️ 서버 연결 오류 — 최신 정보가 아닐 수 있습니다.
+            <small>
+              {lastSync
+                ? `마지막 정상 동기화: ${fmtAgo(now().getTime() - lastSync.getTime())}`
+                : '아직 정상 동기화 기록이 없습니다.'}
+            </small>
+          </span>
+          <button type="button" onClick={refresh}>지금 재시도</button>
         </div>
       )}
 

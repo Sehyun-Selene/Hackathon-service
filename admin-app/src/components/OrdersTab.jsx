@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   MEALS,
   MENUS,
@@ -11,6 +11,15 @@ import {
 } from '../config.js'
 import { getOpenMeals, now } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
+import { useDialogFocus } from '../lib/useDialogFocus.js'
+
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 
 // 배부 목록의 한 줄.
 //
@@ -81,7 +90,7 @@ function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelive
 }
 
 // 주문 현황 (PRD 5.2): 팀별 내역, 시간대 필터, 메뉴별 합산, 품절 처리,
-// CSV 내보내기, 팀 번호 검색, 알러지 현황, 배부 체크(끼니별), 인쇄용 체크리스트.
+// CSV 내보내기, 팀 번호 검색, 알레르기 현황, 배부 체크(끼니별), 인쇄용 체크리스트.
 // 식사 선택(DAY 1 야식 / DAY 2 아침)은 좌측 메뉴의 하위 항목으로 옮겨졌으므로
 // mealFilter는 App에서 관리하고 prop으로 받습니다.
 export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleDelivered }) {
@@ -92,27 +101,15 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   // 배부 목록 탭 — 'pending'(미배부) 기본, 'done'(배부 완료)
   const [deliveryTab, setDeliveryTab] = useState('pending')
 
-  const closeUtilityPanels = () => {
+  const closeUtilityPanels = useCallback(() => {
     setShowAllergyPanel(false)
     setShowSoldoutPanel(false)
-  }
+  }, [])
 
   const allergyDrag = useSheetDrag(closeUtilityPanels)
   const soldoutDrag = useSheetDrag(closeUtilityPanels)
-
-  useEffect(() => {
-    if (!showAllergyPanel && !showSoldoutPanel) return undefined
-    const previousOverflow = document.body.style.overflow
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') closeUtilityPanels()
-    }
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', closeOnEscape)
-    return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [showAllergyPanel, showSoldoutPanel])
+  const allergyDialogRef = useDialogFocus(showAllergyPanel, closeUtilityPanels)
+  const soldoutDialogRef = useDialogFocus(showSoldoutPanel, closeUtilityPanels)
 
   const filteredMealIds = mealFilter === 'all' ? MEALS.map((m) => m.id) : [mealFilter]
   const singleMeal = mealFilter !== 'all' // 배부 체크는 끼니 단위로만 의미 있음
@@ -196,7 +193,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
         ? completedRows
         : pendingRows
 
-  // 알러지 현황: 같은 알러지 조합을 가진 사람끼리 팀 안에서 묶어 표시
+  // 알레르기 현황: 같은 알레르기 조합을 가진 사람끼리 팀 안에서 묶어 표시
   const allergyInfo = useMemo(() => {
     const teamsWith = []
     Object.entries(scan.teams).forEach(([teamId, team]) => {
@@ -236,7 +233,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
           if (personList.length) coveredByOtherMenu += 1
           return
         }
-        // 세부 내역은 "한 사람이 가진 알러지 조합" 단위로 셉니다.
+        // 세부 내역은 "한 사람이 가진 알레르기 조합" 단위로 셉니다.
         // 성분별로 쪼개면 우유+토마토 1명이 "우유 1 · 토마토 1"이 되어 합이
         // 총 개수와 어긋나고, 대체식은 그 사람의 성분을 모두 피해야 하므로
         // 조합 하나가 그대로 대체식 하나입니다.
@@ -295,7 +292,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
     const label = mealFilter === 'all' ? '전체' : MEAL_BY_ID[mealFilter].label
     const rangeLabel = selectedRange ? `${selectedRange.label}번` : '전체 팀'
     // 배부 현장에서 대체식이 필요한 팀을 종이만 보고 알 수 있어야 합니다.
-    // 화면의 알러지 시트를 따로 열어봐야 하면 놓치게 됩니다.
+    // 화면의 알레르기 시트를 따로 열어봐야 하면 놓치게 됩니다.
     const altInfoOf = (teamId) => {
       const people = (scan.teams[teamId]?.allergies || []).map((x) => (Array.isArray(x) ? x : [x]))
       let need = 0
@@ -318,19 +315,19 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
           .map((it) => {
             const name = MENU_BY_ID[it.menuId]?.name || it.menuId
             const tag = mealFilter === 'all' ? `[${MEAL_BY_ID[it.mealId]?.label}] ` : ''
-            return `${tag}${name} ${it.qty}`
+            return `${escapeHtml(tag)}${escapeHtml(name)} ${escapeHtml(it.qty)}`
           })
           .join(', ')
-        const coach = r.assignedName ? ` (${r.assignedName})` : ''
+        const coach = r.assignedName ? ` (${escapeHtml(r.assignedName)})` : ''
         const { need, combos } = altInfoOf(r.teamId)
         altTotal += need
         const alt = need
-          ? `<b>대체식 ${need}</b><span class="cmb"> ${combos.join(' / ')}</span>`
+          ? `<b>대체식 ${need}</b><span class="cmb"> ${combos.map(escapeHtml).join(' / ')}</span>`
           : ''
-        return `<tr><td class="c">☐</td><td class="t">팀 ${r.teamId}${coach}</td><td>${items}</td><td class="a">${alt}</td></tr>`
+        return `<tr><td class="c">☐</td><td class="t">팀 ${escapeHtml(r.teamId)}${coach}</td><td>${items}</td><td class="a">${alt}</td></tr>`
       })
       .join('')
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>배부 체크리스트 — ${label}</title>
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>배부 체크리스트 — ${escapeHtml(label)}</title>
 <style>
   body { font-family: 'Malgun Gothic', system-ui, sans-serif; padding: 16px; color:#111; }
   h1 { font-size: 18px; margin: 0 0 4px; }
@@ -345,7 +342,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   .cmb { color:#666; font-size:11px; }
   @media print { .noprint { display:none; } }
 </style></head><body>
-<h1>배부 체크리스트 — ${label} · ${rangeLabel}</h1>
+<h1>배부 체크리스트 — ${escapeHtml(label)} · ${escapeHtml(rangeLabel)}</h1>
 <div class="sub">총 ${rangedRows.length}팀 · 배부 시 왼쪽 칸에 체크${
       altTotal ? ` · <b>대체식 ${altTotal}개 필요</b>` : ''
     }</div>
@@ -432,7 +429,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
               setShowSoldoutPanel(false)
             }}
           >
-            알러지 {allergyInfo.teamsWith.length}
+            알레르기 {allergyInfo.teamsWith.length}
           </button>
           <button
             className={`btn-ghost toolbar-tool${showSoldoutPanel ? ' active' : ''}`}
@@ -456,16 +453,18 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       {showAllergyPanel && (
         <div className="bottom-sheet-backdrop" onClick={closeUtilityPanels}>
           <section
+            ref={allergyDialogRef}
             className="bottom-sheet allergy-panel"
             role="dialog"
             aria-modal="true"
             aria-labelledby="allergy-sheet-title"
+            tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
             style={allergyDrag.sheetStyle}
           >
             <div className="sheet-handle" aria-hidden="true" {...allergyDrag.handleHandlers} />
             <div className="sheet-head">
-              <h3 id="allergy-sheet-title">알러지 현황</h3>
+              <h3 id="allergy-sheet-title">알레르기 현황</h3>
               <button className="sheet-close" onClick={closeUtilityPanels}>닫기</button>
             </div>
             <p className="sheet-description">팀별 대체 메뉴 준비에 참고하세요.</p>
@@ -499,7 +498,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
                       ))}
                     {altMealInfo.coveredByOtherMenu > 0 && (
                       <p className="alt-meal-note">
-                        알러지가 있지만 같은 끼니의 다른 메뉴로 해결되는{' '}
+                        알레르기가 있지만 같은 끼니의 다른 메뉴로 해결되는{' '}
                         <b>{altMealInfo.coveredByOtherMenu}명</b>은 위 개수에서 제외했습니다.
                       </p>
                     )}
@@ -507,7 +506,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
                 )}
               </div>
               {allergyInfo.teamsWith.length === 0 ? (
-                <p className="empty-text">알러지를 등록한 인원이 없습니다.</p>
+                <p className="empty-text">알레르기를 등록한 인원이 없습니다.</p>
               ) : (
                 <div className="allergy-teams">
                 {allergyInfo.teamsWith.map((t) => (
@@ -535,10 +534,12 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       {showSoldoutPanel && (
         <div className="bottom-sheet-backdrop" onClick={closeUtilityPanels}>
           <section
+            ref={soldoutDialogRef}
             className="bottom-sheet"
             role="dialog"
             aria-modal="true"
             aria-labelledby="soldout-sheet-title"
+            tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
             style={soldoutDrag.sheetStyle}
           >

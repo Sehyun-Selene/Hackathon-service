@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import logo52g from './assets/52g-logo.png'
-import { ADMIN_POLL_MS, COACH_ASSIGNMENTS, DARK_MODE_HOURS, MEALS } from './config.js'
+import { ADMIN_POLL_MS, COACH_ASSIGNMENTS, DARK_MODE_HOURS, MEALS, MENU_BY_ID } from './config.js'
 import {
   storageGet,
   storageGetMany,
-  storageSet,
   teamKey,
   orderKey,
   callKey,
   callCountKey,
   TEAM_ROSTER_KEY,
   COACH_ROSTER_KEY,
+  adminSnapshot,
   coachUpsert,
   callStatusSet,
   flagSet,
   SOLDOUT_KEY,
 } from './lib/storage.js'
-import { now, fmtClock, getNextMeal, getOpenMeals, getVisibleMeals } from './lib/time.js'
+import { now, fmtAgo, fmtClock, getNextMeal, getOpenMeals, getVisibleMeals } from './lib/time.js'
 import { initAudio, playCallAlert } from './lib/audio.js'
 import OrdersTab from './components/OrdersTab.jsx'
 import CallsTab from './components/CallsTab.jsx'
@@ -39,6 +39,9 @@ const deliveredKey = (teamId) => `delivered:${teamId}`
 
 // 등록된 팀 전체 + 주문/호출/카운트 + 마스터 메이트 로스터 + 품절 + 배부상태를 한 번에 스캔
 async function scanAll() {
+  const snapshot = await adminSnapshot()
+  if (snapshot) return snapshot
+
   const roster = (await storageGet(TEAM_ROSTER_KEY)) || { ids: [] }
   const ids = roster.ids || []
   const [teamVals, orderVals, callVals, countVals, deliveredVals] = await Promise.all([
@@ -115,9 +118,25 @@ export default function App() {
   const [scan, setScan] = useState(null)
   const [soundOn, setSoundOn] = useState(true)
   const [syncError, setSyncError] = useState(false)
+  const [undoToast, setUndoToast] = useState(null)
   const knownWaitingIds = useRef(null)
+  const refreshRunning = useRef(false)
+  const undoTimer = useRef(null)
+  const undoActionRef = useRef(null)
   const soundOnRef = useRef(true)
   soundOnRef.current = soundOn
+
+  const showUndo = useCallback((message, undo) => {
+    window.clearTimeout(undoTimer.current)
+    undoActionRef.current = undo
+    setUndoToast({ message })
+    undoTimer.current = window.setTimeout(() => {
+      undoActionRef.current = null
+      setUndoToast(null)
+    }, 8000)
+  }, [])
+
+  useEffect(() => () => window.clearTimeout(undoTimer.current), [])
 
   // 밤샘 운영이라 새벽까지 흰 화면을 보게 됩니다. 참가자 앱과 같은 시간대
   // 규칙으로 자동 전환합니다 (config.DARK_MODE_HOURS).
@@ -130,12 +149,15 @@ export default function App() {
   }, [isDark])
 
   const refresh = useCallback(async () => {
+    if (refreshRunning.current) return
+    refreshRunning.current = true
     let result
     try {
       result = await scanAll()
       setSyncError(false)
     } catch {
       setSyncError(true)
+      refreshRunning.current = false
       return
     }
     const waitingIds = new Set(
@@ -149,13 +171,36 @@ export default function App() {
     }
     knownWaitingIds.current = waitingIds
     setScan(result)
+    refreshRunning.current = false
   }, [])
+
+  const runUndo = useCallback(async () => {
+    const action = undoActionRef.current
+    if (!action) return
+    window.clearTimeout(undoTimer.current)
+    undoActionRef.current = null
+    setUndoToast(null)
+    try {
+      await action()
+    } catch {
+      alert('실행 취소를 저장하지 못했습니다. 최신 상태를 다시 확인해주세요.')
+      await refresh()
+    }
+  }, [refresh])
 
   useEffect(() => {
     if (!coach) return
-    refresh()
-    const id = setInterval(refresh, ADMIN_POLL_MS)
-    return () => clearInterval(id)
+    let stopped = false
+    let timer
+    const run = async () => {
+      await refresh()
+      if (!stopped) timer = window.setTimeout(run, ADMIN_POLL_MS + Math.random() * 500)
+    }
+    run()
+    return () => {
+      stopped = true
+      window.clearTimeout(timer)
+    }
   }, [coach, refresh])
 
   // 저장된 이름으로 자동 입장한 경우에도 메이트 목록에 다시 등록합니다.
@@ -165,7 +210,25 @@ export default function App() {
   useEffect(() => {
     if (!coach?.id) return
     coachUpsert(coach.id, coach.name).catch(() => {})
+    const id = window.setInterval(
+      () => coachUpsert(coach.id, coach.name).catch(() => {}),
+      30_000,
+    )
+    return () => window.clearInterval(id)
   }, [coach?.id, coach?.name])
+
+  // 저장된 이름으로 자동 입장한 뒤 새로고침하면 AudioContext가 사라집니다.
+  // 첫 탭/키 입력에서 다시 활성화해 호출음이 무음이 되는 일을 막습니다.
+  useEffect(() => {
+    if (!coach) return undefined
+    const unlock = () => initAudio()
+    window.addEventListener('pointerdown', unlock, { once: true })
+    window.addEventListener('keydown', unlock, { once: true })
+    return () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
+  }, [coach])
 
   // 마스터 메이트 등록: 로컬 저장 + 공유 마스터 메이트 로스터에 등록/갱신
   // name이 COACH_ASSIGNMENTS의 이름과 정확히 일치해야 담당 팀이 자동 연결됨
@@ -186,18 +249,33 @@ export default function App() {
 
   // 호출 상태 변경: 대기중 → 처리중(담당 마스터 메이트 기록) → 완료
   const updateCallStatus = useCallback(
-    async (teamId, callId, nextStatus) => {
+    async (teamId, callId, nextStatus, previousCall) => {
       try {
         // 그 호출 하나만 서버에서 고칩니다. 목록 전체를 덮어쓰면 같은 순간에
         // 참가자가 넣은 새 호출이 사라질 수 있습니다.
         await callStatusSet(teamId, callId, nextStatus, coach)
-      } catch {
+      } catch (err) {
+        if (err?.code === 'status conflict') {
+          alert('다른 마스터 메이트가 먼저 상태를 변경했습니다.\n최신 상태를 다시 불러옵니다.')
+          await refresh()
+          return
+        }
         alert('네트워크 오류로 호출 상태가 변경되지 않았습니다.\n잠시 후 다시 시도해주세요.')
         return
       }
       await refresh()
+      if (nextStatus === 'waiting') {
+        const previousHandler = {
+          id: previousCall?.handledById || coach?.id,
+          name: previousCall?.handledBy || coach?.name,
+        }
+        showUndo(`팀 ${teamId} 호출을 대기 상태로 되돌렸습니다.`, async () => {
+          await callStatusSet(teamId, callId, 'in_progress', previousHandler)
+          await refresh()
+        })
+      }
     },
-    [coach, refresh],
+    [coach, refresh, showUndo],
   )
 
   // 배부 완료 토글 (팀별 delivered:{teamId} 레코드에 끼니별로 기록)
@@ -210,8 +288,12 @@ export default function App() {
         return
       }
       await refresh()
+      showUndo(`팀 ${teamId}의 배부 상태를 ${next ? '완료' : '미완료'}로 변경했습니다.`, async () => {
+        await flagSet(deliveredKey(teamId), mealId, !next)
+        await refresh()
+      })
     },
-    [refresh],
+    [refresh, showUndo],
   )
 
   const toggleSoldout = useCallback(
@@ -220,14 +302,20 @@ export default function App() {
         // 현재 상태의 반대로 — 화면이 알고 있는 값을 기준으로 켜고 끕니다.
         // scan을 읽으므로 의존성에 포함해야 합니다. 빠뜨리면 첫 렌더의 옛 값이
         // 클로저에 갇혀 토글 방향이 뒤집힙니다.
-        await flagSet(SOLDOUT_KEY, menuId, !scan?.soldout?.[menuId])
+        const next = !scan?.soldout?.[menuId]
+        await flagSet(SOLDOUT_KEY, menuId, next)
+        await refresh()
+        const menuName = MENU_BY_ID[menuId]?.name?.replace('\n', ' ') || menuId
+        showUndo(`${menuName}을(를) ${next ? '품절 처리' : '품절 해제'}했습니다.`, async () => {
+          await flagSet(SOLDOUT_KEY, menuId, !next)
+          await refresh()
+        })
       } catch {
         alert('네트워크 오류로 품절 상태가 변경되지 않았습니다.\n잠시 후 다시 시도해주세요.')
         return
       }
-      await refresh()
     },
-    [refresh, scan],
+    [refresh, scan, showUndo],
   )
 
   if (!coach) {
@@ -490,8 +578,16 @@ export default function App() {
         </header>
 
         {syncError && (
-          <div className="sync-error">
-            ⚠️ 공유 서버 연결 오류 — 최신 데이터가 아닐 수 있습니다. 자동으로 재시도 중입니다.
+          <div className="sync-error" role="status">
+            <span>
+              ⚠️ 공유 서버 연결 오류 — 최신 데이터가 아닐 수 있습니다.
+              <small>
+                {scan?.at
+                  ? `마지막 정상 동기화: ${fmtAgo(now().getTime() - new Date(scan.at).getTime())}`
+                  : '아직 정상 동기화 기록이 없습니다.'}
+              </small>
+            </span>
+            <button type="button" onClick={refresh}>지금 재시도</button>
           </div>
         )}
 
@@ -530,6 +626,13 @@ export default function App() {
             setNameInput('')
           }}
         />
+      )}
+
+      {undoToast && (
+        <div className="undo-toast" role="status">
+          <span>{undoToast.message}</span>
+          <button type="button" onClick={runUndo}>실행 취소</button>
+        </div>
       )}
     </div>
   )

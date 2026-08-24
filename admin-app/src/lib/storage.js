@@ -11,7 +11,7 @@
 //    유효 — 로컬 개발/시연용).
 //
 //  키 설계 (PRD 3.3 — 팀별 키 분리로 동시 쓰기 충돌 최소화):
-//    team:{team_id}          팀 정보(계열사, 인원수, 알러지)  — 참가자 등록
+//    team:{team_id}          팀 정보(계열사, 인원수, 알레르기)  — 참가자 등록
 //    team-roster             등록된 팀 id 목록 (관리자 열거용)
 //    order:{team_id}         해당 팀의 전체 주문 내역
 //    call:{team_id}          해당 팀의 호출 목록(현재 상태 + 이력)
@@ -22,6 +22,17 @@
 import { API_BASE_URL } from '../config.js'
 
 const LOCAL_PREFIX = 'hackathon-torder:'
+const REQUEST_TIMEOUT_MS = 8000
+
+async function fetchWithTimeout(url, options) {
+  const controller = new AbortController()
+  const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } finally {
+    window.clearTimeout(timer)
+  }
+}
 
 function parseLocal(raw) {
   if (raw == null) return null
@@ -33,7 +44,7 @@ function parseLocal(raw) {
 }
 
 async function apiGetMany(keys) {
-  const res = await fetch(`${API_BASE_URL}/api/get`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/get`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ keys }),
@@ -43,7 +54,7 @@ async function apiGetMany(keys) {
 }
 
 async function apiSet(key, value) {
-  const res = await fetch(`${API_BASE_URL}/api/set`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/set`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key, value }),
@@ -92,7 +103,7 @@ export async function storageGetMany(keys) {
 //  원자적 경로를 씁니다.
 // ---------------------------------------------------------------
 async function apiPost(path, body) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -115,6 +126,18 @@ async function apiPost(path, body) {
     throw err
   }
   return data
+}
+
+// 관리자 화면 전체를 한 응답으로 받습니다. 새 API가 아직 배포되지 않은 짧은
+// 시차에는 null을 반환해 아래의 기존 다중 조회 방식으로 안전하게 물러납니다.
+export async function adminSnapshot() {
+  if (!API_BASE_URL) return null
+  try {
+    return await apiPost('/api/snapshot', {})
+  } catch (err) {
+    if (err.code === 'endpoint-missing') return null
+    throw err
+  }
 }
 
 // 마스터 메이트 입장 — 목록을 원자적으로 갱신 (40명이 같은 시각에 입장해도
@@ -141,10 +164,12 @@ export async function coachUpsert(id, name) {
 // 않으므로 같은 순간에 참가자가 새 호출을 넣어도 서로 지워지지 않습니다.
 // 이미 사라진 호출이면 err.code === 'call not found'.
 export async function callStatusSet(teamId, callId, status, coach) {
+  const expectedStatus = status === 'in_progress' ? 'waiting' : 'in_progress'
   const payload = {
     teamId,
     callId,
     status,
+    expectedStatus,
     handledBy: coach?.name || '',
     handledById: coach?.id || '',
   }

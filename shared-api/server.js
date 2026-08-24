@@ -39,6 +39,7 @@
 //
 //  엔드포인트:
 //    POST /api/get    body: { keys: string[] }        → { key: value, ... }
+//    POST /api/snapshot                                → 관리자 전체 화면 1회 조회
 //    POST /api/set    body: { key: string, value: * } → { ok: true }
 //    POST /api/roster-add    body: { teamId }              → 팀 목록에 원자적 추가
 //    POST /api/coach-upsert  body: { id, name }            → 메이트 목록 원자적 갱신
@@ -63,6 +64,8 @@ const REDIS_URL = (process.env.UPSTASH_REDIS_REST_URL || '').replace(/\/$/, '')
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || ''
 const REDIS_HASH = process.env.REDIS_HASH || 'torder'
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || ''
+const TOTAL_TEAMS = Number(process.env.TOTAL_TEAMS || 125)
+const COACH_ACTIVE_TTL_MS = Number(process.env.COACH_ACTIVE_TTL_MS || 2 * 60 * 1000)
 // 팀당 호출 제한. 화면에서만 막으면 두 기기로 열어두면 넘길 수 있어
 // 서버가 최종 판단합니다. 앱 config의 CALL_LIMIT_PER_TEAM과 같은 값이어야
 // 하며, 바꿀 때는 환경변수로 함께 조정하세요.
@@ -70,7 +73,15 @@ const CALL_LIMIT_PER_TEAM = Number(process.env.CALL_LIMIT_PER_TEAM || 5)
 const persistOn = Boolean(REDIS_URL && REDIS_TOKEN)
 
 // 마지막 영속화 상태 — /health 로 확인해 행사 전에 정상 동작을 점검합니다.
-let persistState = persistOn ? { mode: 'redis', lastOk: null, lastError: null } : { mode: 'memory' }
+let persistState = persistOn
+  ? { mode: 'redis', ready: false, lastOk: null, lastError: null }
+  : { mode: 'memory', ready: true }
+let persistReady = !persistOn
+let restoreRetryMs = 2000
+const persistPending = new Map()
+let persistWaiters = []
+let persistFlushTimer = null
+let persistFlushing = false
 
 // Upstash REST: 명령을 JSON 배열로 POST (예: ["HSET","torder","key","{...}"])
 async function redisCommand(command, timeoutMs = 4000) {
@@ -90,44 +101,115 @@ async function redisCommand(command, timeoutMs = 4000) {
 }
 
 // 부팅 복원: 원격에 있던 키를 전부 메모리로 되읽음.
-// 실패해도 서버는 뜹니다 (빈 상태로 시작 — 행사 중 완전 정지보다는 낫기 때문).
+// 실패하면 빈 데이터를 서비스하지 않고 준비중(503) 상태에서 자동 재시도합니다.
 async function restoreFromRedis() {
   if (!persistOn) {
     console.log('[persist] 메모리 전용 모드 (UPSTASH 환경변수 없음)')
-    return
+    return true
   }
   try {
     // HGETALL 결과는 [field1, value1, field2, value2, ...] 형태
     const flat = (await redisCommand(['HGETALL', REDIS_HASH], 10000)) || []
+    const restored = new Map()
     for (let i = 0; i < flat.length; i += 2) {
       try {
-        store.set(flat[i], JSON.parse(flat[i + 1]))
+        restored.set(flat[i], JSON.parse(flat[i + 1]))
       } catch {
         // 개별 키가 깨져 있어도 나머지는 살립니다
       }
     }
+    // 복원이 성공한 뒤에만 현재 메모리를 교체합니다. 실패 중 빈 저장소를
+    // 서비스하면 모든 주문이 사라진 것처럼 보이고 새 값이 원본을 덮을 수 있습니다.
+    store.clear()
+    for (const [key, value] of restored) store.set(key, value)
+    persistReady = true
+    persistState.ready = true
     persistState.lastOk = new Date().toISOString()
+    persistState.lastError = null
+    restoreRetryMs = 2000
     console.log(`[persist] 복원 완료 — ${store.size}개 키`)
+    return true
   } catch (err) {
+    persistReady = false
+    persistState.ready = false
     persistState.lastError = String(err.message || err)
-    console.error('[persist] 복원 실패 — 빈 상태로 시작합니다:', persistState.lastError)
+    console.error('[persist] 복원 실패 — 준비되지 않은 상태로 재시도합니다:', persistState.lastError)
+    return false
   }
 }
 
-// 쓰기 반영. 원격 기록이 실패해도 메모리에는 이미 값이 있으므로
-// 요청 자체는 성공으로 응답하고, 실패 사실만 /health 에 남깁니다.
+function scheduleRestoreRetry() {
+  if (!persistOn || persistReady) return
+  const delay = restoreRetryMs
+  restoreRetryMs = Math.min(30_000, restoreRetryMs * 2)
+  setTimeout(async () => {
+    const ok = await restoreFromRedis()
+    if (!ok) scheduleRestoreRetry()
+  }, delay)
+}
+
+// 쓰기 반영. 원격 기록이 실패하면 화면에 성공으로 보이지 않도록 503을 반환하고,
+// 같은 요청을 안전하게 다시 보낼 수 있게 각 전용 동작을 멱등적으로 유지합니다.
 async function persistKey(key, value) {
+  return persistEntries([[key, value]])
+}
+
+// 여러 필드를 Redis HSET 한 명령으로 기록합니다. call 목록과 횟수처럼 반드시
+// 같이 살아야 하는 값이 한쪽만 저장되는 일을 막습니다. 짧은 시간에 몰린 쓰기는
+// 최신 값으로 합쳐 전송해, 오래된 요청의 Redis 응답이 나중에 도착해 최신 목록을
+// 되돌리는 문제와 125팀 동시 등록 시 원격 요청 폭증을 함께 막습니다.
+function persistEntries(entries) {
   if (!persistOn) return true
+  entries.forEach(([key, value]) => persistPending.set(key, value))
+  const result = new Promise((resolve) => persistWaiters.push(resolve))
+  schedulePersistFlush()
+  return result
+}
+
+function schedulePersistFlush(delay = 12) {
+  if (persistFlushing || persistFlushTimer) return
+  persistFlushTimer = setTimeout(flushPersistBatch, delay)
+}
+
+async function flushPersistBatch() {
+  persistFlushTimer = null
+  if (persistFlushing || persistPending.size === 0) return
+  persistFlushing = true
+  const entries = [...persistPending.entries()]
+  const waiters = persistWaiters
+  persistPending.clear()
+  persistWaiters = []
+  let ok = false
   try {
-    await redisCommand(['HSET', REDIS_HASH, key, JSON.stringify(value)])
+    const command = ['HSET', REDIS_HASH]
+    entries.forEach(([key, value]) => command.push(key, JSON.stringify(value)))
+    await redisCommand(command)
     persistState.lastOk = new Date().toISOString()
     persistState.lastError = null
-    return true
+    ok = true
   } catch (err) {
     persistState.lastError = String(err.message || err)
-    console.error(`[persist] 저장 실패 (${key}):`, persistState.lastError)
+    console.error(`[persist] 저장 실패 (${entries.map(([key]) => key).join(', ')}):`, persistState.lastError)
+  } finally {
+    waiters.forEach((resolve) => resolve(ok))
+    persistFlushing = false
+    if (persistPending.size > 0) schedulePersistFlush(0)
+  }
+}
+
+function sendWriteResult(res, body, persisted) {
+  if (!persisted) {
+    sendJson(res, 503, { error: 'persistence unavailable', retryable: true })
     return false
   }
+  sendJson(res, 200, { ...body, persisted: true })
+  return true
+}
+
+function validTeamId(teamId) {
+  if (typeof teamId !== 'string' || !/^\d{2,3}$/.test(teamId)) return false
+  const n = Number(teamId)
+  return Number.isInteger(n) && n >= 1 && n <= TOTAL_TEAMS && teamId === String(n).padStart(2, '0')
 }
 
 
@@ -204,7 +286,17 @@ async function sweepAlerts() {
     }
 
     // ③ 장시간 미처리 — 운영 총괄 묶음 알림 대상으로 모음
-    if (waitedMin >= slack.LEAD_MIN) stuck.push({ call, waitedMin })
+    if (waitedMin >= slack.LEAD_MIN) stuck.push({ call, waitedMin, phase: 'waiting' })
+  }
+
+  // 처리 시작을 눌러둔 채 현장에서 완료를 잊은 호출도 총관리자에게 알립니다.
+  // 대기 호출과 달리 담당자가 이미 붙었으므로 개인/채널 재알림은 하지 않습니다.
+  const inProgress = allCalls().filter((c) => c.status === 'in_progress' && c.startedAt)
+  for (const call of inProgress) {
+    const handledMin = Math.floor((now - call.startedAt) / slack.MIN)
+    if (handledMin >= slack.IN_PROGRESS_MIN) {
+      stuck.push({ call, waitedMin: handledMin, phase: 'in_progress' })
+    }
   }
 
   // 묶음 알림은 호출마다 보내지 않고 한 번에. 반복 간격이 지나면 갱신.
@@ -296,7 +388,20 @@ const server = http.createServer(async (req, res) => {
 
   // 크론이 주기적으로 찌르는 엔드포인트 — 슬립 방지 겸 상태 점검
   if (req.method === 'GET' && url.pathname === '/health') {
-    sendJson(res, 200, { ok: true, keys: store.size, persist: persistState, slack: slack.state })
+    sendJson(res, persistReady ? 200 : 503, {
+      ok: persistReady,
+      ready: persistReady,
+      keys: store.size,
+      persist: persistState,
+      slack: slack.state,
+    })
+    return
+  }
+
+  // Redis 복원이 실패한 동안 빈 데이터로 읽고 쓰지 않습니다. 복구가 끝나면
+  // 별도 재배포 없이 자동으로 요청을 받습니다.
+  if (!persistReady) {
+    sendJson(res, 503, { error: 'service restoring', retryable: true })
     return
   }
 
@@ -311,6 +416,35 @@ const server = http.createServer(async (req, res) => {
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }
+    return
+  }
+
+  // 관리자 한 화면에 필요한 데이터를 한 응답으로 묶습니다. 기존 화면은 한 번
+  // 갱신할 때 7개 요청을 보내 40명 접속 시 요청 수가 크게 불어났습니다.
+  if (req.method === 'POST' && url.pathname === '/api/snapshot') {
+    const roster = store.get('team-roster') || { ids: [] }
+    const ids = Array.isArray(roster.ids) ? roster.ids.filter(validTeamId) : []
+    const result = { teams: {}, orders: {}, calls: {}, counts: {}, delivered: {} }
+    ids.forEach((id) => {
+      const team = store.get(`team:${id}`)
+      const order = store.get(`order:${id}`)
+      const call = store.get(`call:${id}`)
+      const count = store.get(`call-count:${id}`)
+      const delivered = store.get(`delivered:${id}`)
+      if (team) result.teams[id] = team
+      if (order) result.orders[id] = order
+      if (call) result.calls[id] = call
+      result.counts[id] = typeof count === 'number' ? count : 0
+      if (delivered) result.delivered[id] = delivered
+    })
+    const coachRoster = store.get('coach-roster') || { coaches: [] }
+    const timestamp = Date.now()
+    result.soldout = store.get('soldout') || {}
+    result.coaches = (Array.isArray(coachRoster.coaches) ? coachRoster.coaches : []).filter(
+      (coach) => !coach?.lastSeen || timestamp - coach.lastSeen <= COACH_ACTIVE_TTL_MS,
+    )
+    result.at = timestamp
+    sendJson(res, 200, result)
     return
   }
 
@@ -334,10 +468,10 @@ const server = http.createServer(async (req, res) => {
 
       store.set(key, value)
       const persisted = await persistKey(key, value)
-      sendJson(res, 200, { ok: true, persisted })
+      const sent = sendWriteResult(res, { ok: true }, persisted)
 
       // 알림은 응답을 보낸 뒤 뒤에서 처리 — 참가자 화면이 기다리지 않게
-      if (freshCalls.length) alertNewCalls(freshCalls).catch(() => {})
+      if (sent && freshCalls.length) alertNewCalls(freshCalls).catch(() => {})
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }
@@ -353,8 +487,8 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && url.pathname === '/api/roster-add') {
     try {
       const { teamId } = await readBody(req)
-      if (!teamId || typeof teamId !== 'string') {
-        sendJson(res, 400, { error: 'teamId required' })
+      if (!validTeamId(teamId)) {
+        sendJson(res, 400, { error: 'valid teamId required' })
         return
       }
       const current = store.get('team-roster')
@@ -363,7 +497,7 @@ const server = http.createServer(async (req, res) => {
       const next = { ids }
       store.set('team-roster', next)
       const persisted = await persistKey('team-roster', next)
-      sendJson(res, 200, { ok: true, count: ids.length, persisted })
+      sendWriteResult(res, { ok: true, count: ids.length }, persisted)
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }
@@ -381,10 +515,15 @@ const server = http.createServer(async (req, res) => {
       const current = store.get('coach-roster')
       const list = Array.isArray(current?.coaches) ? current.coaches : []
       const others = list.filter((c) => c && c.id !== id)
-      const next = { coaches: [...others, { id, name: String(name || '') }] }
+      const safeName = String(name || '').trim().slice(0, 40)
+      if (!safeName) {
+        sendJson(res, 400, { error: 'name required' })
+        return
+      }
+      const next = { coaches: [...others, { id, name: safeName, lastSeen: Date.now() }] }
       store.set('coach-roster', next)
       const persisted = await persistKey('coach-roster', next)
-      sendJson(res, 200, { ok: true, count: next.coaches.length, persisted })
+      sendWriteResult(res, { ok: true, count: next.coaches.length }, persisted)
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }
@@ -397,8 +536,13 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && url.pathname === '/api/call-add') {
     try {
       const { teamId, call } = await readBody(req)
-      if (!teamId || typeof teamId !== 'string' || !call || typeof call !== 'object') {
+      if (!validTeamId(teamId) || !call || typeof call !== 'object') {
         sendJson(res, 400, { error: 'teamId and call required' })
+        return
+      }
+      const reason = String(call.reason || '').trim()
+      if (!reason || reason.length > 300 || typeof call.id !== 'string' || call.id.length > 100) {
+        sendJson(res, 400, { error: 'valid call id and reason required' })
         return
       }
       const callKey = `call:${teamId}`
@@ -411,24 +555,41 @@ const server = http.createServer(async (req, res) => {
       // 재시도가 오면, 제한을 먼저 보면 "횟수 초과"라고 답해 참가자가
       // 호출이 안 갔다고 오해합니다. 이미 들어온 호출이면 성공으로 답합니다.
       if (call.id && calls.some((c) => c && c.id === call.id)) {
-        sendJson(res, 200, { ok: true, duplicate: true, count })
+        const existing = calls.find((c) => c && c.id === call.id)
+        const persisted = await persistEntries([
+          [callKey, { team: teamId, calls }],
+          [countKey, count],
+        ])
+        const sent = sendWriteResult(res, { ok: true, duplicate: true, count }, persisted)
+        if (sent && existing) alertNewCalls([{ ...existing, team: teamId }]).catch(() => {})
         return
       }
       if (count >= CALL_LIMIT_PER_TEAM) {
         sendJson(res, 409, { error: 'limit', count, limit: CALL_LIMIT_PER_TEAM })
         return
       }
-      const record = { ...call, status: 'waiting', createdAt: call.createdAt || Date.now() }
+      const record = {
+        id: call.id,
+        reason,
+        assignedName: String(call.assignedName || '').slice(0, 40),
+        assignedSlackId: /^[UW][A-Z0-9]+$/.test(String(call.assignedSlackId || ''))
+          ? String(call.assignedSlackId)
+          : '',
+        status: 'waiting',
+        createdAt: Date.now(),
+      }
       calls.push(record)
       const nextCalls = { team: teamId, calls }
       const nextCount = count + 1
       store.set(callKey, nextCalls)
       store.set(countKey, nextCount)
-      const persisted =
-        (await persistKey(callKey, nextCalls)) && (await persistKey(countKey, nextCount))
-      sendJson(res, 200, { ok: true, count: nextCount, persisted })
+      const persisted = await persistEntries([
+        [callKey, nextCalls],
+        [countKey, nextCount],
+      ])
+      const sent = sendWriteResult(res, { ok: true, count: nextCount }, persisted)
       // 알림은 응답 뒤에 (참가자 화면이 기다리지 않게)
-      alertNewCalls([{ ...record, team: teamId }]).catch(() => {})
+      if (sent) alertNewCalls([{ ...record, team: teamId }]).catch(() => {})
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }
@@ -439,9 +600,9 @@ const server = http.createServer(async (req, res) => {
   // 같은 순간에 참가자가 새 호출을 추가해도 서로를 지우지 않습니다.
   if (req.method === 'POST' && url.pathname === '/api/call-status') {
     try {
-      const { teamId, callId, status, handledBy, handledById, at } = await readBody(req)
+      const { teamId, callId, status, handledBy, handledById, expectedStatus } = await readBody(req)
       const allowed = ['waiting', 'in_progress', 'done']
-      if (!teamId || !callId || !allowed.includes(status)) {
+      if (!validTeamId(teamId) || !callId || !allowed.includes(status)) {
         sendJson(res, 400, { error: 'teamId, callId, status required' })
         return
       }
@@ -453,7 +614,13 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 404, { error: 'call not found' })
         return
       }
-      const stamp = typeof at === 'number' ? at : Date.now()
+      const currentStatus = calls[index].status
+      const requiredStatus = status === 'in_progress' ? 'waiting' : 'in_progress'
+      if ((expectedStatus && currentStatus !== expectedStatus) || currentStatus !== requiredStatus) {
+        sendJson(res, 409, { error: 'status conflict', current: calls[index] })
+        return
+      }
+      const stamp = Date.now()
       const call = { ...calls[index], status }
       if (status === 'waiting') {
         // 잘못 누른 '처리 시작'을 되돌리는 경우 — 담당자 흔적을 지워 아무도
@@ -477,7 +644,7 @@ const server = http.createServer(async (req, res) => {
       const next = { team: teamId, calls: nextCalls }
       store.set(key, next)
       const persisted = await persistKey(key, next)
-      sendJson(res, 200, { ok: true, call, persisted })
+      sendWriteResult(res, { ok: true, call }, persisted)
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }
@@ -503,7 +670,7 @@ const server = http.createServer(async (req, res) => {
       else delete next[field]
       store.set(key, next)
       const persisted = await persistKey(key, next)
-      sendJson(res, 200, { ok: true, value: next, persisted })
+      sendWriteResult(res, { ok: true, value: next }, persisted)
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }
@@ -534,17 +701,21 @@ const server = http.createServer(async (req, res) => {
 
 // 복원이 끝난 뒤에 요청을 받습니다 (복원 전 /api/get 이 빈 값을
 // 돌려주면 참가자 화면이 '주문 없음'으로 잘못 보일 수 있음).
-restoreFromRedis().finally(() => {
-  server.listen(PORT, () => {
-    console.log(`shared kv api listening on :${PORT} (persist: ${persistState.mode})`)
-    if (slack.enabled) {
-      console.log(
-        `[slack] 알림 켜짐 — 미처리 ${slack.UNCLAIMED_MIN}분` +
-          `(${slack.UNCLAIMED_MENTION}) / 총괄 ${slack.LEAD_MIN}분`,
-      )
-      setInterval(() => sweepAlerts().catch(() => {}), SWEEP_MS)
-    } else {
-      console.log('[slack] 알림 꺼짐 (SLACK_WEBHOOK_URL 없음)')
-    }
+restoreFromRedis()
+  .then((ok) => {
+    if (!ok) scheduleRestoreRetry()
   })
-})
+  .finally(() => {
+    server.listen(PORT, () => {
+      console.log(`shared kv api listening on :${PORT} (persist: ${persistState.mode})`)
+      if (slack.enabled) {
+        console.log(
+          `[slack] 알림 켜짐 — 미처리 ${slack.UNCLAIMED_MIN}분` +
+            `(${slack.UNCLAIMED_MENTION}) / 총괄 ${slack.LEAD_MIN}분`,
+        )
+        setInterval(() => sweepAlerts().catch(() => {}), SWEEP_MS)
+      } else {
+        console.log('[slack] 알림 꺼짐 (SLACK_WEBHOOK_URL 없음)')
+      }
+    })
+  })

@@ -7,6 +7,7 @@ import {
   getAssignedCoachForTeam,
 } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
+import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 // 상단 KPI 카드를 누르면 그 숫자의 '내용'을 보여주는 시트.
 //
@@ -21,6 +22,7 @@ const teamNo = (id) => parseInt(id, 10)
 
 export default function KpiDetailSheet({ kind, scan, onClose }) {
   const drag = useSheetDrag(onClose)
+  const dialogRef = useDialogFocus(true, onClose)
   const [onlyPending, setOnlyPending] = useState(false)
 
   const data = useMemo(() => {
@@ -92,10 +94,12 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
   return (
     <div className="bottom-sheet-backdrop" onClick={onClose}>
       <section
+        ref={dialogRef}
         className="bottom-sheet"
         role="dialog"
         aria-modal="true"
         aria-labelledby="kpi-sheet-title"
+        tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
         style={drag.sheetStyle}
       >

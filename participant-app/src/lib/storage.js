@@ -11,7 +11,7 @@
 //    유효 — 로컬 개발/시연용).
 //
 //  키 설계 (PRD 3.3 — 팀별 키 분리로 동시 쓰기 충돌 최소화):
-//    team:{team_id}          팀 정보(계열사, 인원수, 알러지)  — 참가자 등록
+//    team:{team_id}          팀 정보(계열사, 인원수, 알레르기)  — 참가자 등록
 //    team-roster             등록된 팀 id 목록 (관리자 열거용)
 //    order:{team_id}         해당 팀의 전체 주문 내역
 //    call:{team_id}          해당 팀의 호출 목록(현재 상태 + 이력)
@@ -22,6 +22,17 @@
 import { API_BASE_URL } from '../config.js'
 
 const LOCAL_PREFIX = 'hackathon-torder:'
+const REQUEST_TIMEOUT_MS = 8000
+
+async function fetchWithTimeout(url, options) {
+  const controller = new AbortController()
+  const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } finally {
+    window.clearTimeout(timer)
+  }
+}
 
 function parseLocal(raw) {
   if (raw == null) return null
@@ -33,7 +44,7 @@ function parseLocal(raw) {
 }
 
 async function apiGetMany(keys) {
-  const res = await fetch(`${API_BASE_URL}/api/get`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/get`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ keys }),
@@ -43,7 +54,7 @@ async function apiGetMany(keys) {
 }
 
 async function apiSet(key, value) {
-  const res = await fetch(`${API_BASE_URL}/api/set`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/set`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key, value }),
@@ -92,7 +103,7 @@ export async function storageGetMany(keys) {
 //  원자적 경로를 씁니다.
 // ---------------------------------------------------------------
 async function apiPost(path, body) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

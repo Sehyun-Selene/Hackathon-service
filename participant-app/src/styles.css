@@ -3,10 +3,25 @@
    같은 화면이 폰에서만 파랗게 보이던 원인이라, 기본값을 본문 색으로 되돌립니다.
    (색을 직접 지정한 버튼은 클래스 규칙이 이깁니다) */
 button { color: inherit; }
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 3px solid rgba(194, 75, 10, 0.35);
+  outline-offset: 2px;
+}
+
+@font-face {
+  font-family: 'Pretendard Variable';
+  src: url('./assets/PretendardVariable.woff2') format('woff2-variations');
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
-  --primary: #fe8648;
-  --primary-dark: #ef6d2f;
+  --primary: #c24b0a;
+  --primary-dark: #9a3412;
   --bg: #f5f4f2;
   --card: #ffffff;
   --text: #1c1917;
@@ -38,7 +53,7 @@ html.dark .zone-box.has-coach { background: #1e2a44; border-color: #2c3e66; }
 html.dark .fixed-menu-hint { background: #231f1a; border-color: #3a352f; }
 
 body {
-  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
@@ -53,7 +68,14 @@ body {
 /* 공유 서버 연결 오류 배너 */
 .sync-error {
   background: #fee2e2; color: #b91c1c; padding: 10px 14px; border-radius: 12px;
-  margin-bottom: 12px; font-size: 13px; font-weight: 600; text-align: center;
+  margin-bottom: 12px; font-size: 13px; font-weight: 700; display: flex;
+  align-items: center; justify-content: space-between; gap: 10px;
+}
+.sync-error span { min-width: 0; }
+.sync-error small { display: block; margin-top: 3px; font-size: 11px; font-weight: 600; }
+.sync-error button {
+  flex: 0 0 auto; min-height: 38px; border: 1px solid currentColor; border-radius: 9px;
+  background: transparent; color: inherit; padding: 6px 10px; font: inherit; cursor: pointer;
 }
 html.dark .sync-error { background: #450a0a; color: #fca5a5; }
 
@@ -308,8 +330,8 @@ html.dark .folder-tab { background: #2c2721; }
   font-size: 14px; font-weight: 800; color: var(--red);
 }
 html.dark .food-card-soldout { background: rgba(0,0,0,0.6); }
-/* 1행: 메뉴명 + 담기 버튼 / 2행: 알러지 표기(카드 전체 폭)
-   order로 배치 — DOM 순서는 이름 → 알러지 → 버튼(읽는 순서)이지만
+/* 1행: 메뉴명 + 담기 버튼 / 2행: 알레르기 표기(카드 전체 폭)
+   order로 배치 — DOM 순서는 이름 → 알레르기 → 버튼(읽는 순서)이지만
    화면에서는 버튼이 1행에 올라오도록 함 */
 .food-card-body {
   padding: 10px 12px 12px; display: flex; align-items: center; justify-content: space-between;
@@ -618,9 +640,9 @@ html.dark .setup-solo-note { background: #3a2c14; border-color: #5c451c; color: 
   .food-card.picked .food-card-body {
     flex-direction: column; align-items: stretch; gap: 8px;
   }
-  /* 세로로 쌓일 때는 이름 → 알러지 → 수량조절 순서가 자연스러움.
+  /* 세로로 쌓일 때는 이름 → 알레르기 → 수량조절 순서가 자연스러움.
      flex-basis는 주축(세로) 기준으로 해석되므로, 가로 배치용 100%를 풀어야
-     알러지 문구가 좁게 눌리지 않음 */
+     알레르기 문구가 좁게 눌리지 않음 */
   .food-card.picked .food-badges { order: 1; flex: 0 0 auto; }
   .food-card.picked .food-card-action { order: 2; }
   .food-card.picked .food-card-action, .food-card.picked .card-stepper { width: 100%; }
@@ -644,8 +666,8 @@ html.dark .setup-solo-note { background: #3a2c14; border-color: #5c451c; color: 
   .board-refresh-btn { width: 32px; height: 32px; }
 }
 
-/* ---- 알러지 선택 결과 안내 (팀 등록 화면) ----
-   고른 알러지가 "어떤 메뉴를 먹을 수 있는지 / 대체식이 필요한지"로
+/* ---- 알레르기 선택 결과 안내 (팀 등록 화면) ----
+   고른 알레르기가 "어떤 메뉴를 먹을 수 있는지 / 대체식이 필요한지"로
    바로 번역돼 보이도록. 판정은 config.personDiet 에서 옵니다. */
 .diet-summary {
   margin-top: 10px; padding: 9px 11px; border-radius: 10px;
@@ -664,7 +686,7 @@ html.dark .diet-summary { background: #2c2721; }
 html.dark .diet-summary.diet-alt { background: #3a2c14; }
 html.dark .diet-summary.diet-alt b { color: #fbbf24; }
 
-/* 알러지로 담기 상한이 줄었을 때 그 이유를 밝히는 안내 (주문 화면).
+/* 알레르기로 담기 상한이 줄었을 때 그 이유를 밝히는 안내 (주문 화면).
    버튼만 막히면 품절/오류로 오해하므로 반드시 이유를 함께 보여줍니다. */
 .diet-cap-hint {
   background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;

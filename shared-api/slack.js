@@ -20,6 +20,7 @@
 //    ALERT_UNCLAIMED_MIN   채널 공개 전환 시간(분). 기본 15
 //    ALERT_LEAD_MIN        운영 총괄 알림 시간(분). 기본 25
 //    ALERT_LEAD_REPEAT_MIN 운영 총괄 재알림 간격(분). 기본 10
+//    ALERT_IN_PROGRESS_MIN 처리 시작 후 장기 미완료 경고 시간(분). 기본 20
 //    ALERT_UNCLAIMED_MENTION  미처리 알림의 호출 방식. 기본 'channel'
 //                          'channel' → @channel (슬랙을 닫아둔 사람도 푸시 받음)
 //                          'here'    → @here   (슬랙에 '활동 중'인 사람만)
@@ -40,6 +41,7 @@ const num = (name, fallback) => {
 const UNCLAIMED_MIN = num('ALERT_UNCLAIMED_MIN', 15)
 const LEAD_MIN = num('ALERT_LEAD_MIN', 25)
 const LEAD_REPEAT_MIN = num('ALERT_LEAD_REPEAT_MIN', 10)
+const IN_PROGRESS_MIN = num('ALERT_IN_PROGRESS_MIN', 20)
 // 미처리 알림은 특정 담당자를 지목하지 않으므로 멘션이 없으면 아무 폰도
 // 울리지 않고 채널에 글만 쌓입니다. 그래서 기본값을 @channel 로 둡니다.
 // (@here 는 슬랙에 '활동 중'인 사람만 받아서, 슬랙을 닫아둔 메이트는 놓칩니다)
@@ -62,6 +64,7 @@ const state = {
   enabled,
   unclaimedMin: UNCLAIMED_MIN,
   leadMin: LEAD_MIN,
+  inProgressMin: IN_PROGRESS_MIN,
   unclaimedMention: UNCLAIMED_MENTION,
   sent: 0,
   lastOk: null,
@@ -95,12 +98,18 @@ async function post(text) {
 // (config.COACH_ASSIGNMENTS 는 앱 쪽에만 있으므로 서버는 값만 받아 씀).
 function mateLabel(call) {
   if (call.assignedSlackId) return `<@${call.assignedSlackId}>`
-  if (call.assignedName) return `${call.assignedName} 메이트`
+  if (call.assignedName) return `${escapeMrkdwn(call.assignedName)} 메이트`
   return null
 }
 
+// 참가자가 작성한 사유가 <!channel> 같은 Slack 제어 문법으로 해석되지 않게
+// 막습니다. 일반 텍스트의 줄바꿈과 한글은 그대로 유지됩니다.
+function escapeMrkdwn(value) {
+  return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 function quote(reason) {
-  const text = (reason || '').trim()
+  const text = escapeMrkdwn(reason).trim()
   if (!text) return '> _사유 미작성_'
   // 줄바꿈이 있어도 인용 블록이 유지되도록 각 줄에 > 를 붙입니다
   return text
@@ -118,7 +127,9 @@ function newCallText(call) {
 }
 
 function unclaimedText(call, waitedMin) {
-  const name = call.assignedName ? ` (담당 ${call.assignedName} 메이트 응답 없음)` : ''
+  const name = call.assignedName
+    ? ` (담당 ${escapeMrkdwn(call.assignedName)} 메이트 응답 없음)`
+    : ''
   // 슬랙 알림을 실제로 보내려면 '<!channel>' / '<!here>' 형식이어야 합니다.
   // 리터럴 '@channel' 은 글자로만 표시되고 아무에게도 알림이 가지 않습니다.
   const tag = MENTION_TAGS[UNCLAIMED_MENTION]
@@ -135,8 +146,11 @@ function leadDigestText(stuck) {
     .sort((a, b) => a.waitedMin - b.waitedMin)
     .reverse()
     .map((s) => {
-      const name = s.call.assignedName ? `담당 ${s.call.assignedName}` : '담당 미배정'
-      return `• 팀 ${s.call.team} — ${s.waitedMin}분 경과 (${name})`
+      const name = s.call.assignedName
+        ? `담당 ${escapeMrkdwn(s.call.assignedName)}`
+        : '담당 미배정'
+      const phase = s.phase === 'in_progress' ? '처리 시작 후' : '대기'
+      return `• 팀 ${s.call.team} — ${phase} ${s.waitedMin}분 (${name})`
     })
   return `🚨 ${mention}장시간 미처리 호출 ${stuck.length}건\n${lines.join('\n')}`
 }
@@ -164,6 +178,7 @@ module.exports = {
   UNCLAIMED_MIN,
   LEAD_MIN,
   LEAD_REPEAT_MIN,
+  IN_PROGRESS_MIN,
   MIN,
   notifyNewCall,
   notifyUnclaimed,
