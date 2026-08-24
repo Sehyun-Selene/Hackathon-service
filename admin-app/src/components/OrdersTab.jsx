@@ -30,7 +30,9 @@ const escapeHtml = (value) =>
 function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelivered }) {
   const slots = singleMeal ? MENUS[mealFilter] || [] : []
   return (
-    <div className="team-rows">
+    // --rows: 넓은 화면에서 두 칼럼으로 나눌 때 왼쪽 칼럼에 넣을 행 수.
+    // 홀수면 왼쪽을 하나 더 채웁니다(위에서 아래로 읽는 순서와 맞음).
+    <div className="team-rows" style={{ '--rows': Math.ceil(rows.length / 2) }}>
       {rows.map((row) => {
         const done = isDelivered(row.teamId)
         const qtyOf = (menuId) =>
