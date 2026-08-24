@@ -24,6 +24,8 @@ body {
      clip은 hidden과 달리 스크롤 컨테이너를 만들지 않아 sticky를 깨지 않음 */
   overflow-x: clip;
   overscroll-behavior-x: none;
+  /* 두 번 탭했을 때 확대되는 동작만 끕니다(스크롤은 그대로) */
+  touch-action: manipulation;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -39,7 +41,7 @@ body {
 .gate-card h1 { font-size: 21px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.01em; }
 .gate-card p { color: var(--sub); font-size: 14px; margin-bottom: 18px; line-height: 1.55; }
 .gate-input {
-  width: 100%; padding: 13px 14px; font-size: 15px; border: 1px solid var(--line);
+  width: 100%; padding: 13px 14px; font-size: 16px; border: 1px solid var(--line);
   border-radius: 9px; margin-bottom: 12px; background: #fbfbfc;
 }
 .gate-input:focus { outline: none; border-color: var(--primary); background: #fff; }
@@ -224,7 +226,8 @@ body {
 /* 팀 번호 검색 — 주문 현황에서 가장 자주 쓰는 입력이라 눈에 띄게 */
 .table-search {
   border: 1.5px solid #d5cffa; border-radius: 10px; padding: 12px 16px;
-  font-size: 15px; min-height: 48px; width: 100%; background: #fff;
+  /* 16px 미만이면 iOS가 탭하는 순간 화면을 확대해 버립니다 */
+  font-size: 16px; min-height: 48px; width: 100%; background: #fff;
   box-shadow: 0 1px 2px rgba(20, 22, 30, 0.04);
 }
 .table-search::placeholder { color: #a7a2c4; }
@@ -488,7 +491,10 @@ body {
    폰 반응형 세부
    ===================================================================== */
 @media (max-width: 560px) {
-  .toolbar-actions { grid-template-columns: minmax(68px, 1fr) auto auto auto auto; gap: 4px; }
+  /* 검색창을 한 줄 통째로 쓰게 하고 도구 버튼은 아래 줄에 4등분.
+     한 줄에 밀어넣으려 글자를 11px까지 줄였더니 iOS가 탭할 때마다 확대됐음 */
+  .toolbar-actions { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .toolbar-actions .table-search-wrap { grid-column: 1 / -1; }
   .toolbar-actions .btn-secondary, .toolbar-actions .btn-ghost { text-align: center; }
   .toolbar-tool { padding: 7px 6px; font-size: 11px; }
   .bottom-sheet { width: 100%; max-height: 86dvh; padding-left: 14px; padding-right: 14px; }
@@ -497,9 +503,9 @@ body {
   .call-card-actions { justify-content: flex-end; }
   .call-card-actions .btn-primary, .call-card-actions .btn-secondary { width: auto; }
   .table-search-wrap .table-search {
-    width: 100%; padding: 8px 4px 8px 24px; font-size: 11px; min-height: 40px;
+    width: 100%; padding: 10px 8px 10px 36px; font-size: 16px; min-height: 44px;
   }
-  .table-search-icon { left: 7px; width: 13px; height: 13px; }
+  .table-search-icon { left: 12px; width: 16px; height: 16px; }
   .bar-name { min-width: 84px; font-size: 13px; }
 }
 

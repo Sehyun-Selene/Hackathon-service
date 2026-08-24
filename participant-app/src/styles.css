@@ -42,6 +42,8 @@ body {
      clip은 hidden과 달리 스크롤 컨테이너를 만들지 않아 sticky를 깨지 않음 */
   overflow-x: clip;
   overscroll-behavior-x: none;
+  /* 두 번 탭했을 때 확대되는 동작만 끕니다(스크롤·의도적 확대는 그대로) */
+  touch-action: manipulation;
 }
 
 /* 공유 서버 연결 오류 배너 */
@@ -456,7 +458,9 @@ html.dark .card-stepper { background: #2c2721; }
 html.dark .reason-required { background: #4a1d1d; }
 .reason-input {
   width: 100%; padding: 12px 13px; border: 1px solid var(--line); border-radius: 12px;
-  font-size: 15px; line-height: 1.5; background: var(--card); color: var(--text);
+  /* 16px 미만이면 iOS가 입력창을 탭하는 순간 화면을 확대하고 되돌리지 않습니다
+     (확대된 상태로 남아 하단 고정 바가 화면 밖으로 나감) */
+  font-size: 16px; line-height: 1.5; background: var(--card); color: var(--text);
   font-family: inherit; resize: vertical;
 }
 .reason-input:focus { outline: 2px solid var(--primary); outline-offset: -1px; border-color: var(--primary); }
