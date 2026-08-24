@@ -118,12 +118,12 @@ export default function CoachStatusTab({ scan, coach }) {
                           </span>
                           {isMe && <span className="coach-me">나</span>}
                         </span>
-                        {b.length ? (
+                        {/* 대기 중은 탭·그룹 제목이 이미 말해주므로 문구를 두지
+                            않습니다. 대응 중은 '어느 팀'이라는 정보가 있어 표시 */}
+                        {b.length > 0 && (
                           <span className="coach-status busy">
                             🔴 팀 {b.map((x) => x.teamId).join(', ')}
                           </span>
-                        ) : (
-                          <span className="coach-status idle">🟢 대기 중</span>
                         )}
                       </div>
                     )

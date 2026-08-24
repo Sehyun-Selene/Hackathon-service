@@ -332,11 +332,6 @@ body {
   font-size: 12px; font-weight: 700; color: var(--green); cursor: pointer; white-space: nowrap;
 }
 .deliver-check input { width: 20px; height: 20px; accent-color: var(--green); }
-/* 제목이 없을 때도 오른쪽 끝에 붙도록 margin-left: auto */
-.deliver-progress {
-  margin-left: auto; font-size: 13px; font-weight: 700; color: var(--green);
-  font-variant-numeric: tabular-nums;
-}
 .deliver-hint { font-size: 12.5px; color: var(--sub); margin-bottom: 8px; }
 .delivery-range-bar {
   margin-bottom: 14px; padding: 14px; border: 1px solid var(--line);
@@ -349,8 +344,11 @@ body {
 /* 다른 패널 제목(.panel h3)과 같은 크기·굵기로 맞춤 */
 .delivery-range-title { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
 .delivery-range-head .pending-count { color: var(--red); font-size: 13px; font-weight: 700; }
+/* 배부 구간 — 가로 스크롤 가능한 사각 탭. 자주 누르는 조작이라 조금 더 크게 */
 .delivery-ranges { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
-.delivery-ranges .chip { flex: 0 0 auto; }
+.delivery-ranges .coach-tab {
+  flex: 0 0 auto; font-size: 14px; padding: 10px 16px; min-height: 42px;
+}
 .delivery-team-panel { border: 1px solid var(--line); }
 .meal-tag {
   font-size: 11px; background: var(--violet-soft); color: var(--primary-dark); border-radius: 999px; padding: 1px 7px;
@@ -424,7 +422,6 @@ body {
 .coach-me { font-size: 11px; background: var(--primary); color: #fff; border-radius: 999px; padding: 1px 7px; }
 .coach-status { font-size: 12px; font-weight: 600; white-space: nowrap; }
 .coach-status.busy { color: var(--red); }
-.coach-status.idle { color: var(--green); }
 .coach-note { font-size: 13px; color: var(--sub); line-height: 1.5; padding: 6px 2px 0; }
 
 /* =====================================================================

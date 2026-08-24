@@ -141,7 +141,6 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   const queryNum = parseInt(teamQuery, 10)
   const hasQuery = teamQuery.trim() !== '' && Number.isFinite(queryNum)
   const isDelivered = (teamId) => singleMeal && !!scan.delivered?.[teamId]?.[mealFilter]
-  const deliveredCount = singleMeal ? teamRows.filter((r) => isDelivered(r.teamId)).length : 0
 
   const rangeOptions = Array.from(
     { length: Math.ceil(TOTAL_TEAMS / DELIVERY_TEAM_RANGE_SIZE) },
@@ -524,9 +523,9 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
             <b className="delivery-range-title">배부 구간</b>
             <span className="pending-count">미배부 {pendingRows.length}팀</span>
           </div>
-          <div className="filter-group delivery-ranges">
+          <div className="coach-tabs delivery-ranges">
             <button
-              className={`chip${teamRange === 'all' ? ' on' : ''}`}
+              className={`coach-tab${teamRange === 'all' ? ' on' : ''}`}
               onClick={() => setTeamRange('all')}
             >
               전체
@@ -534,7 +533,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
             {rangeOptions.map((range) => (
               <button
                 key={range.id}
-                className={`chip${teamRange === range.id ? ' on' : ''}`}
+                className={`coach-tab${teamRange === range.id ? ' on' : ''}`}
                 onClick={() => setTeamRange(range.id)}
               >
                 {range.label}
@@ -570,11 +569,6 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
               {!singleMeal && ` (${visibleRows.length}팀)`}
               {hasQuery && ` — "${queryNum}번" 검색 중`}
             </h3>
-          )}
-          {singleMeal && teamRows.length > 0 && (
-            <span className="deliver-progress">
-              배부 {deliveredCount}/{teamRows.length}팀 완료
-            </span>
           )}
         </div>
 
