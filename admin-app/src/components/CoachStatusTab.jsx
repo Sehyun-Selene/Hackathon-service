@@ -57,12 +57,12 @@ export default function CoachStatusTab({ scan, coach }) {
           ]
   const shownCount = groups.reduce((s, g) => s + g.rows.length, 0)
 
-  // '대기 중'과 '대응 중'은 글자가 비슷해 색 점을 함께 붙입니다
-  // (초록=대기, 빨강=대응). 목록의 상태 표시와 같은 색 규칙.
+  // '대기 중'과 '대응 중'은 글자가 비슷하므로 탭 박스 자체를 상태색으로
+  // 채웁니다 (초록=대기, 빨강=대응). 목록의 🟢/🔴 표시와 같은 색 규칙.
   const TABS = [
-    { id: 'idle', label: '대기 중', count: idle.length, dot: 'idle' },
-    { id: 'busy', label: '대응 중', count: busy.length, dot: 'busy' },
-    { id: 'all', label: '전체', count: rows.length, dot: null },
+    { id: 'idle', label: '대기 중', count: idle.length, tone: 'idle' },
+    { id: 'busy', label: '대응 중', count: busy.length, tone: 'busy' },
+    { id: 'all', label: '전체', count: rows.length, tone: null },
   ]
 
   return (
@@ -74,10 +74,11 @@ export default function CoachStatusTab({ scan, coach }) {
           {TABS.map((t) => (
             <button
               key={t.id}
-              className={`coach-tab${filter === t.id ? ' on' : ''}`}
+              className={`coach-tab${t.tone ? ` tone-${t.tone}` : ''}${
+                filter === t.id ? ' on' : ''
+              }`}
               onClick={() => setFilter(t.id)}
             >
-              {t.dot && <i className={`tab-dot ${t.dot}`} aria-hidden="true" />}
               {t.label} <b className="tab-count">{t.count}</b>
             </button>
           ))}
