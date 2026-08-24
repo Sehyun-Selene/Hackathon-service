@@ -115,6 +115,7 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
           <label className="reason-label" htmlFor="call-reason">
             무엇이 막혔는지 적어주세요 <span className="reason-required">필수</span>
           </label>
+          <p className="reason-help">마스터 메이트가 미리 보고 옵니다.</p>
           <textarea
             id="call-reason"
             className={`reason-input${reasonError ? ' has-error' : ''}`}
@@ -129,11 +130,7 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
             }}
           />
           <div className="reason-meta">
-            {reasonError ? (
-              <span className="reason-err-text">호출 사유를 작성해주세요.</span>
-            ) : (
-              <span className="reason-help">마스터 메이트가 미리 보고 옵니다.</span>
-            )}
+            {reasonError && <span className="reason-err-text">호출 사유를 작성해주세요.</span>}
             <span className="reason-count">
               {reason.length}/{REASON_MAX}
             </span>

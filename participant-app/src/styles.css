@@ -470,9 +470,10 @@ html.dark .reason-required { background: #4a1d1d; }
   display: flex; justify-content: space-between; align-items: center; gap: 8px;
   margin-top: 6px; font-size: 12px;
 }
-.reason-help { color: var(--sub); }
+.reason-help { color: var(--sub); font-size: 12px; text-align: left; margin: -2px 0 7px; }
 .reason-err-text { color: var(--red); font-weight: 600; }
-.reason-count { color: var(--sub); font-variant-numeric: tabular-nums; }
+/* 오류 문구가 없을 때도 오른쪽 끝에 붙어 있도록 */
+.reason-count { color: var(--sub); font-variant-numeric: tabular-nums; margin-left: auto; }
 /* 전송된 호출 사유 (진행 상태 박스) */
 .call-sent-reason {
   font-size: 13.5px; line-height: 1.55; color: var(--text);
