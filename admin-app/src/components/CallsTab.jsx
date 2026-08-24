@@ -67,7 +67,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
         </div>
         {shown.length === 0 ? (
           <p className="empty-text">
-            {onlyMine ? '내가 담당하는 진행 중 호출이 없습니다.' : '진행 중인 호출이 없습니다. 🎉'}
+            {onlyMine ? '내가 담당하는 진행 중 호출이 없습니다.' : '진행 중인 호출이 없습니다.'}
           </p>
         ) : (
           <div className="call-list">
