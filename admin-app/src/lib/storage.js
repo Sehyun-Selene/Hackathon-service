@@ -208,6 +208,15 @@ export async function flagSet(key, field, value) {
   }
 }
 
+// 이 호출을 내가 잡았는가 — 신원 단위는 이름입니다 (담당 팀 연결도 이름 기준).
+// 기기 id는 같은 사람이 폰과 노트북을 함께 쓰면 갈라지므로, 이름을 먼저 보고
+// 이름이 비어 있는 옛 기록만 기기 id로 보완합니다.
+export function isHandledByMe(call, coach) {
+  if (!call || !coach) return false
+  if (call.handledBy && coach.name) return call.handledBy === coach.name
+  return !!call.handledById && call.handledById === coach.id
+}
+
 // ---- 키 빌더 ----
 export const teamKey = (teamId) => `team:${teamId}`
 export const orderKey = (teamId) => `order:${teamId}`

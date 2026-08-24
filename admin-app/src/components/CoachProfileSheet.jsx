@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { COACH_ASSIGNMENTS, formatTeamRange } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
+import { isHandledByMe } from '../lib/storage.js'
 
 // 내 프로필 — 사이드바(좁은 화면은 상단바)의 이름을 누르면 열립니다.
 // 마스터 메이트는 호출 대응만 담당하므로 주문 관련 정보는 넣지 않습니다.
@@ -30,13 +31,13 @@ export default function CoachProfileSheet({ scan, coach, onClose, onChangeName }
       const mine = myTeams.includes(parseInt(teamId, 10))
       ;(data.calls || []).forEach((c) => {
         if (c.status === 'waiting' && mine) waitingMine += 1
-        if (c.status === 'in_progress' && c.handledById === coach.id) inProgressByMe += 1
-        if (c.status === 'done' && c.handledById === coach.id) doneByMe += 1
+        if (c.status === 'in_progress' && isHandledByMe(c, coach)) inProgressByMe += 1
+        if (c.status === 'done' && isHandledByMe(c, coach)) doneByMe += 1
       })
     })
 
     return { waitingMine, inProgressByMe, doneByMe }
-  }, [scan.calls, myTeams, coach.id])
+  }, [scan.calls, myTeams, coach])
 
   return (
     <div className="bottom-sheet-backdrop" onClick={onClose}>

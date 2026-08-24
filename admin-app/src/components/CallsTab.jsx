@@ -6,6 +6,7 @@ import {
   getAssignedCoachForTeam,
 } from '../config.js'
 import { now, fmtCountdown, fmtClock } from '../lib/time.js'
+import { isHandledByMe } from '../lib/storage.js'
 
 // 마스터 메이트 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 마스터 메이트 개인별 배정.
 // 내가 담당하는 팀의 호출을 우선 대응하되, 다른 마스터 메이트도 지원 가능.
@@ -35,7 +36,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
   // 완료 이력은 내가 처리한 것만. 전원 이력이 섞이면 40명 규모에서 목록이
   // 길어지고, 정작 "내가 뭘 처리했는지" 확인이 어려워짐.
   const done = all
-    .filter((c) => c.status === 'done' && c.handledById === coach.id)
+    .filter((c) => c.status === 'done' && isHandledByMe(c, coach))
     .sort((a, b) => b.doneAt - a.doneAt)
 
   const shown = onlyMine ? active.filter((c) => c.assignedName === coach.name) : active
@@ -94,7 +95,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                     ) : (
                       <>
                         <span className="status-pill in-progress">
-                          처리중{c.handledById === coach.id ? ' (나)' : ''}
+                          처리중{isHandledByMe(c, coach) ? ' (나)' : ''}
                         </span>
                         {/* 잘못 누른 '처리 시작'을 되돌립니다. 되돌리지 못하면 그
                             호출이 대기 목록에서 사라지고, 슬랙 미처리 알림도

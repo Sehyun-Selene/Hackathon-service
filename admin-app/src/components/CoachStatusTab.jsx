@@ -11,15 +11,21 @@ import { COACH_ASSIGNMENTS, formatTeamRange } from '../config.js'
 export default function CoachStatusTab({ scan, coach }) {
   const [filter, setFilter] = useState('idle') // idle | busy | all
 
-  // 진행 중(in_progress) 호출에서 담당 마스터 메이트별로 어떤 팀을 맡고 있는지 매핑
-  const busyByCoachId = useMemo(() => {
+  // 진행 중(in_progress) 호출을 담당자별로 매핑.
+  // 이름과 기기 id 양쪽으로 담아둡니다 — 신원 단위는 이름이지만, 이름이 없는
+  // 옛 기록은 기기 id로만 찾을 수 있습니다.
+  const busyByKey = useMemo(() => {
     const map = {}
+    const push = (key, teamId) => {
+      if (!key) return
+      map[key] = map[key] || []
+      map[key].push({ teamId })
+    }
     Object.entries(scan.calls).forEach(([teamId, data]) => {
       ;(data.calls || []).forEach((c) => {
-        if (c.status === 'in_progress' && c.handledById) {
-          map[c.handledById] = map[c.handledById] || []
-          map[c.handledById].push({ teamId })
-        }
+        if (c.status !== 'in_progress') return
+        if (c.handledBy) push('name:' + c.handledBy, teamId)
+        else push('id:' + c.handledById, teamId)
       })
     })
     return map
@@ -45,13 +51,16 @@ export default function CoachStatusTab({ scan, coach }) {
         return {
           coach: { id: person.ids[0], name: person.name },
           ids: person.ids,
-          busy: person.ids.flatMap((id) => busyByCoachId[id] || []),
+          busy: [
+            ...(busyByKey['name:' + person.name] || []),
+            ...person.ids.flatMap((id) => busyByKey['id:' + id] || []),
+          ],
           range: formatTeamRange(teams),
           sortKey: teams.length ? Math.min(...teams) : Number.MAX_SAFE_INTEGER,
         }
       })
       .sort((a, b) => a.sortKey - b.sortKey || a.coach.name.localeCompare(b.coach.name))
-  }, [scan.coaches, busyByCoachId])
+  }, [scan.coaches, busyByKey])
 
   const idle = rows.filter((r) => r.busy.length === 0)
   const busy = rows.filter((r) => r.busy.length > 0)
