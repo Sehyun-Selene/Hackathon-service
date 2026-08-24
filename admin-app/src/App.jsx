@@ -13,6 +13,7 @@ import {
   COACH_ROSTER_KEY,
   coachUpsert,
   callStatusSet,
+  flagSet,
   SOLDOUT_KEY,
 } from './lib/storage.js'
 import { now, fmtClock, getNextMeal, getOpenMeals, getVisibleMeals } from './lib/time.js'
@@ -184,10 +185,7 @@ export default function App() {
   const toggleDelivered = useCallback(
     async (teamId, mealId, next) => {
       try {
-        const data = (await storageGet(deliveredKey(teamId))) || {}
-        if (next) data[mealId] = true
-        else delete data[mealId]
-        await storageSet(deliveredKey(teamId), data)
+        await flagSet(deliveredKey(teamId), mealId, next)
       } catch {
         alert('네트워크 오류로 배부 상태가 저장되지 않았습니다.\n잠시 후 다시 시도해주세요.')
         return
@@ -200,17 +198,17 @@ export default function App() {
   const toggleSoldout = useCallback(
     async (menuId) => {
       try {
-        const sold = (await storageGet(SOLDOUT_KEY)) || {}
-        if (sold[menuId]) delete sold[menuId]
-        else sold[menuId] = true
-        await storageSet(SOLDOUT_KEY, sold)
+        // 현재 상태의 반대로 — 화면이 알고 있는 값을 기준으로 켜고 끕니다.
+        // scan을 읽으므로 의존성에 포함해야 합니다. 빠뜨리면 첫 렌더의 옛 값이
+        // 클로저에 갇혀 토글 방향이 뒤집힙니다.
+        await flagSet(SOLDOUT_KEY, menuId, !scan?.soldout?.[menuId])
       } catch {
         alert('네트워크 오류로 품절 상태가 변경되지 않았습니다.\n잠시 후 다시 시도해주세요.')
         return
       }
       await refresh()
     },
-    [refresh],
+    [refresh, scan],
   )
 
   if (!coach) {

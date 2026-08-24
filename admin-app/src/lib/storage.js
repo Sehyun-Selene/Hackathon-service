@@ -189,6 +189,25 @@ export async function callStatusSet(teamId, callId, status, coach) {
   }
 }
 
+// 품절·배부 표시 — 객체 안 필드 하나만 원자적으로 켜고 끕니다.
+// 두 메이트가 같은 순간에 다른 메뉴/끼니를 건드려도 서로를 지우지 않습니다.
+export async function flagSet(key, field, value) {
+  const local = async () => {
+    const current = (await storageGet(key)) || {}
+    if (value) current[field] = true
+    else delete current[field]
+    await storageSet(key, current)
+    return { ok: true }
+  }
+  if (!API_BASE_URL) return local()
+  try {
+    return await apiPost('/api/flag-set', { key, field, value: !!value })
+  } catch (err) {
+    if (err.code !== 'endpoint-missing') throw err
+    return { ...(await local()), legacy: true }
+  }
+}
+
 // ---- 키 빌더 ----
 export const teamKey = (teamId) => `team:${teamId}`
 export const orderKey = (teamId) => `order:${teamId}`

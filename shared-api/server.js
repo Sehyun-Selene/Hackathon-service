@@ -44,6 +44,7 @@
 //    POST /api/coach-upsert  body: { id, name }            → 메이트 목록 원자적 갱신
 //    POST /api/call-add      body: { teamId, call }        → 제한검사+호출추가+횟수증가
 //    POST /api/call-status   body: { teamId, callId, ... } → 호출 하나만 원자적 변경
+//    POST /api/flag-set      body: { key, field, value }   → 품절·배부 표시 원자적 변경
 //    POST /api/reset  body: { token: string }         → 전체 삭제(행사 전 초기화용)
 //    GET  /health                                     → 상태 확인용(크론 대상)
 // =====================================================================
@@ -442,6 +443,32 @@ const server = http.createServer(async (req, res) => {
       store.set(key, next)
       const persisted = await persistKey(key, next)
       sendJson(res, 200, { ok: true, call, persisted })
+    } catch {
+      sendJson(res, 400, { error: 'invalid request' })
+    }
+    return
+  }
+
+  // 품절 / 배부 완료 표시: 객체 안의 필드 하나만 켜고 끕니다.
+  // 두 메이트가 같은 순간에 서로 다른 메뉴를 품절 처리하거나, 같은 팀의
+  // 다른 끼니를 배부 완료하면, 앱에서 통째로 쓰던 방식은 한쪽이 사라졌습니다.
+  if (req.method === 'POST' && url.pathname === '/api/flag-set') {
+    try {
+      const { key, field, value } = await readBody(req)
+      const allowed = key === 'soldout' || (typeof key === 'string' && key.startsWith('delivered:'))
+      if (!allowed || !field || typeof field !== 'string') {
+        sendJson(res, 400, { error: 'key and field required' })
+        return
+      }
+      const current = store.get(key)
+      const next = current && typeof current === 'object' && !Array.isArray(current)
+        ? { ...current }
+        : {}
+      if (value) next[field] = true
+      else delete next[field]
+      store.set(key, next)
+      const persisted = await persistKey(key, next)
+      sendJson(res, 200, { ok: true, value: next, persisted })
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }
