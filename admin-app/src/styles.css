@@ -47,6 +47,7 @@ body {
 
 .sidebar { background: var(--card); }
 .brand-row { display: flex; align-items: center; gap: 10px; }
+.brand-row .topbar-coach { margin-left: auto; }
 .menu-toggle { display: none; }
 .menu-backdrop { display: none; }
 .drawer-head { display: none; }
@@ -331,7 +332,11 @@ body {
   font-size: 12px; font-weight: 700; color: var(--green); cursor: pointer; white-space: nowrap;
 }
 .deliver-check input { width: 20px; height: 20px; accent-color: var(--green); }
-.deliver-progress { font-size: 13px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+/* 제목이 없을 때도 오른쪽 끝에 붙도록 margin-left: auto */
+.deliver-progress {
+  margin-left: auto; font-size: 13px; font-weight: 700; color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
 .deliver-hint { font-size: 12.5px; color: var(--sub); margin-bottom: 8px; }
 .delivery-range-bar {
   margin-bottom: 14px; padding: 14px; border: 1px solid var(--line);
@@ -568,6 +573,7 @@ body {
 /* 바깥 패널과 같은 '모서리만 둥근 네모' 형태 (알약형 chip과 구분).
    인원수는 탭 라벨에 들어 있어 별도 요약 줄을 두지 않습니다. */
 .coach-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.panel-head-row .coach-tabs { margin-bottom: 0; }
 .coach-tab {
   border: 1px solid var(--line); background: var(--card); border-radius: 8px;
   padding: 9px 14px; min-height: 40px; font: inherit; font-size: 13.5px;

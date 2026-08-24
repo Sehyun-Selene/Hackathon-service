@@ -545,37 +545,38 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       )}
 
       <section className="panel delivery-team-panel">
+        {/* 제목 자리에 탭을 둡니다 — 목록 구분은 탭이 담당하므로 별도 제목이
+            필요하지 않고, 진행 표시와 같은 줄에 좌/우로 놓입니다.
+            검색 중이거나 끼니 '전체'일 때는 탭이 의미가 없어 제목을 씁니다. */}
         <div className="panel-head-row">
-          <h3>
-            {singleMeal && !hasQuery ? '배부' : '팀별 주문'}
-            {!singleMeal && ` (${visibleRows.length}팀)`}
-            {hasQuery && ` — "${queryNum}번" 검색 중`}
-          </h3>
+          {singleMeal && !hasQuery ? (
+            <div className="coach-tabs">
+              <button
+                className={`coach-tab${deliveryTab === 'pending' ? ' on' : ''}`}
+                onClick={() => setDeliveryTab('pending')}
+              >
+                미배부 팀 {pendingRows.length}
+              </button>
+              <button
+                className={`coach-tab${deliveryTab === 'done' ? ' on' : ''}`}
+                onClick={() => setDeliveryTab('done')}
+              >
+                배부 완료 팀 {completedRows.length}
+              </button>
+            </div>
+          ) : (
+            <h3>
+              {'팀별 주문'}
+              {!singleMeal && ` (${visibleRows.length}팀)`}
+              {hasQuery && ` — "${queryNum}번" 검색 중`}
+            </h3>
+          )}
           {singleMeal && teamRows.length > 0 && (
             <span className="deliver-progress">
               배부 {deliveredCount}/{teamRows.length}팀 완료
             </span>
           )}
         </div>
-
-        {/* 미배부 / 배부 완료를 탭으로 — 완료 목록을 접었다 펴는 방식보다
-            "지금 어느 목록을 보는지"가 분명해짐 */}
-        {singleMeal && !hasQuery && (
-          <div className="coach-tabs">
-            <button
-              className={`coach-tab${deliveryTab === 'pending' ? ' on' : ''}`}
-              onClick={() => setDeliveryTab('pending')}
-            >
-              미배부 팀 {pendingRows.length}
-            </button>
-            <button
-              className={`coach-tab${deliveryTab === 'done' ? ' on' : ''}`}
-              onClick={() => setDeliveryTab('done')}
-            >
-              배부 완료 팀 {completedRows.length}
-            </button>
-          </div>
-        )}
 
         {!singleMeal && teamRows.length > 0 && (
           <p className="deliver-hint">

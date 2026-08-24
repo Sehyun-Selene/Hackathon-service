@@ -351,6 +351,16 @@ export default function App() {
               관리자 <b>페이지</b>
             </span>
           </div>
+          {/* 좁은 화면에서는 사이드바 하단(.side-foot)이 숨겨지므로 이 줄의
+              오른쪽 끝을 프로필 진입점으로 씁니다 */}
+          <button
+            className="topbar-coach"
+            onClick={() => setShowProfile(true)}
+            aria-haspopup="dialog"
+            aria-label="내 프로필 보기"
+          >
+            🧑‍🏫 {coach.name}
+          </button>
         </div>
         <nav className={`side-nav${menuOpen ? ' open' : ''}`}>
           <div className="drawer-head">
@@ -419,15 +429,6 @@ export default function App() {
             <h1>{activeTab?.label}</h1>
           </div>
           <div className="topbar-actions">
-            {/* 좁은 화면에서는 사이드바 하단이 숨겨져 여기가 프로필 진입점 */}
-            <button
-              className="topbar-coach"
-              onClick={() => setShowProfile(true)}
-              aria-haspopup="dialog"
-              aria-label="내 프로필 보기"
-            >
-              🧑‍🏫 {coach.name}
-            </button>
             <label className="sound-toggle">
               <input
                 type="checkbox"
