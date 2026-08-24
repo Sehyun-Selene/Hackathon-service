@@ -538,7 +538,6 @@ html.dark .call-guide-title { color: #fbbf24; }
   font-size: 24px; font-weight: 800;
 }
 .setup-header .header-sub { margin-top: 2px; font-size: 13px; opacity: 0.9; }
-.setup-intro { font-size: 14px; color: var(--sub); line-height: 1.5; margin-bottom: 16px; }
 .setup-field { margin-bottom: 18px; }
 .setup-label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
 .chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; }

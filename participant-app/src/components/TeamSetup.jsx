@@ -127,10 +127,6 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
             먼저 읽어야 하는 안내라 소개 문구보다 위에 둡니다 */}
         <p className="setup-solo-note">👤 한 팀당 한 명씩만 팀 등록을 해주세요.</p>
 
-        <p className="setup-intro">
-          팀 번호를 입력하면 주문을 시작할 수 있어요.
-        </p>
-
         <div className="setup-field">
           <label className="setup-label" htmlFor="team-no">
             팀 번호
