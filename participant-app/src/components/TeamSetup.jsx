@@ -145,7 +145,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
         </div>
 
         <div className="setup-field">
-          <label className="setup-label">인원수 (음식 주문 개수 제한 기준)</label>
+          <label className="setup-label">인원수</label>
           <div className="stepper">
             <button
               className="qty-btn"
