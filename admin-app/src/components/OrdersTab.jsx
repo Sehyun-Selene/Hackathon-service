@@ -92,7 +92,7 @@ function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelive
 }
 
 // 주문 현황 (PRD 5.2): 팀별 내역, 시간대 필터, 메뉴별 합산, 품절 처리,
-// CSV 내보내기, 팀 번호 검색, 알레르기 현황, 배부 체크(끼니별), 인쇄용 체크리스트.
+// 팀 번호 검색, 알레르기 현황, 배부 체크(끼니별), 인쇄용 체크리스트.
 // 식사 선택(DAY 1 야식 / DAY 2 아침)은 좌측 메뉴의 하위 항목으로 옮겨졌으므로
 // mealFilter는 App에서 관리하고 prop으로 받습니다.
 export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleDelivered }) {
@@ -102,6 +102,9 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   const [teamRange, setTeamRange] = useState('all')
   // 배부 목록 탭 — 'pending'(미배부) 기본, 'done'(배부 완료)
   const [deliveryTab, setDeliveryTab] = useState('pending')
+  // 폰에서는 도구가 두 개뿐이라 버튼 줄을 따로 두지 않고, 검색칸 오른쪽의
+  // 더보기(⋯)로 묶습니다
+  const [moreOpen, setMoreOpen] = useState(false)
 
   const closeUtilityPanels = useCallback(() => {
     setShowAllergyPanel(false)
@@ -250,44 +253,6 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
     })
     return { rows: MEALS.map((m) => byMeal[m.id]), coveredByOtherMenu }
   }, [scan.teams])
-
-  const exportCsv = () => {
-    const rows = [['팀', '담당 마스터 메이트', '인원수', '식사', '메뉴', '수량']]
-    Object.entries(scan.orders)
-      .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
-      .forEach(([teamId, order]) => {
-        const team = scan.teams[teamId] || {}
-        MEALS.forEach((meal) => {
-          ;(order.meals?.[meal.id]?.items || []).forEach(({ menuId, qty }) => {
-            const menu = MENU_BY_ID[menuId]
-            rows.push([
-              teamId,
-              getAssignedCoachForTeam(teamId)?.name || '',
-              team.memberCount || '',
-              meal.label,
-              menu?.name || menuId,
-              qty,
-            ])
-          })
-        })
-      })
-    const csv =
-      '﻿' +
-      rows
-        .map((r) =>
-          r
-            // 메뉴명에 카드 표시용 줄바꿈이 들어있을 수 있어 공백으로 눕힘
-            .map((c) => `"${String(c).replace(/\s*\n\s*/g, ' ').replace(/"/g, '""')}"`)
-            .join(','),
-        )
-        .join('\r\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `해커톤_주문내역_${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(a.href)
-  }
 
   // (C) 인쇄용 배부 체크리스트 — 현재 끼니 필터 기준, 팀번호순, 종이 체크칸 포함
   const printChecklist = () => {
@@ -441,6 +406,46 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
               aria-label="팀 번호 검색"
             />
           </label>
+          {/* 폰 전용 더보기 — 넓은 화면에서는 오른쪽 버튼들이 그대로 보입니다 */}
+          <div className="search-more-wrap">
+            <button
+              className={`search-more${moreOpen ? ' on' : ''}`}
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              aria-label="도구 더보기"
+            >
+              ⋯
+            </button>
+            {moreOpen && (
+              <>
+                <div className="search-more-backdrop" onClick={() => setMoreOpen(false)} />
+                <div className="search-more-menu" role="menu">
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      setShowAllergyPanel(true)
+                      setShowSoldoutPanel(false)
+                      setMoreOpen(false)
+                    }}
+                  >
+                    🥗 알레르기 현황
+                    <b>{allergyInfo.teamsWith.length}</b>
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      setShowSoldoutPanel(true)
+                      setShowAllergyPanel(false)
+                      setMoreOpen(false)
+                    }}
+                  >
+                    🚫 품절 관리
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button
             className={`btn-ghost toolbar-tool${showAllergyPanel ? ' active' : ''}`}
             onClick={() => {
@@ -463,9 +468,6 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
               실시간이고 체크도 바로 되므로 이 버튼을 감춥니다(styles.css) */}
           <button className="btn-ghost toolbar-tool checklist-tool" onClick={printChecklist}>
             체크리스트
-          </button>
-          <button className="btn-secondary toolbar-tool" onClick={exportCsv}>
-            CSV
           </button>
         </div>
       </div>
