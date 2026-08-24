@@ -18,11 +18,18 @@ import MenuBoard from './components/MenuBoard.jsx'
 import CallSection from './components/CallSection.jsx'
 import TeamInfoSheet from './components/TeamInfoSheet.jsx'
 
+// 이 기기가 어느 팀인지 기억합니다. 행사 중 창을 닫거나 새로고침해도 다시
+// 등록하지 않도록 — 팀 등록은 행사 시작 때 한 번만 하면 됩니다.
+const MY_TEAM_KEY = 'torder-my-team'
+
 export default function App() {
-  // 새로고침하거나 다시 접속하면 항상 빈 팀 등록 화면부터 시작합니다.
   const [team, setTeam] = useState(null)
   const [editingTeam, setEditingTeam] = useState(false)
   const [showTeamInfo, setShowTeamInfo] = useState(false)
+  // 저장된 팀을 확인하는 중 — 등록 화면이 잠깐 스쳤다 사라지는 것을 막습니다
+  const [restoring, setRestoring] = useState(true)
+  // 서버에 기록이 없을 때(초기화 등) 등록 화면에 채워줄 값
+  const [prefill, setPrefill] = useState(null)
 
   // 화면 하단 탭: 'order'(음식 주문) | 'call'(마스터 메이트 호출)
   // 현재 주문 가능한 식사가 있을 때만 음식 주문 탭으로 랜딩
@@ -49,6 +56,49 @@ export default function App() {
   const [syncError, setSyncError] = useState(false)
 
   const teamId = team?.teamId || null
+
+  // ---- 저장된 팀으로 자동 입장 ----
+  // 서버 기록을 확인해서 들어갑니다. 다른 팀원이 팀 정보를 고쳤을 수 있어
+  // 로컬 사본보다 서버 기록을 우선합니다.
+  useEffect(() => {
+    let alive = true
+    const run = async () => {
+      let stored = null
+      try {
+        stored = JSON.parse(window.localStorage.getItem(MY_TEAM_KEY) || 'null')
+      } catch {
+        stored = null
+      }
+      if (!stored?.teamId) {
+        if (alive) setRestoring(false)
+        return
+      }
+      let server
+      let reachable = true
+      try {
+        server = await storageGet(teamKey(stored.teamId))
+      } catch {
+        reachable = false // 통신 실패 — 있는지 없는지 알 수 없음
+      }
+      if (!alive) return
+      if (server || !reachable) {
+        // 목록에 빠져 있으면 관리자 화면에서 이 팀이 안 보이므로, 들어올 때마다
+        // 한 번 더 넣어둡니다 (서버가 중복을 걸러내므로 여러 번 불러도 안전)
+        rosterAddTeam(stored.teamId).catch(() => {})
+        setTeam(server || stored)
+        setTab(getOpenMeals(now().getTime()).length > 0 ? 'order' : 'call')
+      } else {
+        // 서버에 기록이 없음(행사 전 초기화 등) → 저장값을 채운 등록 화면
+        setPrefill(stored)
+      }
+      setRestoring(false)
+    }
+    run()
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const refresh = useCallback(async () => {
     if (!teamId) return
@@ -85,7 +135,13 @@ export default function App() {
     // 팀 목록 추가는 서버에서 원자적으로. 앱에서 읽고-고쳐-쓰면 같은 순간에
     // 등록한 다른 팀의 번호를 지워버려, 그 팀이 관리자 화면에서 사라집니다.
     await rosterAddTeam(t.teamId)
+    try {
+      window.localStorage.setItem(MY_TEAM_KEY, JSON.stringify(record))
+    } catch {
+      /* 저장 공간 거부(시크릿 모드 등) — 이번 세션에서는 그대로 진행 */
+    }
     setTeam(record)
+    setPrefill(null)
     setEditingTeam(false)
     setTab(getOpenMeals(now().getTime()).length > 0 ? 'order' : 'call')
     window.requestAnimationFrame(() => {
@@ -99,6 +155,18 @@ export default function App() {
     } catch {
       return null
     }
+  }, [])
+
+  // 이 기기를 다른 팀이 쓰게 될 때 — 기억을 지우고 등록 화면으로
+  const forgetTeam = useCallback(() => {
+    try {
+      window.localStorage.removeItem(MY_TEAM_KEY)
+    } catch {
+      /* 무시 */
+    }
+    setShowTeamInfo(false)
+    setPrefill(null)
+    setTeam(null)
   }, [])
 
   const closeTeamInfo = useCallback(() => setShowTeamInfo(false), [])
@@ -189,11 +257,17 @@ export default function App() {
     document.documentElement.classList.toggle('dark', isDark)
   }, [isDark])
 
+  // 저장된 팀을 확인하는 사이에는 아무것도 보여주지 않습니다
+  // (등록 화면이 깜빡였다 사라지면 새로 등록해야 하나 오해하게 됩니다)
+  if (restoring) {
+    return <div className="app boot-wait" aria-busy="true" />
+  }
+
   // 팀 미설정 또는 수정 중 → 온보딩 화면
   if (!team || editingTeam) {
     return (
       <TeamSetup
-        initial={editingTeam ? team : null}
+        initial={editingTeam ? team : prefill}
         existingLookup={lookupTeam}
         onComplete={saveTeam}
       />
@@ -273,7 +347,12 @@ export default function App() {
       )}
 
       {showTeamInfo && (
-        <TeamInfoSheet team={team} onClose={closeTeamInfo} onEdit={editTeamInfo} />
+        <TeamInfoSheet
+          team={team}
+          onClose={closeTeamInfo}
+          onEdit={editTeamInfo}
+          onForget={forgetTeam}
+        />
       )}
     </div>
   )
