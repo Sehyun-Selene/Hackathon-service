@@ -28,9 +28,9 @@ function OrderNotice() {
       <ul className="call-guide-list">
         {shared ? (
           <li>
-            {MEALS.map((m) => m.shortLabel || m.label).join('과 ')} 모두{' '}
-            {dayOf(shared.label)} {fmtHM(shared.orderStart)}부터 {fmtHM(shared.orderEnd)}까지
-            신청합니다.
+            {MEALS.map((m) => m.label).join(' ')}은
+            <br />
+            {fmtClock(new Date(shared.orderStart))}부터 가능합니다.
           </li>
         ) : (
           MEALS.map((m) => (
