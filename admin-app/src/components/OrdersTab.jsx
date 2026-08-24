@@ -523,10 +523,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
             검색 중이거나 끼니 '전체'일 때는 구간·탭이 의미가 없어 제목만 씁니다. */}
         {singleMeal && !hasQuery ? (
           <div className="delivery-controls">
-            <div className="panel-head-row">
-              <b className="delivery-range-title">배부 구간</b>
-              <span className="pending-count">미배부 {pendingRows.length}팀</span>
-            </div>
+            <b className="delivery-range-title">배부 구간</b>
             <div className="coach-tabs delivery-ranges">
               <button
                 className={`coach-tab${teamRange === 'all' ? ' on' : ''}`}

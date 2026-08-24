@@ -341,8 +341,7 @@ body {
   margin-bottom: 0;
 }
 /* 다른 패널 제목(.panel h3)과 같은 크기·굵기로 맞춤 */
-.delivery-range-title { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
-.pending-count { color: var(--red); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.delivery-range-title { display: block; margin-bottom: 10px; font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
 /* 배부 구간 — 가로 스크롤 가능한 사각 탭. 자주 누르는 조작이라 조금 더 크게 */
 .delivery-ranges { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
 .delivery-ranges .coach-tab {
