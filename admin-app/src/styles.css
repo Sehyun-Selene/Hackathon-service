@@ -325,6 +325,8 @@ body {
 /* 수량은 '16 개'처럼 줄바꿈되지 않게 (메뉴명만 줄바꿈 허용) */
 .total-item b { font-variant-numeric: tabular-nums; white-space: nowrap; flex: 0 0 auto; }
 .total-of { font-size: 12px; color: var(--sub); font-weight: 500; }
+.total-name { min-width: 0; }
+.total-name-short { display: none; }
 .total-item.done { opacity: 0.5; }
 .total-item.done b { color: var(--green); }
 .total-item.limit-hit { border-color: #f0b6b8; background: #fef5f5; }
@@ -498,7 +500,13 @@ body {
   .toolbar-actions .btn-secondary, .toolbar-actions .btn-ghost { text-align: center; }
   .toolbar-tool { padding: 7px 6px; font-size: 11px; }
   .bottom-sheet { width: 100%; max-height: 86dvh; padding-left: 14px; padding-right: 14px; }
-  .totals-grid, .coach-list { grid-template-columns: 1fr; }
+  .coach-list { grid-template-columns: 1fr; }
+  /* 끼니마다 메뉴가 2개뿐이라 한 줄에 나란히 담습니다. 긴 정식 이름은 이 폭에
+     들어가지 않으므로 배부 목록과 같은 짧은 이름으로 바꿉니다 */
+  .totals-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .total-item { padding: 10px; font-size: 13.5px; }
+  .total-name-full { display: none; }
+  .total-name-short { display: inline; }
     .call-card { flex-direction: column; align-items: stretch; }
   .call-card-actions { justify-content: flex-end; }
   .call-card-actions .btn-primary, .call-card-actions .btn-secondary { width: auto; }
@@ -625,6 +633,22 @@ body {
 .coach-tab.on {
   background: var(--primary); border-color: var(--primary); color: #fff;
   box-shadow: 0 2px 8px rgba(109, 90, 230, 0.28);
+}
+/* 탭 옆 숫자 — 탭 이름과 같은 굵기·크기라 눈에 걸리지 않아 배지로 분리 */
+.tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 21px; padding: 0 6px; margin-left: 7px;
+  border-radius: 6px; background: var(--violet-soft); color: var(--primary-dark);
+  font-size: 13.5px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.coach-tab.on .tab-count { background: rgba(255, 255, 255, 0.24); color: #fff; }
+/* 폰: 구간 버튼 6개가 4+2로 어긋나 보이므로 3×2 격자로 가지런히.
+   (.coach-tabs의 flex 정의보다 뒤에 있어야 그리드가 적용됩니다) */
+@media (max-width: 560px) {
+  .delivery-ranges {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; overflow: visible;
+  }
+  .delivery-ranges .coach-tab { width: 100%; padding: 10px 4px; font-size: 13.5px; }
 }
 /* 상태 색 점 — '대기 중'과 '대응 중'이 글자만으로는 헷갈리므로 색을 함께 */
 .tab-dot {

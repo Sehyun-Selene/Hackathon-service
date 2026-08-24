@@ -197,6 +197,9 @@ ALL_MENUS.forEach((m) => {
   if (!m.allergyNote && m.allergens?.length) {
     m.allergyNote = `⚠️ ${m.allergens.join('·')} 포함`
   }
+  // 1인분 표기가 군더더기인 곳(관리자 합산표)에서 쓰는 이름.
+  // '페퍼로니 딜라이트 (1인)' → '페퍼로니 딜라이트'
+  m.baseName = m.name.split('(')[0].trim() || m.name
 })
 export const MENU_BY_ID = Object.fromEntries(ALL_MENUS.map((m) => [m.id, m]))
 export const MEAL_BY_ID = Object.fromEntries(MEALS.map((m) => [m.id, m]))

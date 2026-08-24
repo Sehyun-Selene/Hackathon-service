@@ -399,7 +399,16 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
                 const allDone = anyDelivered && remain === 0
                 return (
                   <div key={menuId} className={`total-item${allDone ? ' done' : ''}`}>
-                    <span>{MENU_BY_ID[menuId]?.name || menuId}</span>
+                    {/* '(1인)'은 여기서 군더더기라 뺍니다. 좁은 화면에서는 두 메뉴를
+                        한 줄에 담기 위해 배부 목록과 같은 짧은 이름을 씁니다 */}
+                    <span className="total-name">
+                      <span className="total-name-full">
+                        {MENU_BY_ID[menuId]?.baseName || menuId}
+                      </span>
+                      <span className="total-name-short">
+                        {MENU_BY_ID[menuId]?.shortLabel || MENU_BY_ID[menuId]?.baseName || menuId}
+                      </span>
+                    </span>
                     <b>
                       {remain}개
                       {anyDelivered && remain !== total && (
@@ -574,13 +583,13 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
                 className={`coach-tab${deliveryTab === 'pending' ? ' on' : ''}`}
                 onClick={() => setDeliveryTab('pending')}
               >
-                미배부 팀 {pendingRows.length}
+                미배부 팀 <b className="tab-count">{pendingRows.length}</b>
               </button>
               <button
                 className={`coach-tab${deliveryTab === 'done' ? ' on' : ''}`}
                 onClick={() => setDeliveryTab('done')}
               >
-                배부 완료 팀 {completedRows.length}
+                배부 완료 팀 <b className="tab-count">{completedRows.length}</b>
               </button>
             </div>
           </div>

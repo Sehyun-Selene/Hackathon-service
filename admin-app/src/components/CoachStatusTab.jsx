@@ -78,7 +78,7 @@ export default function CoachStatusTab({ scan, coach }) {
               onClick={() => setFilter(t.id)}
             >
               {t.dot && <i className={`tab-dot ${t.dot}`} aria-hidden="true" />}
-              {t.label} {t.count}
+              {t.label} <b className="tab-count">{t.count}</b>
             </button>
           ))}
         </div>
