@@ -330,6 +330,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       })
       .join('')
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>배부 체크리스트 — ${escapeHtml(label)}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   body { font-family: 'Malgun Gothic', system-ui, sans-serif; padding: 16px; color:#111; }
   h1 { font-size: 18px; margin: 0 0 4px; }
@@ -342,18 +343,34 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   td.a { white-space:nowrap; }
   td.a b { color:#b45309; }
   .cmb { color:#666; font-size:11px; }
+  .pbtn { padding:8px 14px; font-size:14px; margin-bottom:12px; }
+  /* 폰에서 열어 확인하는 경우 — 종이 기준 여백·글씨를 그대로 두면 아주 작게
+     보입니다. 화면에서 읽을 수 있는 크기로 조정하고 버튼도 손가락 크기로 */
+  @media screen and (max-width: 640px) {
+    body { padding: 12px; }
+    h1 { font-size: 17px; }
+    table { font-size: 14px; }
+    th, td { padding: 8px 6px; }
+    td.c { width: 34px; font-size: 18px; }
+    td.t { white-space: normal; }
+    td.a { white-space: normal; }
+    .cmb { display:block; font-size:12px; }
+    .pbtn { width:100%; min-height:48px; font-size:16px; font-weight:700; }
+  }
   @media print { .noprint { display:none; } }
 </style></head><body>
 <h1>배부 체크리스트 — ${escapeHtml(label)} · ${escapeHtml(rangeLabel)}</h1>
 <div class="sub">총 ${rangedRows.length}팀 · 배부 시 왼쪽 칸에 체크${
       altTotal ? ` · <b>대체식 ${altTotal}개 필요</b>` : ''
     }</div>
-<button class="noprint" onclick="window.print()" style="margin-bottom:12px;padding:8px 14px;">🖨 인쇄</button>
+<button class="noprint pbtn" onclick="window.print()">🖨 인쇄</button>
 <table><thead><tr><th>완료</th><th>팀</th><th>주문 내역</th><th>대체식</th></tr></thead><tbody>${rowsHtml}</tbody></table>
 </body></html>`
     const w = window.open('', '_blank')
     if (!w) {
-      alert('팝업이 차단되어 인쇄 창을 열 수 없습니다. 브라우저에서 팝업을 허용해 주세요.')
+      alert(
+        '팝업이 차단되어 체크리스트를 열 수 없습니다.\n브라우저의 팝업 차단을 허용한 뒤 다시 눌러주세요.\n(인쇄는 데스크톱 브라우저에서 여는 편이 편합니다)',
+      )
       return
     }
     w.document.write(html)
@@ -442,7 +459,9 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
           >
             품절 관리
           </button>
-          <button className="btn-ghost toolbar-tool" onClick={printChecklist}>
+          {/* 종이 체크리스트는 노트북에서 뽑습니다. 폰에서는 앱의 배부 목록이
+              실시간이고 체크도 바로 되므로 이 버튼을 감춥니다(styles.css) */}
+          <button className="btn-ghost toolbar-tool checklist-tool" onClick={printChecklist}>
             체크리스트
           </button>
           <button className="btn-secondary toolbar-tool" onClick={exportCsv}>

@@ -564,7 +564,9 @@ body {
 @media (max-width: 560px) {
   /* 검색창을 한 줄 통째로 쓰게 하고 도구 버튼은 아래 줄에 4등분.
      한 줄에 밀어넣으려 글자를 11px까지 줄였더니 iOS가 탭할 때마다 확대됐음 */
-  .toolbar-actions { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  /* 폰에서는 체크리스트 버튼을 감추므로 세 칸 */
+  .toolbar-actions { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .checklist-tool { display: none; }
   .toolbar-actions .table-search-wrap { grid-column: 1 / -1; }
   .toolbar-actions .btn-secondary, .toolbar-actions .btn-ghost { text-align: center; }
   .toolbar-tool { padding: 7px 6px; font-size: 11px; }
