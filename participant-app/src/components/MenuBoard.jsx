@@ -84,7 +84,10 @@ export default function MenuBoard({
   const [refreshing, setRefreshing] = useState(false)
   // 관리자 재촉이 방금 온 것인지 (오래된 표시로 계속 뜨지 않게 10분만 유효)
   const NUDGE_TTL_MS = 10 * 60 * 1000
-  const nudgeFresh = !!nudge?.at && now().getTime() - nudge.at < NUDGE_TTL_MS
+  // nudge.at은 서버가 찍은 실제 시각이므로 실제 시각으로 비교합니다.
+  // now()는 개발용 ?now= 오프셋이 섞여 있어, 시간을 시뮬레이션하면 방금 온
+  // 재촉도 '며칠 전'으로 판정됩니다.
+  const nudgeFresh = !!nudge?.at && Date.now() - nudge.at < NUDGE_TTL_MS
   // 처음 뜰 때 한 번만 진동 — 화면을 보고 있지 않을 수도 있으므로
   const buzzedRef = useRef(null)
   useEffect(() => {
