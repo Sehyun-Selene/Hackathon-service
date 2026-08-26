@@ -22,7 +22,18 @@ import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 const teamNo = (id) => parseInt(id, 10)
 
-export default function KpiDetailSheet({ kind, scan, mealFilter, onClose }) {
+export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onClose }) {
+  // 팀별 호출 횟수와 같은 규칙 — 메이트는 자기 담당 팀만 봅니다.
+  //   config의 callManager: true (총관리자) → 전체 팀
+  //   담당 팀이 배정되지 않았거나 명단이 아직 비어 있으면 → 전체 팀
+  const myAssignment = COACH_ASSIGNMENTS.find((c) => c.name && c.name === coach?.name) || null
+  const myTeams = myAssignment?.teamNumbers || []
+  const rosterConfigured = COACH_ASSIGNMENTS.some((c) => c.name)
+  const isManager = !!myAssignment?.callManager
+  const showAllTeams = isManager || myTeams.length === 0
+  // 채널 전체에 재촉을 보내는 건 총관리자만. 명단 설정 전에는 누구도 총관리자가
+  // 아니므로, 그때만 예외로 허용합니다(설정 전 테스트용).
+  const canNudge = isManager || !rosterConfigured
   const drag = useSheetDrag(onClose)
   const dialogRef = useDialogFocus(true, onClose)
   const [onlyPending, setOnlyPending] = useState(false)
@@ -76,10 +87,14 @@ export default function KpiDetailSheet({ kind, scan, mealFilter, onClose }) {
         .map(([id]) => teamNo(id)),
     )
     const isOrders = kind === 'orders'
-    const cells = Array.from({ length: TOTAL_TEAMS }, (_, i) => {
-      const n = i + 1
-      return { key: n, label: n, done: isOrders ? ordered.has(n) : registered.has(n) }
-    })
+    const targetTeams = showAllTeams
+      ? Array.from({ length: TOTAL_TEAMS }, (_, i) => i + 1)
+      : [...myTeams].sort((a, b) => a - b)
+    const cells = targetTeams.map((n) => ({
+      key: n,
+      label: n,
+      done: isOrders ? ordered.has(n) : registered.has(n),
+    }))
     // 못 한 팀을 담당 메이트별로 묶습니다. 참가자 폰에는 알림을 보낼 수
     // 없으니, 실제로 할 수 있는 일은 '담당자가 그 테이블로 가는 것'입니다.
     const missing = cells.filter((c) => !c.done).map((c) => c.key)
@@ -92,14 +107,21 @@ export default function KpiDetailSheet({ kind, scan, mealFilter, onClose }) {
     })
     return {
       mode: 'team-grid',
-      title: isOrders ? '팀별 주문 현황' : '팀별 등록 현황',
+      title: showAllTeams
+        ? isOrders
+          ? '팀별 주문 현황'
+          : '팀별 등록 현황'
+        : isOrders
+          ? '내 담당 팀 주문 현황'
+          : '내 담당 팀 등록 현황',
       cells,
       doneLabel: isOrders ? '주문 완료' : '등록',
       pendingLabel: isOrders ? '미주문' : '미등록',
       missing,
       byCoach: [...byCoach.entries()].sort((a, b) => Math.min(...a[1]) - Math.min(...b[1])),
     }
-  }, [kind, scan])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind, scan, showAllTeams, myTeams.join(',')])
 
   // 슬랙 재촉 — 도배를 막기 위해 서버가 종류별 쿨다운을 둡니다
   const [notifyState, setNotifyState] = useState(null)
@@ -166,7 +188,7 @@ export default function KpiDetailSheet({ kind, scan, mealFilter, onClose }) {
                 config의 마스터 메이트 명단이 비어 있어, 입장한 인원만 표시합니다.
               </p>
             )}
-            {data.mode === 'team-grid' && data.missing.length > 0 && (
+            {data.mode === 'team-grid' && data.missing.length > 0 && canNudge && (
               <div className="nudge-box">
                 <div className="nudge-head">
                   <b>{data.pendingLabel} {data.missing.length}팀</b>

@@ -613,6 +613,7 @@ export default function App() {
         <KpiDetailSheet
           kind={kpiDetail}
           scan={scan}
+          coach={coach}
           mealFilter={mealFilter}
           onClose={() => setKpiDetail(null)}
         />
