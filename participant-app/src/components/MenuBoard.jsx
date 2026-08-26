@@ -68,7 +68,6 @@ export default function MenuBoard({
   nextMeals,
   soldout,
   savedOrder,
-  nudge,
   memberCount,
   allergies,
   onRefresh,
@@ -82,21 +81,6 @@ export default function MenuBoard({
   const [activeMealId, setActiveMealId] = useState(openMeals[0]?.id || null)
   const [showCart, setShowCart] = useState(false) // 하단 장바구니 시트
   const [refreshing, setRefreshing] = useState(false)
-  // 관리자 재촉이 방금 온 것인지 (오래된 표시로 계속 뜨지 않게 10분만 유효)
-  const NUDGE_TTL_MS = 10 * 60 * 1000
-  // nudge.at은 서버가 찍은 실제 시각이므로 실제 시각으로 비교합니다.
-  // now()는 개발용 ?now= 오프셋이 섞여 있어, 시간을 시뮬레이션하면 방금 온
-  // 재촉도 '며칠 전'으로 판정됩니다.
-  const nudgeFresh = !!nudge?.at && Date.now() - nudge.at < NUDGE_TTL_MS
-  // 처음 뜰 때 한 번만 진동 — 화면을 보고 있지 않을 수도 있으므로
-  const buzzedRef = useRef(null)
-  useEffect(() => {
-    if (!nudgeFresh) return
-    if (buzzedRef.current === nudge.at) return
-    buzzedRef.current = nudge.at
-    navigator.vibrate?.([120, 80, 120])
-  }, [nudgeFresh, nudge?.at])
-
   const closeCart = useCallback(() => setShowCart(false), [])
   const cartDrag = useSheetDrag(closeCart)
   const cartDialogRef = useDialogFocus(showCart, closeCart)
@@ -328,20 +312,6 @@ export default function MenuBoard({
       <OrderNotice />
 
       {/* 담아두기만 하면 저장되지 않으므로, 마감 임박에는 눈에 띄게 알립니다 */}
-      {/* 관리자가 누른 재촉. 아직 주문하지 않은 팀에만 띄웁니다
-          (주문을 끝낸 팀에게 재촉이 뜨면 혼란만 줍니다) */}
-      {nudgeFresh && !hasSaved && (
-        <div className="nudge-banner" role="status">
-          <span className="nudge-banner-icon" aria-hidden="true">🍽️</span>
-          <div>
-            <b>음식을 주문해주세요!</b>
-            <p>
-              마감까지 <b>{fmtCountdown(remain)}</b> 남았습니다. 지금 메뉴를 담아 주문해주세요.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* 두 경우를 모두 잡습니다.
           ① 담아만 두고 저장하지 않음 → 그대로 마감되면 사라집니다
           ② 아무것도 주문하지 않음 → 담아둔 것도 없으니 예전 조건에 걸리지

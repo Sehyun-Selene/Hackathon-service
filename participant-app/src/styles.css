@@ -734,3 +734,13 @@ html.dark .board-countdown.urgent .board-countdown-label { color: #fca5a5; }
 @media (prefers-reduced-motion: reduce) {
   .nudge-banner { animation: none; }
 }
+
+/* 배너를 눌러 주문 탭으로 이동할 수 있게 — 알림을 보고 어디로 가야 할지
+   찾게 두지 않습니다. 탭 밖에 두어 호출 탭에서도 보입니다 */
+.nudge-banner {
+  width: 100%; text-align: left; border: none; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
+}
+.nudge-banner-text { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.nudge-banner-text span { font-size: 13.5px; line-height: 1.5; opacity: 0.95; }
+.nudge-banner-go { font-size: 20px; opacity: 0.9; }

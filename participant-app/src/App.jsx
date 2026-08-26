@@ -13,7 +13,7 @@ import {
   SOLDOUT_KEY,
   NUDGE_KEY,
 } from './lib/storage.js'
-import { now, fmtAgo, fmtClock, getOpenMeals, getNextMeals } from './lib/time.js'
+import { now, fmtAgo, fmtClock, fmtCountdown, getOpenMeals, getNextMeals } from './lib/time.js'
 import TeamSetup from './components/TeamSetup.jsx'
 import MenuBoard from './components/MenuBoard.jsx'
 import CallSection from './components/CallSection.jsx'
@@ -22,6 +22,8 @@ import TeamInfoSheet from './components/TeamInfoSheet.jsx'
 // 이 기기가 어느 팀인지 기억합니다. 행사 중 창을 닫거나 새로고침해도 다시
 // 등록하지 않도록 — 팀 등록은 행사 시작 때 한 번만 하면 됩니다.
 const MY_TEAM_KEY = 'torder-my-team'
+// 관리자 재촉 표시의 유효기간 — 오래된 표시로 계속 뜨지 않게
+const NUDGE_TTL_MS = 10 * 60 * 1000
 
 export default function App() {
   const [team, setTeam] = useState(null)
@@ -241,6 +243,21 @@ export default function App() {
     [teamId, refresh],
   )
 
+  // 관리자 재촉이 처음 도착했을 때 한 번 진동 — 화면을 보고 있지 않을 수도
+  // 있으므로. 훅이므로 조기 반환보다 반드시 위에 있어야 합니다.
+  const buzzedRef = useRef(null)
+  useEffect(() => {
+    if (!nudge?.at) return
+    if (Date.now() - nudge.at >= NUDGE_TTL_MS) return
+    const open = getOpenMeals(now().getTime())
+    if (!open.length) return
+    const ordered = open.some((m) => (savedOrder?.meals?.[m.id]?.items || []).length > 0)
+    if (ordered) return
+    if (buzzedRef.current === nudge.at) return
+    buzzedRef.current = nudge.at
+    navigator.vibrate?.([120, 80, 120])
+  }, [nudge?.at, savedOrder])
+
   // 내 호출 상태 변화(대기중→처리중→완료) 감지 → 진동 알림
   const prevCallRef = useRef(null)
   useEffect(() => {
@@ -284,6 +301,19 @@ export default function App() {
   const openMeals = getOpenMeals(t)
   const nextMeals = getNextMeals(t)
   const hasActiveCall = (callData?.calls || []).some((c) => c.status !== 'done')
+
+  // ── 관리자 재촉 배너 (판단만 — 훅은 아래 조기 반환보다 위에 있습니다) ──
+  // 주문 탭 안이 아니라 탭 밖에서 그립니다. 호출 탭을 보고 있는 참가자도
+  // 봐야 하기 때문입니다 — 재촉의 목적이 '닿는 것'이라서요.
+  const nudgeFresh = !!nudge?.at && Date.now() - nudge.at < NUDGE_TTL_MS
+  const orderedOpenMeal = openMeals.some(
+    (m) => (savedOrder?.meals?.[m.id]?.items || []).length > 0,
+  )
+  // 주문 창이 열려 있고, 아직 주문하지 않은 팀에만
+  const showNudge = nudgeFresh && openMeals.length > 0 && !orderedOpenMeal
+  const nudgeRemain = openMeals.length
+    ? new Date(openMeals[0].orderEnd).getTime() - now().getTime()
+    : 0
 
   return (
     <div className={`app${tab === 'order' && openMeals.length ? ' has-sticky-bar' : ''}`}>
@@ -334,13 +364,29 @@ export default function App() {
           </div>
         </div>
         <div className="folder-body">
+          {/* 눌러서 바로 주문 탭으로 — 알림을 보고 어디로 가야 할지 찾게 두지
+              않습니다 */}
+          {showNudge && (
+            <button className="nudge-banner" onClick={() => setTab('order')}>
+              <span className="nudge-banner-icon" aria-hidden="true">🍽️</span>
+              <span className="nudge-banner-text">
+                <b>음식을 주문해주세요!</b>
+                <span>
+                  마감까지 {fmtCountdown(nudgeRemain)} 남았습니다.
+                  {tab === 'order' ? ' 지금 메뉴를 담아 주문해주세요.' : ' 눌러서 주문하기'}
+                </span>
+              </span>
+              <span className="nudge-banner-go" aria-hidden="true">
+                {tab === 'order' ? '' : '›'}
+              </span>
+            </button>
+          )}
           {tab === 'order' ? (
             <MenuBoard
               openMeals={openMeals}
               nextMeals={nextMeals}
               soldout={soldout}
               savedOrder={savedOrder}
-              nudge={nudge}
               memberCount={team.memberCount}
               allergies={team.allergies}
               onRefresh={refresh}
