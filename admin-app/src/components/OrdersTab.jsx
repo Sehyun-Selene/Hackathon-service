@@ -592,7 +592,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
                           onClick={() => onToggleSoldout(m.id)}
                         >
                           {scan.soldout[m.id] ? '🚫 ' : ''}
-                          {m.name}
+                          {m.baseName || m.name}
                         </button>
                       ))}
                     </div>
