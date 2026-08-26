@@ -86,7 +86,9 @@ export const CALL_LIMIT_PER_TEAM = 5
 //      됩니다 (지금은 자리 4개만 미리 만들어둔 상태).
 // ---------------------------------------------------------------
 export const COACH_ASSIGNMENTS = [
-  { id: 'coach-1', name: '', teamNumbers: [], slackUserId: '', callManager: false },
+  // 호출 총관리자 — 담당 구간 없이 전체를 봅니다.
+  //   callManager: true → 전체 팀 호출 횟수 + 미주문·미등록 재촉 권한
+  { id: 'coach-1', name: '김세현', teamNumbers: [], slackUserId: 'U0BED7LG02D', callManager: true },
   { id: 'coach-2', name: '', teamNumbers: [], slackUserId: '', callManager: false },
   { id: 'coach-3', name: '', teamNumbers: [], slackUserId: '', callManager: false },
   { id: 'coach-4', name: '', teamNumbers: [], slackUserId: '', callManager: false },
