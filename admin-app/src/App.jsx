@@ -126,6 +126,14 @@ export default function App() {
   const soundOnRef = useRef(true)
   soundOnRef.current = soundOn
 
+  // 되돌릴 것이 없는 단순 알림 — 같은 토스트를 씁니다
+  const showToast = useCallback((message) => {
+    window.clearTimeout(undoTimer.current)
+    undoActionRef.current = null
+    setUndoToast({ message })
+    undoTimer.current = window.setTimeout(() => setUndoToast(null), 4000)
+  }, [])
+
   const showUndo = useCallback((message, undo) => {
     window.clearTimeout(undoTimer.current)
     undoActionRef.current = undo
@@ -615,6 +623,7 @@ export default function App() {
           scan={scan}
           coach={coach}
           mealFilter={mealFilter}
+          onToast={showToast}
           onClose={() => setKpiDetail(null)}
         />
       )}
@@ -637,7 +646,9 @@ export default function App() {
       {undoToast && (
         <div className="undo-toast" role="status">
           <span>{undoToast.message}</span>
-          <button type="button" onClick={runUndo}>실행 취소</button>
+          {undoActionRef.current && (
+            <button type="button" onClick={runUndo}>실행 취소</button>
+          )}
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   COACH_ASSIGNMENTS,
   MEALS,
@@ -22,7 +22,7 @@ import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 const teamNo = (id) => parseInt(id, 10)
 
-export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onClose }) {
+export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast, onClose }) {
   // 팀별 호출 횟수와 같은 규칙 — 메이트는 자기 담당 팀만 봅니다.
   //   config의 callManager: true (총관리자) → 전체 팀
   //   담당 팀이 배정되지 않았거나 명단이 아직 비어 있으면 → 전체 팀
@@ -95,16 +95,7 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onClose 
       label: n,
       done: isOrders ? ordered.has(n) : registered.has(n),
     }))
-    // 못 한 팀을 담당 메이트별로 묶습니다. 참가자 폰에는 알림을 보낼 수
-    // 없으니, 실제로 할 수 있는 일은 '담당자가 그 테이블로 가는 것'입니다.
     const missing = cells.filter((c) => !c.done).map((c) => c.key)
-    const byCoach = new Map()
-    missing.forEach((n) => {
-      const name = getAssignedCoachForTeam(String(n).padStart(2, '0'))?.name || '담당 미배정'
-      const list = byCoach.get(name) || []
-      list.push(n)
-      byCoach.set(name, list)
-    })
     return {
       mode: 'team-grid',
       title: showAllTeams
@@ -118,30 +109,45 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onClose 
       doneLabel: isOrders ? '주문 완료' : '등록',
       pendingLabel: isOrders ? '미주문' : '미등록',
       missing,
-      byCoach: [...byCoach.entries()].sort((a, b) => Math.min(...a[1]) - Math.min(...b[1])),
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, scan, showAllTeams, myTeams.join(',')])
 
-  // 참가자 주문 페이지에 '주문해주세요' 배너 띄우기.
-  // 페이지를 열어둔 팀에만 보입니다 — 웹은 닫힌 페이지에 닿을 수 없습니다.
-  const [popupState, setPopupState] = useState(null)
+  // 재촉 두 가지. 결과는 토스트로 알리고, 도배 방지 쿨다운은 안내 문구 대신
+  // 버튼을 잠가서 표현합니다 (남은 시간이 버튼에 보이므로 문구가 필요 없음).
+  const [busy, setBusy] = useState(null) // 'popup' | 'slack'
+  const [until, setUntil] = useState({}) // { popup: ms, slack: ms }
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    if (!until.popup && !until.slack) return undefined
+    const id = window.setInterval(() => setTick((t) => t + 1), 1000)
+    return () => window.clearInterval(id)
+  }, [until.popup, until.slack])
+  const leftSec = (key) => Math.max(0, Math.ceil(((until[key] || 0) - Date.now()) / 1000))
+  const lock = (key, sec) => setUntil((u) => ({ ...u, [key]: Date.now() + sec * 1000 }))
+  const COOLDOWN_SEC = 120
+
   const sendPopup = async () => {
-    setPopupState({ status: 'sending' })
+    setBusy('popup')
     try {
       await nudgeParticipants(mealFilter)
-      setPopupState({ status: 'ok' })
+      lock('popup', COOLDOWN_SEC)
+      onToast?.('참가자 주문 페이지에 알림을 보냈습니다.')
     } catch (err) {
-      if (err?.code === 'cooldown') setPopupState({ status: 'cooldown', sec: err.data?.retryAfterSec })
-      else if (err?.code === 'endpoint-missing') setPopupState({ status: 'old-server' })
-      else setPopupState({ status: 'fail' })
+      if (err?.code === 'cooldown') {
+        lock('popup', err.data?.retryAfterSec || COOLDOWN_SEC)
+        onToast?.('방금 보냈습니다. 잠시 후 다시 시도해주세요.')
+      } else if (err?.code === 'endpoint-missing') {
+        onToast?.('공유 서버 배포가 아직 반영되지 않았습니다.')
+      } else {
+        onToast?.('알림을 보내지 못했습니다.')
+      }
     }
+    setBusy(null)
   }
 
-  // 슬랙 재촉 — 도배를 막기 위해 서버가 종류별 쿨다운을 둡니다
-  const [notifyState, setNotifyState] = useState(null)
   const sendNudge = async () => {
-    setNotifyState({ status: 'sending' })
+    setBusy('slack')
     try {
       const r = await notifyMissing({
         kind: kind === 'orders' ? 'orders' : 'teams',
@@ -149,15 +155,27 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onClose 
         mealId: mealFilter,
         label: MEAL_BY_ID[mealFilter]?.label || '',
       })
-      if (r?.sent) setNotifyState({ status: 'ok', teams: r.teams })
-      else if (r?.teams === 0) setNotifyState({ status: 'none' })
-      else setNotifyState({ status: 'fail' })
+      if (r?.sent) {
+        lock('slack', COOLDOWN_SEC)
+        onToast?.('슬랙에 알림을 보냈습니다.')
+      } else if (r?.teams === 0) {
+        onToast?.('모두 완료된 상태입니다.')
+      } else {
+        onToast?.('알림을 보내지 못했습니다.')
+      }
     } catch (err) {
-      if (err?.code === 'cooldown') setNotifyState({ status: 'cooldown', sec: err.data?.retryAfterSec })
-      else if (err?.code === 'slack disabled') setNotifyState({ status: 'disabled' })
-      else if (err?.code === 'endpoint-missing') setNotifyState({ status: 'old-server' })
-      else setNotifyState({ status: 'fail' })
+      if (err?.code === 'cooldown') {
+        lock('slack', err.data?.retryAfterSec || COOLDOWN_SEC)
+        onToast?.('방금 보냈습니다. 잠시 후 다시 시도해주세요.')
+      } else if (err?.code === 'slack disabled') {
+        onToast?.('슬랙 웹훅이 설정되지 않았습니다.')
+      } else if (err?.code === 'endpoint-missing') {
+        onToast?.('공유 서버 배포가 아직 반영되지 않았습니다.')
+      } else {
+        onToast?.('알림을 보내지 못했습니다.')
+      }
     }
+    setBusy(null)
   }
 
   const done = (data.cells || []).filter((c) => c.done).length
@@ -205,87 +223,37 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onClose 
               </p>
             )}
             {data.mode === 'team-grid' && data.missing.length > 0 && canNudge && (
-              <div className="nudge-box">
-                <div className="nudge-head">
-                  <b>{data.pendingLabel} {data.missing.length}팀</b>
-                  <div className="nudge-actions">
-                    {/* 주문 재촉만 참가자에게 띄웁니다. 등록은 아직 앱에 들어온
-                        적이 없는 팀이라 띄울 화면 자체가 없습니다 */}
-                    {kind === 'orders' && (
-                      <button
-                        className="btn-primary sm"
-                        onClick={sendPopup}
-                        disabled={popupState?.status === 'sending'}
-                      >
-                        {popupState?.status === 'sending' ? '띄우는 중…' : '📱 주문 페이지에 띄우기'}
-                      </button>
-                    )}
+              <>
+                <div className="nudge-actions">
+                  {/* 주문 재촉만 참가자에게 띄웁니다. 등록은 아직 앱에 들어온
+                      적이 없는 팀이라 띄울 화면 자체가 없습니다.
+                      이모지를 붙이면 버튼 글자가 줄바꿈돼 빼두었습니다 */}
+                  {kind === 'orders' && (
                     <button
-                      className="btn-secondary sm"
-                      onClick={sendNudge}
-                      disabled={notifyState?.status === 'sending'}
+                      className="btn-primary sm"
+                      onClick={sendPopup}
+                      disabled={busy === 'popup' || leftSec('popup') > 0}
                     >
-                      {notifyState?.status === 'sending' ? '보내는 중…' : '📣 슬랙으로 알리기'}
+                      {busy === 'popup'
+                        ? '띄우는 중…'
+                        : leftSec('popup') > 0
+                          ? leftSec('popup') + '초 후 가능'
+                          : '주문 페이지에 띄우기'}
                     </button>
-                  </div>
+                  )}
+                  <button
+                    className="btn-outline sm"
+                    onClick={sendNudge}
+                    disabled={busy === 'slack' || leftSec('slack') > 0}
+                  >
+                    {busy === 'slack'
+                      ? '보내는 중…'
+                      : leftSec('slack') > 0
+                        ? leftSec('slack') + '초 후 가능'
+                        : '슬랙으로 알리기'}
+                  </button>
                 </div>
-                {/* 담당 메이트별로 묶어, 각자 자기 구간만 보고 움직이게.
-                    명단이 비어 있으면 전부 '담당 미배정'이 되어 위 격자와 같은
-                    말을 반복하므로 생략합니다. 한 줄이 너무 길어지지 않게
-                    앞쪽만 보여주고 나머지는 개수로 접습니다 */}
-                {data.byCoach.some(([name]) => name !== '담당 미배정') && (
-                  <div className="nudge-groups">
-                    {data.byCoach.map(([name, list]) => (
-                      <p key={name}>
-                        <b>{name}</b> 팀 {list.slice(0, 25).join(', ')}
-                        {list.length > 25 ? ' … 외 ' + (list.length - 25) + '팀' : ''}
-                      </p>
-                    ))}
-                  </div>
-                )}
-                {popupState?.status === 'ok' && (
-                  <p className="nudge-msg ok">
-                    참가자 주문 페이지에 배너를 띄웠습니다. 페이지를 열어둔 팀에만 보입니다.
-                  </p>
-                )}
-                {popupState?.status === 'cooldown' && (
-                  <p className="nudge-msg">
-                    방금 띄웠습니다. {popupState.sec || 0}초 후에 다시 띄울 수 있어요.
-                  </p>
-                )}
-                {popupState?.status === 'old-server' && (
-                  <p className="nudge-msg">
-                    공유 서버 배포가 아직 반영되지 않았습니다. 1~2분 후 다시 눌러주세요.
-                  </p>
-                )}
-                {notifyState?.status === 'old-server' && (
-                  <p className="nudge-msg">
-                    공유 서버 배포가 아직 반영되지 않았습니다. 1~2분 후 다시 눌러주세요.
-                  </p>
-                )}
-                {popupState?.status === 'fail' && (
-                  <p className="nudge-msg">배너를 띄우지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
-                )}
-                {notifyState?.status === 'ok' && (
-                  <p className="nudge-msg ok">
-                    슬랙 채널에 {notifyState.teams}팀 목록을 보냈습니다.
-                  </p>
-                )}
-                {notifyState?.status === 'cooldown' && (
-                  <p className="nudge-msg">
-                    방금 보냈습니다. {notifyState.sec || 0}초 후에 다시 보낼 수 있어요.
-                  </p>
-                )}
-                {notifyState?.status === 'none' && (
-                  <p className="nudge-msg ok">모두 완료된 상태입니다.</p>
-                )}
-                {notifyState?.status === 'disabled' && (
-                  <p className="nudge-msg">슬랙 웹훅이 설정되지 않아 보낼 수 없습니다.</p>
-                )}
-                {notifyState?.status === 'fail' && (
-                  <p className="nudge-msg">전송에 실패했습니다. 잠시 후 다시 시도해 주세요.</p>
-                )}
-              </div>
+              </>
             )}
           </>
         )}

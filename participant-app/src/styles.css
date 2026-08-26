@@ -721,7 +721,7 @@ html.dark .board-countdown.urgent .board-countdown-label { color: #fca5a5; }
   display: flex; align-items: flex-start; gap: 12px;
   background: var(--primary); color: #fff;
   border-radius: 14px; padding: 14px 16px; margin-bottom: 12px;
-  box-shadow: 0 6px 20px rgba(254, 134, 72, 0.35);
+  box-shadow: 0 6px 18px rgba(194, 75, 10, 0.28);
   animation: nudge-in 260ms ease-out;
 }
 .nudge-banner-icon { font-size: 22px; line-height: 1.2; }
