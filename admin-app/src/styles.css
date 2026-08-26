@@ -980,3 +980,5 @@ html.dark .btn-outline:hover { background: var(--violet-soft); }
 @media (max-width: 560px) {
   .nudge-actions { display: grid; grid-template-columns: 1fr 1fr; }
 }
+/* 격자 스위치 두 개 — 미주문만 / 내 담당만 */
+.grid-toggles { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

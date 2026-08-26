@@ -23,14 +23,16 @@ import { useDialogFocus } from '../lib/useDialogFocus.js'
 const teamNo = (id) => parseInt(id, 10)
 
 export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast, onClose }) {
-  // 팀별 호출 횟수와 같은 규칙 — 메이트는 자기 담당 팀만 봅니다.
-  //   config의 callManager: true (총관리자) → 전체 팀
-  //   담당 팀이 배정되지 않았거나 명단이 아직 비어 있으면 → 전체 팀
+  // KPI 카드가 전체 숫자를 보여주므로, 눌러서 열리는 격자도 전체를 보여줍니다.
+  // 예전에는 메이트에게 자동으로 담당 팀만 걸러 보여줬는데, 카드와 상세가
+  // 다른 말을 해서 무엇이 나올지 예측할 수 없었습니다. 좁혀 보는 것은
+  // '내 담당만' 스위치로 드러냅니다 (담당 팀이 있는 사람에게만 보임).
   const myAssignment = COACH_ASSIGNMENTS.find((c) => c.name && c.name === coach?.name) || null
   const myTeams = myAssignment?.teamNumbers || []
   const rosterConfigured = COACH_ASSIGNMENTS.some((c) => c.name)
   const isManager = !!myAssignment?.callManager
-  const showAllTeams = isManager || myTeams.length === 0
+  const [onlyMine, setOnlyMine] = useState(false)
+  const canFilterMine = myTeams.length > 0
   // 채널 전체에 재촉을 보내는 건 총관리자만. 명단 설정 전에는 누구도 총관리자가
   // 아니므로, 그때만 예외로 허용합니다(설정 전 테스트용).
   const canNudge = isManager || !rosterConfigured
@@ -87,9 +89,10 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
         .map(([id]) => teamNo(id)),
     )
     const isOrders = kind === 'orders'
-    const targetTeams = showAllTeams
-      ? Array.from({ length: TOTAL_TEAMS }, (_, i) => i + 1)
-      : [...myTeams].sort((a, b) => a - b)
+    const mine = new Set(myTeams)
+    const targetTeams = Array.from({ length: TOTAL_TEAMS }, (_, i) => i + 1).filter(
+      (n) => !onlyMine || mine.has(n),
+    )
     const cells = targetTeams.map((n) => ({
       key: n,
       label: n,
@@ -98,20 +101,14 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
     const missing = cells.filter((c) => !c.done).map((c) => c.key)
     return {
       mode: 'team-grid',
-      title: showAllTeams
-        ? isOrders
-          ? '팀별 주문 현황'
-          : '팀별 등록 현황'
-        : isOrders
-          ? '내 담당 팀 주문 현황'
-          : '내 담당 팀 등록 현황',
+      title: isOrders ? '팀별 주문 현황' : '팀별 등록 현황',
       cells,
       doneLabel: isOrders ? '주문 완료' : '등록',
       pendingLabel: isOrders ? '미주문' : '미등록',
       missing,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, scan, showAllTeams, myTeams.join(',')])
+  }, [kind, scan, onlyMine, myTeams.join(',')])
 
   // 재촉 두 가지. 결과는 토스트로 알리고, 도배 방지 쿨다운은 안내 문구 대신
   // 버튼을 잠가서 표현합니다 (남은 시간이 버튼에 보이므로 문구가 필요 없음).
@@ -208,14 +205,27 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
               <span>
                 {data.doneLabel} <b>{done}</b> / {total}
               </span>
-              <label className="grid-toggle">
-                <input
-                  type="checkbox"
-                  checked={onlyPending}
-                  onChange={(e) => setOnlyPending(e.target.checked)}
-                />
-                {data.pendingLabel}만 보기
-              </label>
+              <div className="grid-toggles">
+                <label className="grid-toggle">
+                  <input
+                    type="checkbox"
+                    checked={onlyPending}
+                    onChange={(e) => setOnlyPending(e.target.checked)}
+                  />
+                  {data.pendingLabel}만
+                </label>
+                {/* 담당 팀이 배정된 사람에게만 — 총관리자는 담당 구간이 없습니다 */}
+                {canFilterMine && data.mode === 'team-grid' && (
+                  <label className="grid-toggle">
+                    <input
+                      type="checkbox"
+                      checked={onlyMine}
+                      onChange={(e) => setOnlyMine(e.target.checked)}
+                    />
+                    내 담당만
+                  </label>
+                )}
+              </div>
             </div>
             {data.rosterMissing && (
               <p className="sheet-description">
