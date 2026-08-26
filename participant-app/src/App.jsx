@@ -11,6 +11,7 @@ import {
   callKey,
   callCountKey,
   SOLDOUT_KEY,
+  NUDGE_KEY,
 } from './lib/storage.js'
 import { now, fmtAgo, fmtClock, getOpenMeals, getNextMeals } from './lib/time.js'
 import TeamSetup from './components/TeamSetup.jsx'
@@ -52,6 +53,8 @@ export default function App() {
   const [callData, setCallData] = useState(null)
   const [callCount, setCallCount] = useState(0)
   const [soldout, setSoldout] = useState({})
+  // 관리자가 누른 '주문해주세요' 재촉 표시 { at, mealId }
+  const [nudge, setNudge] = useState(null)
   const [lastSync, setLastSync] = useState(null)
   const [syncError, setSyncError] = useState(false)
   const refreshRunning = useRef(false)
@@ -106,17 +109,19 @@ export default function App() {
     if (refreshRunning.current) return
     refreshRunning.current = true
     try {
-      const [order, call, count, sold] = await storageGetMany([
+      const [order, call, count, sold, nudgeVal] = await storageGetMany([
         orderKey(teamId),
         callKey(teamId),
         callCountKey(teamId),
         SOLDOUT_KEY,
+        NUDGE_KEY,
       ])
       setSavedOrder(order)
       savedOrderRef.current = order
       setCallData(call)
       setCallCount(typeof count === 'number' ? count : 0)
       setSoldout(sold || {})
+      setNudge(nudgeVal || null)
       setLastSync(now())
       setSyncError(false)
     } catch {
@@ -335,6 +340,7 @@ export default function App() {
               nextMeals={nextMeals}
               soldout={soldout}
               savedOrder={savedOrder}
+              nudge={nudge}
               memberCount={team.memberCount}
               allergies={team.allergies}
               onRefresh={refresh}

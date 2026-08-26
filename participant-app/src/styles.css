@@ -714,3 +714,23 @@ html.dark .board-countdown.urgent .board-countdown-label { color: #fca5a5; }
 @media (prefers-reduced-motion: reduce) {
   .board-countdown.urgent { animation: none; }
 }
+
+/* 관리자가 누른 '주문해주세요' 재촉 배너 — 화면에서 가장 먼저 눈에 들어와야
+   하므로 강조색을 씁니다 (마감 경고보다 위) */
+.nudge-banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--primary); color: #fff;
+  border-radius: 14px; padding: 14px 16px; margin-bottom: 12px;
+  box-shadow: 0 6px 20px rgba(254, 134, 72, 0.35);
+  animation: nudge-in 260ms ease-out;
+}
+.nudge-banner-icon { font-size: 22px; line-height: 1.2; }
+.nudge-banner b { font-size: 15px; }
+.nudge-banner p { font-size: 13.5px; line-height: 1.55; margin-top: 3px; opacity: 0.95; }
+@keyframes nudge-in {
+  from { transform: translateY(-6px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nudge-banner { animation: none; }
+}

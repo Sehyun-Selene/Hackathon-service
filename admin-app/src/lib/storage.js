@@ -253,6 +253,14 @@ export async function notifyMissing({ kind, totalTeams, mealId, label }) {
   return apiPost('/api/notify-missing', { kind, totalTeams, mealId, label })
 }
 
+// 참가자 화면에 '주문해주세요' 배너를 띄웁니다.
+// 페이지를 열어둔 팀에만 보입니다 — 웹은 닫힌 페이지에 닿을 수 없습니다.
+// 쿨다운 중이면 err.code === 'cooldown'.
+export async function nudgeParticipants(mealId) {
+  if (!API_BASE_URL) return { ok: false }
+  return apiPost('/api/nudge', { mealId })
+}
+
 // ---- 키 빌더 ----
 export const teamKey = (teamId) => `team:${teamId}`
 export const orderKey = (teamId) => `order:${teamId}`

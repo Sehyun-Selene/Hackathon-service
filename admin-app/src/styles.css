@@ -977,3 +977,8 @@ html.dark .search-more-menu { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
 .nudge-groups b { color: var(--text); }
 .nudge-msg { margin-top: 8px; font-size: 12.5px; color: var(--sub); font-weight: 600; }
 .nudge-msg.ok { color: var(--green); }
+.nudge-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 560px) {
+  .nudge-head { flex-direction: column; align-items: stretch; }
+  .nudge-actions { display: grid; grid-template-columns: 1fr 1fr; }
+}

@@ -183,6 +183,8 @@ export const callCountKey = (teamId) => `call-count:${teamId}`
 export const TEAM_ROSTER_KEY = 'team-roster'
 export const COACH_ROSTER_KEY = 'coach-roster'
 export const SOLDOUT_KEY = 'soldout'
+// 관리자가 누른 '주문해주세요' 재촉 표시 { at, mealId }
+export const NUDGE_KEY = 'nudge'
 
 // ---- 팀 번호 정규화: "5", "05", "005" → "05" (100 이상은 "105") ----
 export function normalizeTeam(raw) {

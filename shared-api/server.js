@@ -46,6 +46,7 @@
 //    POST /api/call-add      body: { teamId, call }        → 제한검사+호출추가+횟수증가
 //    POST /api/call-status   body: { teamId, callId, ... } → 호출 하나만 원자적 변경
 //    POST /api/flag-set      body: { key, field, value }   → 품절·배부 표시 원자적 변경
+//    POST /api/nudge         body: { mealId }              → 참가자 화면 재촉 배너
 //    POST /api/notify-missing body: { kind, totalTeams, mealId, label }
 //                                                          → 미등록·미주문 팀을 슬랙에 재촉
 //    POST /api/reset  body: { token: string }         → 전체 삭제(행사 전 초기화용)
@@ -676,6 +677,33 @@ const server = http.createServer(async (req, res) => {
       store.set(key, next)
       const persisted = await persistKey(key, next)
       sendWriteResult(res, { ok: true, value: next }, persisted)
+    } catch {
+      sendJson(res, 400, { error: 'invalid request' })
+    }
+    return
+  }
+
+  // 참가자 화면 재촉 — 관리자가 누르면 '주문해주세요' 배너가 뜹니다.
+  //
+  // 페이지를 열어둔 팀에만 보입니다(웹은 닫힌 페이지에 닿을 수 없음).
+  // 팀별로 따로 보내지 않고 하나의 표시만 남기고, 아직 주문하지 않은 팀의
+  // 화면에서만 배너가 뜨도록 판단은 참가자 앱이 합니다.
+  if (req.method === 'POST' && url.pathname === '/api/nudge') {
+    try {
+      const body = await readBody(req)
+      const mealId = typeof body.mealId === 'string' ? body.mealId.slice(0, 40) : ''
+      const now = Date.now()
+      const last = notifyMarks.nudge || 0
+      const waitMs = NOTIFY_COOLDOWN_MS - (now - last)
+      if (waitMs > 0) {
+        sendJson(res, 429, { error: 'cooldown', retryAfterSec: Math.ceil(waitMs / 1000) })
+        return
+      }
+      const value = { at: now, mealId }
+      store.set('nudge', value)
+      notifyMarks.nudge = now
+      const persisted = await persistKey('nudge', value)
+      sendJson(res, 200, { ok: true, at: now, persisted })
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }

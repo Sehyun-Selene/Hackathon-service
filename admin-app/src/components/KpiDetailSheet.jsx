@@ -8,7 +8,7 @@ import {
   getAssignedCoachForTeam,
 } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
-import { notifyMissing } from '../lib/storage.js'
+import { notifyMissing, nudgeParticipants } from '../lib/storage.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 // 상단 KPI 카드를 누르면 그 숫자의 '내용'을 보여주는 시트.
@@ -123,6 +123,21 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onClose 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, scan, showAllTeams, myTeams.join(',')])
 
+  // 참가자 주문 페이지에 '주문해주세요' 배너 띄우기.
+  // 페이지를 열어둔 팀에만 보입니다 — 웹은 닫힌 페이지에 닿을 수 없습니다.
+  const [popupState, setPopupState] = useState(null)
+  const sendPopup = async () => {
+    setPopupState({ status: 'sending' })
+    try {
+      await nudgeParticipants(mealFilter)
+      setPopupState({ status: 'ok' })
+    } catch (err) {
+      if (err?.code === 'cooldown') setPopupState({ status: 'cooldown', sec: err.data?.retryAfterSec })
+      else if (err?.code === 'endpoint-missing') setPopupState({ status: 'old-server' })
+      else setPopupState({ status: 'fail' })
+    }
+  }
+
   // 슬랙 재촉 — 도배를 막기 위해 서버가 종류별 쿨다운을 둡니다
   const [notifyState, setNotifyState] = useState(null)
   const sendNudge = async () => {
@@ -140,6 +155,7 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onClose 
     } catch (err) {
       if (err?.code === 'cooldown') setNotifyState({ status: 'cooldown', sec: err.data?.retryAfterSec })
       else if (err?.code === 'slack disabled') setNotifyState({ status: 'disabled' })
+      else if (err?.code === 'endpoint-missing') setNotifyState({ status: 'old-server' })
       else setNotifyState({ status: 'fail' })
     }
   }
@@ -192,10 +208,26 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onClose 
               <div className="nudge-box">
                 <div className="nudge-head">
                   <b>{data.pendingLabel} {data.missing.length}팀</b>
-                  <button className="btn-secondary sm" onClick={sendNudge}
-                    disabled={notifyState?.status === 'sending'}>
-                    {notifyState?.status === 'sending' ? '보내는 중…' : '📣 슬랙으로 알리기'}
-                  </button>
+                  <div className="nudge-actions">
+                    {/* 주문 재촉만 참가자에게 띄웁니다. 등록은 아직 앱에 들어온
+                        적이 없는 팀이라 띄울 화면 자체가 없습니다 */}
+                    {kind === 'orders' && (
+                      <button
+                        className="btn-primary sm"
+                        onClick={sendPopup}
+                        disabled={popupState?.status === 'sending'}
+                      >
+                        {popupState?.status === 'sending' ? '띄우는 중…' : '📱 주문 페이지에 띄우기'}
+                      </button>
+                    )}
+                    <button
+                      className="btn-secondary sm"
+                      onClick={sendNudge}
+                      disabled={notifyState?.status === 'sending'}
+                    >
+                      {notifyState?.status === 'sending' ? '보내는 중…' : '📣 슬랙으로 알리기'}
+                    </button>
+                  </div>
                 </div>
                 {/* 담당 메이트별로 묶어, 각자 자기 구간만 보고 움직이게.
                     명단이 비어 있으면 전부 '담당 미배정'이 되어 위 격자와 같은
@@ -210,6 +242,29 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onClose 
                       </p>
                     ))}
                   </div>
+                )}
+                {popupState?.status === 'ok' && (
+                  <p className="nudge-msg ok">
+                    참가자 주문 페이지에 배너를 띄웠습니다. 페이지를 열어둔 팀에만 보입니다.
+                  </p>
+                )}
+                {popupState?.status === 'cooldown' && (
+                  <p className="nudge-msg">
+                    방금 띄웠습니다. {popupState.sec || 0}초 후에 다시 띄울 수 있어요.
+                  </p>
+                )}
+                {popupState?.status === 'old-server' && (
+                  <p className="nudge-msg">
+                    공유 서버 배포가 아직 반영되지 않았습니다. 1~2분 후 다시 눌러주세요.
+                  </p>
+                )}
+                {notifyState?.status === 'old-server' && (
+                  <p className="nudge-msg">
+                    공유 서버 배포가 아직 반영되지 않았습니다. 1~2분 후 다시 눌러주세요.
+                  </p>
+                )}
+                {popupState?.status === 'fail' && (
+                  <p className="nudge-msg">배너를 띄우지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
                 )}
                 {notifyState?.status === 'ok' && (
                   <p className="nudge-msg ok">
