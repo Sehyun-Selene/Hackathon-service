@@ -226,14 +226,9 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
                   </label>
                 )}
               </div>
-            </div>
-            {data.rosterMissing && (
-              <p className="sheet-description">
-                config의 마스터 메이트 명단이 비어 있어, 입장한 인원만 표시합니다.
-              </p>
-            )}
-            {data.mode === 'team-grid' && data.missing.length > 0 && canNudge && (
-              <>
+              {/* 요약·스위치와 같은 줄에 둡니다. 줄을 따로 만들면 넓은 화면에서
+                  빈 공간만 늘어납니다 */}
+              {data.mode === 'team-grid' && data.missing.length > 0 && canNudge && (
                 <div className="nudge-actions">
                   {/* 주문 재촉만 참가자에게 띄웁니다. 등록은 아직 앱에 들어온
                       적이 없는 팀이라 띄울 화면 자체가 없습니다.
@@ -263,7 +258,12 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
                         : '슬랙으로 알리기'}
                   </button>
                 </div>
-              </>
+              )}
+            </div>
+            {data.rosterMissing && (
+              <p className="sheet-description">
+                config의 마스터 메이트 명단이 비어 있어, 입장한 인원만 표시합니다.
+              </p>
             )}
           </>
         )}
