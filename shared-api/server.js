@@ -46,6 +46,8 @@
 //    POST /api/call-add      body: { teamId, call }        → 제한검사+호출추가+횟수증가
 //    POST /api/call-status   body: { teamId, callId, ... } → 호출 하나만 원자적 변경
 //    POST /api/flag-set      body: { key, field, value }   → 품절·배부 표시 원자적 변경
+//    POST /api/notify-missing body: { kind, totalTeams, mealId, label }
+//                                                          → 미등록·미주문 팀을 슬랙에 재촉
 //    POST /api/reset  body: { token: string }         → 전체 삭제(행사 전 초기화용)
 //    GET  /health                                     → 상태 확인용(크론 대상)
 // =====================================================================
@@ -70,6 +72,9 @@ const COACH_ACTIVE_TTL_MS = Number(process.env.COACH_ACTIVE_TTL_MS || 2 * 60 * 1
 // 서버가 최종 판단합니다. 앱 config의 CALL_LIMIT_PER_TEAM과 같은 값이어야
 // 하며, 바꿀 때는 환경변수로 함께 조정하세요.
 const CALL_LIMIT_PER_TEAM = Number(process.env.CALL_LIMIT_PER_TEAM || 5)
+// 재촉 알림 도배 방지 — 종류별로 이 간격 안에는 다시 보내지 않습니다
+const NOTIFY_COOLDOWN_MS = Number(process.env.NOTIFY_COOLDOWN_SEC || 120) * 1000
+const notifyMarks = {}
 const persistOn = Boolean(REDIS_URL && REDIS_TOKEN)
 
 // 마지막 영속화 상태 — /health 로 확인해 행사 전에 정상 동작을 점검합니다.
@@ -671,6 +676,71 @@ const server = http.createServer(async (req, res) => {
       store.set(key, next)
       const persisted = await persistKey(key, next)
       sendWriteResult(res, { ok: true, value: next }, persisted)
+    } catch {
+      sendJson(res, 400, { error: 'invalid request' })
+    }
+    return
+  }
+
+  // 미등록·미주문 팀 재촉을 슬랙으로.
+  //
+  // 참가자 폰에는 푸시를 보낼 수 없습니다(iOS 웹 푸시는 홈 화면 추가가 필요해
+  // 125팀에게 시킬 수 없음). 그래서 '찾아갈 수 있는 사람'인 메이트에게 보냅니다.
+  //
+  // 목록은 **서버가 자기 데이터로 직접 계산**합니다. 앱이 보낸 문장을 그대로
+  // 뿌리면 채널에 아무 내용이나 보낼 수 있는 통로가 되기 때문입니다.
+  // 끼니 이름만 앱에서 받고, 멘션 문자를 지운 뒤 길이를 제한해서 씁니다.
+  if (req.method === 'POST' && url.pathname === '/api/notify-missing') {
+    try {
+      const body = await readBody(req)
+      const kind = body.kind === 'orders' ? 'orders' : 'teams'
+      const totalTeams = Math.min(Math.max(Number(body.totalTeams) || 0, 1), 500)
+      const mealId = typeof body.mealId === 'string' ? body.mealId : ''
+      // 멘션 문자와 줄바꿈을 제거해 문구 조작을 막습니다
+      const label = String(body.label || '')
+        .replace(/[<>@]/g, '')
+        .split(String.fromCharCode(10))
+        .join(' ')
+        .split(String.fromCharCode(13))
+        .join(' ')
+        .slice(0, 40)
+
+      if (!slack.enabled) {
+        sendJson(res, 503, { error: 'slack disabled' })
+        return
+      }
+      // 같은 종류를 연달아 보내 채널을 시끄럽게 만들지 않도록
+      const now = Date.now()
+      const last = notifyMarks[kind] || 0
+      const waitMs = NOTIFY_COOLDOWN_MS - (now - last)
+      if (waitMs > 0) {
+        sendJson(res, 429, { error: 'cooldown', retryAfterSec: Math.ceil(waitMs / 1000) })
+        return
+      }
+
+      const roster = store.get('team-roster')
+      const registered = new Set(
+        (Array.isArray(roster?.ids) ? roster.ids : []).map((id) => parseInt(id, 10)),
+      )
+      const teams = []
+      for (let n = 1; n <= totalTeams; n++) {
+        if (kind === 'teams') {
+          if (!registered.has(n)) teams.push(n)
+        } else {
+          if (!registered.has(n)) continue // 등록도 안 한 팀은 주문 재촉 대상이 아님
+          const id = String(n).padStart(2, '0')
+          const order = store.get('order:' + id)
+          const items = order?.meals?.[mealId]?.items || []
+          if (!items.length) teams.push(n)
+        }
+      }
+      if (!teams.length) {
+        sendJson(res, 200, { ok: true, sent: false, teams: 0 })
+        return
+      }
+      const ok = await slack.notifyDigest({ kind, label, teams })
+      if (ok) notifyMarks[kind] = now
+      sendJson(res, 200, { ok, sent: ok, teams: teams.length })
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }

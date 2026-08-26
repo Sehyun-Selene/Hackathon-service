@@ -610,7 +610,12 @@ export default function App() {
       </div>
 
       {kpiDetail && scan && (
-        <KpiDetailSheet kind={kpiDetail} scan={scan} onClose={() => setKpiDetail(null)} />
+        <KpiDetailSheet
+          kind={kpiDetail}
+          scan={scan}
+          mealFilter={mealFilter}
+          onClose={() => setKpiDetail(null)}
+        />
       )}
 
       {showProfile && (

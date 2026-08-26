@@ -242,6 +242,17 @@ export function isHandledByMe(call, coach) {
   return !!call.handledById && call.handledById === coach.id
 }
 
+// 미등록·미주문 팀을 슬랙으로 재촉합니다.
+//
+// 참가자 폰에는 푸시를 보낼 수 없어(iOS 웹 푸시는 홈 화면 추가 필요), 실제로
+// 찾아갈 수 있는 메이트에게 보냅니다. 목록은 서버가 자기 데이터로 계산하므로
+// 앱이 임의 문장을 채널에 뿌릴 수는 없습니다.
+// 쿨다운 중이면 err.code === 'cooldown' (err.data.retryAfterSec).
+export async function notifyMissing({ kind, totalTeams, mealId, label }) {
+  if (!API_BASE_URL) return { ok: false, sent: false, teams: 0 }
+  return apiPost('/api/notify-missing', { kind, totalTeams, mealId, label })
+}
+
 // ---- 키 빌더 ----
 export const teamKey = (teamId) => `team:${teamId}`
 export const orderKey = (teamId) => `order:${teamId}`

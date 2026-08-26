@@ -171,9 +171,32 @@ async function notifyLead(stuck) {
   return post(leadDigestText(stuck))
 }
 
+// 미등록·미주문 팀 재촉 — 관리자가 직접 누를 때만 나갑니다.
+// 참가자 폰으로는 푸시를 보낼 수 없어(iOS 웹 푸시는 홈 화면 추가가 필요),
+// 찾아갈 수 있는 메이트에게 보냅니다.
+function _digestText({ kind, label, teams }) {
+  const head =
+    kind === 'orders'
+      ? `⏰ *${label} 미주문 ${teams.length}팀*`
+      : `📝 *팀 등록을 아직 안 한 ${teams.length}팀*`
+  const tail =
+    kind === 'orders'
+      ? '담당 구간의 팀에 들러 주문을 도와주세요.'
+      : '담당 구간의 팀에 들러 QR 등록을 도와주세요.'
+  return `<!channel> ${head}
+팀 ${teams.join(', ')}
+${tail}`
+}
+
+async function notifyDigest(payload) {
+  return post(_digestText(payload))
+}
+
 module.exports = {
   enabled,
   state,
+  notifyDigest,
+  _digestText,
   UNCLAIMED_MENTION,
   UNCLAIMED_MIN,
   LEAD_MIN,

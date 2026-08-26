@@ -153,8 +153,11 @@ export default function MenuBoard({
   const { end } = mealTimes(activeMeal)
   const remain = end - now().getTime()
   // 마감 임박 경고 — 담아만 두고 '주문하기'를 누르지 않으면 그대로 사라집니다
+  // 10분 남으면 카운트다운을 강조하고, 5분 남으면 경고를 띄웁니다
   const DEADLINE_WARN_MS = 5 * 60 * 1000
+  const DEADLINE_PULSE_MS = 10 * 60 * 1000
   const nearDeadline = remain > 0 && remain <= DEADLINE_WARN_MS
+  const pulseDeadline = remain > 0 && remain <= DEADLINE_PULSE_MS
   // 이미 주문한 메뉴가 뒤늦게 품절된 경우 — 참가자에게 알려줍니다
   const soldoutOrdered = MEALS.flatMap((meal) =>
     (savedOrder?.meals?.[meal.id]?.items || [])
@@ -291,7 +294,7 @@ export default function MenuBoard({
           </div>
         </div>
         <div className="board-header-actions">
-          <div className="board-countdown">
+          <div className={`board-countdown${pulseDeadline ? ' urgent' : ''}`}>
             <span className="board-countdown-label">마감까지</span>
             <b>{fmtCountdown(remain)}</b>
           </div>
@@ -309,10 +312,22 @@ export default function MenuBoard({
       <OrderNotice />
 
       {/* 담아두기만 하면 저장되지 않으므로, 마감 임박에는 눈에 띄게 알립니다 */}
-      {nearDeadline && dirty && (
+      {/* 두 경우를 모두 잡습니다.
+          ① 담아만 두고 저장하지 않음 → 그대로 마감되면 사라집니다
+          ② 아무것도 주문하지 않음 → 담아둔 것도 없으니 예전 조건에 걸리지
+             않아 아무 안내도 못 받았습니다 (실제로 놓치는 쪽) */}
+      {nearDeadline && (dirty || !hasSaved) && (
         <div className="deadline-warn">
-          ⏰ 마감까지 <b>{fmtCountdown(remain)}</b> — 아직 주문하지 않았습니다. 아래{' '}
-          <b>주문하기</b>를 눌러주세요.
+          ⏰ 마감까지 <b>{fmtCountdown(remain)}</b> —{' '}
+          {dirty ? (
+            <>
+              담아둔 메뉴가 <b>아직 주문되지 않았습니다.</b> 아래 <b>주문하기</b>를 눌러주세요.
+            </>
+          ) : (
+            <>
+              <b>아직 주문하지 않았습니다.</b> 지금 메뉴를 담아 주문해주세요.
+            </>
+          )}
         </div>
       )}
 

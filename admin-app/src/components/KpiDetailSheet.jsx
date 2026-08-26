@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react'
 import {
   COACH_ASSIGNMENTS,
   MEALS,
+  MEAL_BY_ID,
   TOTAL_TEAMS,
   formatTeamRange,
   getAssignedCoachForTeam,
 } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
+import { notifyMissing } from '../lib/storage.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 // 상단 KPI 카드를 누르면 그 숫자의 '내용'을 보여주는 시트.
@@ -20,7 +22,7 @@ import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 const teamNo = (id) => parseInt(id, 10)
 
-export default function KpiDetailSheet({ kind, scan, onClose }) {
+export default function KpiDetailSheet({ kind, scan, mealFilter, onClose }) {
   const drag = useSheetDrag(onClose)
   const dialogRef = useDialogFocus(true, onClose)
   const [onlyPending, setOnlyPending] = useState(false)
@@ -78,14 +80,47 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
       const n = i + 1
       return { key: n, label: n, done: isOrders ? ordered.has(n) : registered.has(n) }
     })
+    // 못 한 팀을 담당 메이트별로 묶습니다. 참가자 폰에는 알림을 보낼 수
+    // 없으니, 실제로 할 수 있는 일은 '담당자가 그 테이블로 가는 것'입니다.
+    const missing = cells.filter((c) => !c.done).map((c) => c.key)
+    const byCoach = new Map()
+    missing.forEach((n) => {
+      const name = getAssignedCoachForTeam(String(n).padStart(2, '0'))?.name || '담당 미배정'
+      const list = byCoach.get(name) || []
+      list.push(n)
+      byCoach.set(name, list)
+    })
     return {
       mode: 'team-grid',
       title: isOrders ? '팀별 주문 현황' : '팀별 등록 현황',
       cells,
       doneLabel: isOrders ? '주문 완료' : '등록',
       pendingLabel: isOrders ? '미주문' : '미등록',
+      missing,
+      byCoach: [...byCoach.entries()].sort((a, b) => Math.min(...a[1]) - Math.min(...b[1])),
     }
   }, [kind, scan])
+
+  // 슬랙 재촉 — 도배를 막기 위해 서버가 종류별 쿨다운을 둡니다
+  const [notifyState, setNotifyState] = useState(null)
+  const sendNudge = async () => {
+    setNotifyState({ status: 'sending' })
+    try {
+      const r = await notifyMissing({
+        kind: kind === 'orders' ? 'orders' : 'teams',
+        totalTeams: TOTAL_TEAMS,
+        mealId: mealFilter,
+        label: MEAL_BY_ID[mealFilter]?.label || '',
+      })
+      if (r?.sent) setNotifyState({ status: 'ok', teams: r.teams })
+      else if (r?.teams === 0) setNotifyState({ status: 'none' })
+      else setNotifyState({ status: 'fail' })
+    } catch (err) {
+      if (err?.code === 'cooldown') setNotifyState({ status: 'cooldown', sec: err.data?.retryAfterSec })
+      else if (err?.code === 'slack disabled') setNotifyState({ status: 'disabled' })
+      else setNotifyState({ status: 'fail' })
+    }
+  }
 
   const done = (data.cells || []).filter((c) => c.done).length
   const total = (data.cells || []).length
@@ -130,6 +165,50 @@ export default function KpiDetailSheet({ kind, scan, onClose }) {
               <p className="sheet-description">
                 config의 마스터 메이트 명단이 비어 있어, 입장한 인원만 표시합니다.
               </p>
+            )}
+            {data.mode === 'team-grid' && data.missing.length > 0 && (
+              <div className="nudge-box">
+                <div className="nudge-head">
+                  <b>{data.pendingLabel} {data.missing.length}팀</b>
+                  <button className="btn-secondary sm" onClick={sendNudge}
+                    disabled={notifyState?.status === 'sending'}>
+                    {notifyState?.status === 'sending' ? '보내는 중…' : '📣 슬랙으로 알리기'}
+                  </button>
+                </div>
+                {/* 담당 메이트별로 묶어, 각자 자기 구간만 보고 움직이게.
+                    명단이 비어 있으면 전부 '담당 미배정'이 되어 위 격자와 같은
+                    말을 반복하므로 생략합니다. 한 줄이 너무 길어지지 않게
+                    앞쪽만 보여주고 나머지는 개수로 접습니다 */}
+                {data.byCoach.some(([name]) => name !== '담당 미배정') && (
+                  <div className="nudge-groups">
+                    {data.byCoach.map(([name, list]) => (
+                      <p key={name}>
+                        <b>{name}</b> 팀 {list.slice(0, 25).join(', ')}
+                        {list.length > 25 ? ' … 외 ' + (list.length - 25) + '팀' : ''}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {notifyState?.status === 'ok' && (
+                  <p className="nudge-msg ok">
+                    슬랙 채널에 {notifyState.teams}팀 목록을 보냈습니다.
+                  </p>
+                )}
+                {notifyState?.status === 'cooldown' && (
+                  <p className="nudge-msg">
+                    방금 보냈습니다. {notifyState.sec || 0}초 후에 다시 보낼 수 있어요.
+                  </p>
+                )}
+                {notifyState?.status === 'none' && (
+                  <p className="nudge-msg ok">모두 완료된 상태입니다.</p>
+                )}
+                {notifyState?.status === 'disabled' && (
+                  <p className="nudge-msg">슬랙 웹훅이 설정되지 않아 보낼 수 없습니다.</p>
+                )}
+                {notifyState?.status === 'fail' && (
+                  <p className="nudge-msg">전송에 실패했습니다. 잠시 후 다시 시도해 주세요.</p>
+                )}
+              </div>
             )}
           </>
         )}
