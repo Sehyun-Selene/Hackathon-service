@@ -280,7 +280,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       .map((r) => {
         const items = r.items
           .map((it) => {
-            const name = MENU_BY_ID[it.menuId]?.name || it.menuId
+            const name = MENU_BY_ID[it.menuId]?.baseName || it.menuId
             const tag = mealFilter === 'all' ? `[${MEAL_BY_ID[it.mealId]?.label}] ` : ''
             return `${escapeHtml(tag)}${escapeHtml(name)} ${escapeHtml(it.qty)}`
           })
