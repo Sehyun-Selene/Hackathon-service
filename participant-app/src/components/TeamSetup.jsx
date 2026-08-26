@@ -70,6 +70,8 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
   const [touched, setTouched] = useState(false)
   // 입력한 번호가 이미 등록된 팀일 때 알려줍니다 (오타로 남의 팀을 덮어쓰는 것 방지)
   const [existingInfo, setExistingInfo] = useState(null)
+  // 등록 직전 서버 조회 중 — 버튼을 잠가 두 번 눌리는 것을 막습니다
+  const [checking, setChecking] = useState(false)
 
   const allergyFull = allergyBlocks.length >= memberCount
   const addPerson = () => {
@@ -115,12 +117,49 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     if (parseInt(teamNo, 10) > TOTAL_TEAMS) return setError(`팀 번호는 1~${TOTAL_TEAMS} 사이여야 합니다.`)
     if (!memberCount || memberCount < 1) return setError('인원수를 1명 이상 입력해 주세요.')
 
-    if (existingInfo?.teamId === teamId && initial?.teamId !== teamId) {
-      const confirmed = window.confirm(
-        `팀 ${teamId}은 이미 등록되어 있습니다.\n\n` +
-          '내 팀 번호가 맞으면 확인을 눌러주세요. 입력한 인원수·알레르기 정보로 기존 팀 정보가 갱신됩니다.',
-      )
-      if (!confirmed) return
+    // ── 이미 등록된 팀인지 여기서 직접 확인합니다 ──
+    // blur가 채워둔 값(existingInfo)에 의존하면 안 됩니다. 버튼을 누르는 순간
+    // blur의 서버 조회가 막 시작되므로, 조회가 끝나기 전에 등록이 진행돼
+    // 경고가 뜨자마자 다음 화면으로 넘어가 버립니다.
+    const isEditingSelf = initial?.teamId === teamId
+    if (!isEditingSelf && existingLookup) {
+      setChecking(true)
+      let existing = null
+      try {
+        existing = await existingLookup(teamId)
+      } catch {
+        /* 통신 실패면 확인할 수 없으므로 그대로 진행합니다 */
+      }
+      setChecking(false)
+      if (existing) {
+        setExistingInfo({ teamId, memberCount: existing.memberCount })
+        // 등록은 막고 입장만 허용합니다. 하드 차단을 하면 등록한 사람 폰이
+        // 꺼졌을 때 다른 팀원이 마스터 메이트를 호출할 수 없게 됩니다.
+        const join = window.confirm(
+          `이미 등록된 팀입니다 (팀 ${teamId} · ${existing.memberCount || '?'}명).\n\n` +
+            '확인 = 우리 팀이 맞습니다. 등록된 정보로 입장합니다\n' +
+            '취소 = 팀 번호를 다시 확인합니다',
+        )
+        if (!join) {
+          setError('이미 등록된 팀입니다. 팀 번호를 다시 확인해 주세요.')
+          return
+        }
+        // 기존 정보를 덮어쓰지 않습니다 — 입력한 값이 아니라 등록된 값으로 입장
+        setSaving(true)
+        onSaving?.(true)
+        try {
+          await onComplete({
+            teamId,
+            memberCount: existing.memberCount,
+            allergies: existing.allergies || [],
+          })
+        } catch {
+          setError('네트워크 오류로 입장하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+          setSaving(false)
+          onSaving?.(false)
+        }
+        return
+      }
     }
 
     // 알레르기를 하나도 선택 안 한 빈 블록은 제외하고 저장 (사람별 배열)
@@ -269,8 +308,12 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
 
         {error && <p className="setup-error">{error}</p>}
 
-        <button className="btn-primary setup-submit" onClick={submit} disabled={saving}>
-          {saving ? '저장 중…' : '이 정보로 시작하기'}
+        <button
+          className="btn-primary setup-submit"
+          onClick={submit}
+          disabled={saving || checking}
+        >
+          {saving ? '저장 중…' : checking ? '확인 중…' : '이 정보로 시작하기'}
         </button>
       </section>
     </div>
