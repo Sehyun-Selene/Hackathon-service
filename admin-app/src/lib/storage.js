@@ -142,20 +142,20 @@ export async function adminSnapshot() {
 
 // 마스터 메이트 입장 — 목록을 원자적으로 갱신 (40명이 같은 시각에 입장해도
 // 서로를 지우지 않게)
-export async function coachUpsert(id, name) {
+export async function coachUpsert(id, name, crewId) {
   if (!API_BASE_URL) {
     const roster = (await storageGet(COACH_ROSTER_KEY)) || { coaches: [] }
     const others = (roster.coaches || []).filter((c) => c.id !== id)
-    await storageSet(COACH_ROSTER_KEY, { coaches: [...others, { id, name }] })
+    await storageSet(COACH_ROSTER_KEY, { coaches: [...others, { id, name, crewId }] })
     return { ok: true }
   }
   try {
-    return await apiPost('/api/coach-upsert', { id, name })
+    return await apiPost('/api/coach-upsert', { id, name, crewId })
   } catch (err) {
     if (err.code !== 'endpoint-missing') throw err
     const roster = (await storageGet(COACH_ROSTER_KEY)) || { coaches: [] }
     const others = (roster.coaches || []).filter((c) => c.id !== id)
-    await storageSet(COACH_ROSTER_KEY, { coaches: [...others, { id, name }] })
+    await storageSet(COACH_ROSTER_KEY, { coaches: [...others, { id, name, crewId }] })
     return { ok: true, legacy: true }
   }
 }

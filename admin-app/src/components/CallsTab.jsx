@@ -5,6 +5,7 @@ import {
   ALL_TEAM_IDS,
   groupByLeague,
   getAssignedCoachForTeam,
+  crewFor,
 } from '../config.js'
 import { now, fmtCountdown, fmtClock } from '../lib/time.js'
 import { isHandledByMe } from '../lib/storage.js'
@@ -45,12 +46,15 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
   // 호출 횟수는 내 담당 팀만 봅니다. 남의 담당 팀 잔여 횟수는 내가 판단할
   // 일이 아니고, 메이트에게 다른 팀 정보가 필요한 곳은 '진행 중인 호출'뿐입니다.
   // 전체를 보는 건 총관리자(callManager)뿐입니다.
-  const myAssignment = COACH_ASSIGNMENTS.find((a) => a.name === coach.name)
+  const myAssignment = crewFor(coach)
   const myTeams = myAssignment?.teamNumbers || []
   const showAllTeams = !!myAssignment?.callManager
   // 팀 번호는 'E-45' 같은 문자열입니다. 리그가 다르면 같은 숫자라도 다른 팀이라
   // 격자도 리그별로 나눠 그립니다.
   const countGroups = groupByLeague(showAllTeams ? ALL_TEAM_IDS : myTeams)
+  // 식음 운영처럼 담당 구간이 아예 없는 역할에는 이 패널이 늘 비어 있습니다.
+  // 배정을 기다리는 메이트에게는 안내가 필요하지만, 그분에게는 군더더기입니다.
+  const showCounts = showAllTeams || myTeams.length > 0 || !myAssignment?.orderManager
 
   return (
     <div>
@@ -153,6 +157,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
       {/* 팀별 호출 횟수 — 내가 담당하는 팀만. 남의 담당 팀 잔여 횟수는
           내가 판단할 일이 아니고, 135칸을 훑으면 내 팀을 못 찾음.
           전체를 보는 건 총관리자뿐입니다. */}
+      {showCounts && (
       <details className="panel done-panel">
         <summary>
           {showAllTeams ? '전체 팀 호출 횟수' : '내 담당 팀 호출 횟수'} (제한{' '}
@@ -189,6 +194,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
           ))
         )}
       </details>
+      )}
     </div>
   )
 }

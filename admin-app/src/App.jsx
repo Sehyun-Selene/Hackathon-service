@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import logo52g from './assets/52g-logo.png'
-import { ADMIN_POLL_MS, COACH_ASSIGNMENTS, DARK_MODE_HOURS, MEALS, MENU_BY_ID } from './config.js'
+import {
+  ADMIN_POLL_MS,
+  ADMIN_CREW,
+  DARK_MODE_HOURS,
+  MEALS,
+  MENU_BY_ID,
+  crewLabel,
+} from './config.js'
 import {
   storageGet,
   storageGetMany,
@@ -105,9 +112,10 @@ export default function App() {
       return null
     }
   })
-  const [nameInput, setNameInput] = useState(coach?.name || '')
-  // 입장 화면에서 입력한 글자로 좁혀 보여줄 후보 목록 (명단이 비면 자유 입력)
-  const knownCoachNames = COACH_ASSIGNMENTS.map((c) => c.name).filter(Boolean)
+  const [nameInput, setNameInput] = useState('')
+  // 명단에서 고른 사람. 이름이 겹치는 분이 있어(이상윤 두 분) 이름 대신
+  // 명단 항목 자체를 고르게 합니다 — 오타로 담당 팀이 안 붙는 것도 막습니다.
+  const [pickedCrew, setPickedCrew] = useState(null)
 
   const [tab, setTab] = useState('calls') // 입장 직후 첫 화면
   // 주문 현황의 식사 선택 — 좌측 메뉴의 하위 항목으로 노출되므로 여기서 관리
@@ -220,9 +228,9 @@ export default function App() {
   // (서버가 id 기준으로 갱신하므로 여러 번 불러도 안전)
   useEffect(() => {
     if (!coach?.id) return
-    coachUpsert(coach.id, coach.name).catch(() => {})
+    coachUpsert(coach.id, coach.name, coach.crewId).catch(() => {})
     const id = window.setInterval(
-      () => coachUpsert(coach.id, coach.name).catch(() => {}),
+      () => coachUpsert(coach.id, coach.name, coach.crewId).catch(() => {}),
       30_000,
     )
     return () => window.clearInterval(id)
@@ -241,16 +249,17 @@ export default function App() {
     }
   }, [coach])
 
-  // 마스터 메이트 등록: 로컬 저장 + 공유 마스터 메이트 로스터에 등록/갱신
-  // name이 COACH_ASSIGNMENTS의 이름과 정확히 일치해야 담당 팀이 자동 연결됨
-  const enterAsCoach = useCallback(async (name) => {
+  // 입장: 기기에 저장 + 공유 크루 목록에 등록/갱신
+  // 담당 팀은 이름이 아니라 crewId로 찾습니다. 같은 이름이 둘 있어
+  // 이름으로 찾으면 둘 중 아무나 걸립니다.
+  const enterAsCoach = useCallback(async (member) => {
     const id = getCoachId()
-    const record = { id, name }
+    const record = { id, name: member.name, crewId: member.id }
     window.localStorage.setItem(MY_COACH_KEY, JSON.stringify(record))
     try {
       // 목록 갱신은 서버에서 원자적으로 — 40명이 같은 시각에 입장해도
       // 서로를 목록에서 지우지 않게
-      await coachUpsert(id, name)
+      await coachUpsert(id, member.name, member.id)
     } catch {
       /* 로스터 등록 실패해도 입장은 진행 — 다음 상태 변경 시 다시 시도됨 */
     }
@@ -331,48 +340,64 @@ export default function App() {
 
   if (!coach) {
     const query = nameInput.trim()
-    // 이름을 전부 칩으로 깔면 40명 규모에서 화면이 잠기므로, 입력한 글자로
-    // 좁혀가는 방식. 아직 아무것도 입력하지 않았으면 목록을 보여주지 않습니다.
+    const squash = (t) => String(t || '').replace(/\s/g, '').toLowerCase()
+    // 45명을 전부 깔면 화면이 잠기므로 입력한 글자로 좁혀갑니다. 이름뿐 아니라
+    // 닉네임·회사로도 찾게 두었습니다 — 본인을 찾는 방법이 하나뿐이면
+    // 한글 이름이 기억나지 않는 순간에 막힙니다.
     const matches = query
-      ? knownCoachNames.filter((n) => n.replace(/\s/g, '').includes(query.replace(/\s/g, '')))
+      ? ADMIN_CREW.filter(
+          (c) =>
+            squash(c.name).includes(squash(query)) ||
+            squash(c.nickname).includes(squash(query)) ||
+            squash(c.company).includes(squash(query)),
+        )
       : []
-    const exact = knownCoachNames.some((n) => n === query)
-    const rosterReady = knownCoachNames.length > 0
+    const rosterReady = ADMIN_CREW.length > 0
 
     return (
       <div className="gate">
         <div className="gate-card">
           <h1>🛠️ 해커톤 운영 관리자</h1>
-          <p>본인 이름을 입력해 주세요.</p>
+          <p>명단에서 본인을 찾아 주세요.</p>
           {/* 후보 목록은 입력칸 아래에 '떠 있게'(absolute) 두어, 뜨고 사라질 때
-              카드 크기가 바뀌지 않도록 합니다. 후보를 눌러도 입력칸만 채우고
+              카드 크기가 바뀌지 않도록 합니다. 후보를 눌러도 고르기만 하고
               입장은 아래 버튼으로만 — 실수로 다른 사람으로 들어가는 걸 막습니다. */}
           <div className="gate-field">
             <input
               className="gate-input"
-              placeholder={rosterReady ? '이름 검색 (예: 김)' : '이름 입력'}
+              placeholder="이름·닉네임 검색 (예: 김, Ryan)"
               value={nameInput}
               autoComplete="off"
-              onChange={(e) => setNameInput(e.target.value)}
+              onChange={(e) => {
+                setNameInput(e.target.value)
+                setPickedCrew(null)
+              }}
               onKeyDown={(e) => {
-                if (e.key !== 'Enter') return
-                // 이름이 정확히 일치할 때만 엔터로 입장. 후보가 하나뿐이어도
-                // 입력칸을 채워주기만 하고 입장은 버튼에 맡깁니다.
-                if (exact || !rosterReady) enterAsCoach(query)
-                else if (matches.length === 1) setNameInput(matches[0])
+                // 후보가 하나로 좁혀졌을 때만 엔터로 고릅니다. 입장은 버튼에 맡깁니다.
+                if (e.key === 'Enter' && matches.length === 1) {
+                  setPickedCrew(matches[0])
+                  setNameInput(crewLabel(matches[0]))
+                }
               }}
             />
-            {rosterReady && query && !exact && (
+            {query && !pickedCrew && (
               <div className="gate-suggest">
                 {matches.length > 0 ? (
                   <>
-                    {matches.slice(0, 8).map((name) => (
+                    {matches.slice(0, 8).map((member) => (
                       <button
-                        key={name}
+                        key={member.id}
                         className="gate-suggest-item"
-                        onClick={() => setNameInput(name)}
+                        onClick={() => {
+                          setPickedCrew(member)
+                          setNameInput(crewLabel(member))
+                        }}
                       >
-                        {name}
+                        <b>{member.name}</b>
+                        {/* 이름이 같은 분이 있어 닉네임·회사까지 보여야 고를 수 있습니다 */}
+                        <span className="gate-suggest-sub">
+                          {[member.nickname, member.company].filter(Boolean).join(' · ')}
+                        </span>
                       </button>
                     ))}
                     {matches.length > 8 && (
@@ -383,28 +408,24 @@ export default function App() {
                   </>
                 ) : (
                   <p className="gate-nomatch">
-                    명단에서 찾을 수 없는 이름입니다. 오타가 없는지 확인해 주세요.
+                    명단에서 찾을 수 없습니다. 이름 대신 닉네임으로도 찾아보세요.
                   </p>
                 )}
               </div>
             )}
           </div>
 
-          {/* 버튼은 항상 같은 자리에 하나만. 상태에 따라 라벨/활성만 바뀝니다.
-              명단에 없는 이름으로도 들어갈 수 있게 두되(설정 전·누락 대비),
-              담당 팀이 연결되지 않는다는 점을 라벨에 밝혀둡니다. */}
+          {/* 버튼은 항상 같은 자리에 하나만. 상태에 따라 라벨/활성만 바뀝니다. */}
           <button
             className="btn-primary gate-enter"
-            disabled={!query || (rosterReady && !exact && matches.length > 0)}
-            onClick={() => enterAsCoach(query)}
+            disabled={!pickedCrew || !rosterReady}
+            onClick={() => pickedCrew && enterAsCoach(pickedCrew)}
           >
-            {!query
-              ? '입장하기'
-              : !rosterReady || exact
-                ? `${query} 님으로 입장하기`
-                : matches.length > 0
-                  ? '목록에서 이름을 선택해 주세요'
-                  : '명단에 없는 이름으로 입장 (담당 팀 미배정)'}
+            {pickedCrew
+              ? `${crewLabel(pickedCrew)} 님으로 입장하기`
+              : query
+                ? '목록에서 본인을 선택해 주세요'
+                : '입장하기'}
           </button>
         </div>
       </div>

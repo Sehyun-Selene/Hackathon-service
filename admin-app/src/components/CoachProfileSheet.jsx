@@ -1,5 +1,11 @@
 import { useMemo } from 'react'
-import { COACH_ASSIGNMENTS, formatTeamRange } from '../config.js'
+import {
+  COACH_ASSIGNMENTS,
+  formatTeamRange,
+  crewFor,
+  crewLabel,
+  crewRoleLabel,
+} from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 import { isHandledByMe } from '../lib/storage.js'
@@ -19,14 +25,17 @@ export default function CoachProfileSheet({ scan, coach, onOpenDetail, onClose, 
 
   // 명단에서 내 항목 찾기 — 이름이 정확히 같아야 연결됩니다
   const assignment = useMemo(
-    () => COACH_ASSIGNMENTS.find((c) => c.name && c.name === coach.name) || null,
+    () => crewFor(coach),
     [coach.name],
   )
   const myTeams = assignment?.teamNumbers || []
-  // 총관리자는 담당 구간이 없고 슬랙 개인 알림도 쓰지 않습니다.
-  // 대신 "다들 등록했나 · 주문했나 · 들어왔나"를 확인하는 자리로 씁니다.
+  // 담당 구간이 없는 역할(총관리자·식음 운영)에게는 담당 팀·슬랙 알림 대신
+  // "다들 등록했나 · 주문했나 · 들어왔나"를 확인하는 자리로 씁니다.
   const isManager = !!assignment?.callManager
-  const overview = [
+  // 식음 운영은 주문만 봅니다 — 등록·입장은 그분이 손댈 일이 아닙니다
+  const isOrderManager = !!assignment?.orderManager
+  const roleLabel = crewRoleLabel(assignment)
+  const overviewAll = [
     { kind: 'teams', label: '등록한 팀', value: Object.keys(scan.teams || {}).length },
     { kind: 'orders', label: '주문한 팀', value: Object.keys(scan.orders || {}).length },
     {
@@ -37,6 +46,7 @@ export default function CoachProfileSheet({ scan, coach, onOpenDetail, onClose, 
       value: new Set((scan.coaches || []).map((c) => c.name)).size,
     },
   ]
+  const overview = isManager ? overviewAll : overviewAll.filter((o) => o.kind === 'orders')
 
   const stats = useMemo(() => {
     let waitingMine = 0 // 내 담당 팀의 대기 호출
@@ -69,14 +79,17 @@ export default function CoachProfileSheet({ scan, coach, onOpenDetail, onClose, 
       >
         <div className="sheet-handle" aria-hidden="true" {...drag.handleHandlers} />
         <div className="sheet-head">
-          <h3 id="profile-sheet-title">🧑‍🏫 {coach.name}</h3>
+          <h3 id="profile-sheet-title">
+            🧑‍🏫 {crewLabel(assignment) || coach.name}
+            {roleLabel && <span className="profile-role">{roleLabel}</span>}
+          </h3>
           <button className="sheet-close" onClick={onClose}>
             닫기
           </button>
         </div>
         <div className="sheet-body">
-          {isManager ? (
-            /* 총관리자 — 눌러서 "누가 아직 안 했나" 목록을 엽니다 */
+          {isManager || isOrderManager ? (
+            /* 담당 구간이 없는 역할 — 눌러서 "누가 아직 안 했나" 목록을 엽니다 */
             <div className="profile-block">
               <div className="profile-label">행사 진행 현황</div>
               <div className="profile-stats">
@@ -106,10 +119,13 @@ export default function CoachProfileSheet({ scan, coach, onOpenDetail, onClose, 
               </>
             ) : (
               <div className="profile-warn">
-                <b>담당 팀이 배정되지 않았습니다.</b>
+                <b>담당 팀이 아직 배정되지 않았습니다.</b>
+                {/* 명단에서 골라 들어오므로 이름이 틀릴 일은 없습니다.
+                    남은 경우는 담당 구간이 아직 안 정해진 것뿐입니다. */}
                 <p>
-                  입장할 때 입력한 이름이 운영 명단과 다르면 담당 팀이 연결되지 않습니다. 이름을
-                  다시 확인해 주세요. (담당 팀이 없어도 다른 팀 호출은 대응할 수 있습니다)
+                  {assignment
+                    ? '담당 구간이 정해지면 여기에 표시됩니다. 그때까지도 다른 팀 호출은 대응할 수 있습니다.'
+                    : '운영 명단에서 찾을 수 없는 계정입니다. 아래에서 다시 입장해 주세요.'}
                 </p>
               </div>
             )}

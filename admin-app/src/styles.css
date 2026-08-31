@@ -698,9 +698,14 @@ body {
 .gate-enter { width: 100%; }
 .gate-suggest-item {
   border: 0; background: transparent; border-radius: 7px;
-  padding: 12px 12px; font: inherit; font-size: 15px; font-weight: 600;
+  padding: 10px 12px; font: inherit; font-size: 15px; font-weight: 600;
   color: var(--text); cursor: pointer; text-align: left; min-height: 44px;
+  display: flex; align-items: baseline; gap: 8px;
 }
+/* 이름이 같은 분이 있어 닉네임·회사를 함께 보여줍니다. 이름을 고르는 화면이라
+   이름이 먼저 읽히고 나머지는 뒤로 물러나야 합니다. */
+.gate-suggest-sub { font-size: 12.5px; font-weight: 600; color: var(--sub); }
+.gate-suggest-item:hover .gate-suggest-sub { color: var(--primary-dark); }
 .gate-suggest-item:hover { background: var(--violet-soft); color: var(--primary-dark); }
 .gate-nomatch {
   font-size: 13px; color: var(--red); line-height: 1.5; padding: 8px 2px;
@@ -980,5 +985,11 @@ html.dark .btn-outline:hover { background: var(--violet-soft); }
 }
 .league-block-head span { color: var(--primary-dark); font-weight: 800; }
 /* 총관리자 프로필의 진행 현황 — 눌러서 상세 목록을 엽니다 */
+/* 역할 배지 — 담당 구간이 없는 총관리자·식음 운영이 누구인지 이름 옆에 */
+.profile-role {
+  margin-left: 8px; padding: 2px 8px; border-radius: 6px;
+  background: var(--violet-soft); color: var(--primary-dark);
+  font-size: 12px; font-weight: 700; vertical-align: middle;
+}
 .profile-stat-btn { cursor: pointer; font: inherit; text-align: center; width: 100%; }
 .profile-stat-btn:hover { border-color: var(--primary); }

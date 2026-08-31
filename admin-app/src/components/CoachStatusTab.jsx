@@ -1,5 +1,12 @@
 import { useMemo, useState } from 'react'
-import { COACH_ASSIGNMENTS, formatTeamRange, teamSortKey } from '../config.js'
+import {
+  COACH_ASSIGNMENTS,
+  formatTeamRange,
+  teamSortKey,
+  crewFor,
+  crewLabel,
+  crewRoleLabel,
+} from '../config.js'
 
 // 마스터 메이트 현황 (PRD 요청 #5): 위치 지도 대신, 마스터 메이트 개인별 리스트를 한눈에.
 // 목적: 특정 마스터 메이트가 바쁘면(대응 중이면) 다른 마스터 메이트가 그 담당 팀
@@ -38,26 +45,30 @@ export default function CoachStatusTab({ scan, coach }) {
   // 뜹니다. 그래서 이름으로 묶고, 그 사람의 어느 기기든 대응 중이면 대응 중으로
   // 봅니다.
   const rows = useMemo(() => {
+    // 한 사람이 폰·노트북 두 대로 열 수 있어 사람 단위로 묶습니다.
+    // 묶는 열쇠는 명단 id — 이름이 같은 두 분(이상윤)이 한 사람으로
+    // 합쳐지지 않게 합니다. 명단에 없는 이름은 이름으로 묶습니다.
     const byName = new Map()
     scan.coaches.forEach((c) => {
-      const entry = byName.get(c.name) || { name: c.name, ids: [] }
+      const key = c.crewId || 'name:' + c.name
+      const entry = byName.get(key) || { name: c.name, crewId: c.crewId, ids: [] }
       entry.ids.push(c.id)
-      byName.set(c.name, entry)
+      byName.set(key, entry)
     })
     return [...byName.values()]
       .map((person) => {
-        const assigned = COACH_ASSIGNMENTS.find((a) => a.name === person.name)
+        const assigned = crewFor(person)
         const teams = assigned?.teamNumbers || []
         return {
-          coach: { id: person.ids[0], name: person.name },
+          coach: { id: person.ids[0], name: crewLabel(assigned) || person.name },
           ids: person.ids,
           busy: [
             ...(busyByKey['name:' + person.name] || []),
             ...person.ids.flatMap((id) => busyByKey['id:' + id] || []),
           ],
           range: formatTeamRange(teams),
-          // 총관리자는 담당 구간이 없는 게 정상입니다 — 미배정과 구분해 표시
-          isManager: !!assigned?.callManager,
+          // 담당 구간이 없는 게 정상인 역할(총관리자·식음 운영)은 구분해 표시
+          roleLabel: crewRoleLabel(assigned),
           sortKey: teams.length ? Math.min(...teams.map(teamSortKey)) : Number.MAX_SAFE_INTEGER,
         }
       })
@@ -131,7 +142,7 @@ export default function CoachStatusTab({ scan, coach }) {
                 </p>
               ) : (
                 <div className="coach-list">
-                  {g.rows.map(({ coach: c, busy: b, range, ids, isManager }) => {
+                  {g.rows.map(({ coach: c, busy: b, range, ids, roleLabel }) => {
                     // 내 기기가 그 사람의 기기 목록에 있으면 '나'
                     const isMe = ids.includes(coach.id) || c.name === coach.name
                     return (
@@ -139,7 +150,7 @@ export default function CoachStatusTab({ scan, coach }) {
                         <span className="coach-name">
                           🧑‍🏫 {c.name}
                           <span className="coach-range">
-                            {range ? `팀 ${range}` : isManager ? '총관리자' : '담당 미배정'}
+                            {range ? `팀 ${range}` : roleLabel || '담당 미배정'}
                           </span>
                           {isMe && <span className="coach-me">나</span>}
                         </span>

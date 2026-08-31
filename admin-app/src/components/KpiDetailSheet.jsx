@@ -9,6 +9,10 @@ import {
   formatTeamRange,
   getAssignedCoachForTeam,
   teamSortKey,
+  crewFor,
+  crewLabel,
+  crewRoleLabel,
+  crewNameIsUnique,
 } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { notifyMissing, nudgeParticipants } from '../lib/storage.js'
@@ -29,15 +33,15 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
   // 예전에는 메이트에게 자동으로 담당 팀만 걸러 보여줬는데, 카드와 상세가
   // 다른 말을 해서 무엇이 나올지 예측할 수 없었습니다. 좁혀 보는 것은
   // '내 담당만' 스위치로 드러냅니다 (담당 팀이 있는 사람에게만 보임).
-  const myAssignment = COACH_ASSIGNMENTS.find((c) => c.name && c.name === coach?.name) || null
+  const myAssignment = crewFor(coach)
   const myTeams = myAssignment?.teamNumbers || []
-  const rosterConfigured = COACH_ASSIGNMENTS.some((c) => c.name)
   const isManager = !!myAssignment?.callManager
+  // 식음 운영은 주문 쪽만 — 미주문 팀을 확인하고 주문하라고 재촉합니다
+  const isOrderManager = !!myAssignment?.orderManager
   const [onlyMine, setOnlyMine] = useState(false)
   const canFilterMine = myTeams.length > 0
-  // 채널 전체에 재촉을 보내는 건 총관리자만. 명단 설정 전에는 누구도 총관리자가
-  // 아니므로, 그때만 예외로 허용합니다(설정 전 테스트용).
-  const canNudge = isManager || !rosterConfigured
+  // 채널 전체에 재촉을 보내는 건 총관리자, 주문 재촉은 식음 운영도.
+  const canNudge = isManager || (isOrderManager && kind === 'orders')
   const drag = useSheetDrag(onClose)
   const dialogRef = useDialogFocus(true, onClose)
   const [onlyPending, setOnlyPending] = useState(false)
@@ -54,6 +58,9 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
 
     if (kind === 'coaches') {
       // 명단 전원을 깔고 입장 여부를 표시 (미입장 파악이 목적)
+      // 입장 여부는 명단 id로 봅니다. 이름이 같은 두 분이 있어, 이름으로만
+      // 보면 한 분이 들어와도 두 분 다 들어온 것처럼 보입니다.
+      const enteredIds = new Set(scan.coaches.map((c) => c.crewId).filter(Boolean))
       const enteredNames = new Set(scan.coaches.map((c) => c.name))
       const roster = COACH_ASSIGNMENTS.filter((c) => c.name)
       // 명단이 아직 비어 있으면 입장한 사람만이라도 보여줍니다
@@ -61,13 +68,15 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
         ? roster
             .map((c) => ({
               key: c.id,
-              label: c.name,
+              label: crewLabel(c),
               note: c.teamNumbers.length
                 ? `팀 ${formatTeamRange(c.teamNumbers)}`
-                : c.callManager
-                  ? '총관리자'
-                  : '담당 미배정',
-              done: enteredNames.has(c.name),
+                : crewRoleLabel(c) || '담당 미배정',
+              // 이름이 겹치지 않는 사람은 예전 기록(crewId 없는 입장)으로도
+              // 판단할 수 있습니다. 겹치는 이름은 id로만 — 한 분이 들어왔을 때
+              // 두 분 다 들어온 것처럼 보이면 안 됩니다.
+              done:
+                enteredIds.has(c.id) || (crewNameIsUnique(c.name) && enteredNames.has(c.name)),
               sortKey: c.teamNumbers.length
                 ? Math.min(...c.teamNumbers.map(teamSortKey))
                 : Number.MAX_SAFE_INTEGER,

@@ -372,8 +372,50 @@ export const PLAY_MATES = [
 // 3-3. 식음 운영 — 주문·배부 현황을 맡습니다.
 //    (지금은 명단만 보관합니다 — 권한을 따로 주지는 않았습니다)
 export const FOOD_CREW = [
-  { id: 'food-01', name: '한성우', nickname: 'Austin', company: '(주)GS' },
+  //  orderManager: 주문 현황을 맡은 사람. 미주문 팀을 확인하고 주문하라고
+  //  재촉할 수 있습니다. 호출·등록 쪽 권한은 총관리자에게만 있습니다.
+  { id: 'food-01', name: '한성우', nickname: 'Austin', company: '(주)GS', orderManager: true },
 ]
+
+// 3-4. 크루 조회
+//    관리자 앱에 들어오는 사람은 마스터 메이트·총관리자·식음 운영입니다.
+//    플레이 메이트는 이 앱을 쓰지 않아 넣지 않습니다.
+export const ADMIN_CREW = [...COACH_ASSIGNMENTS, ...FOOD_CREW]
+
+// 명단에 같은 이름이 둘 있으면(이상윤·Yunie / 이상윤·Yun) 이름만으로는
+// 누구인지 가릴 수 없습니다. 그래서 입장할 때 고른 사람의 id를 기기에
+// 저장하고, 조회는 id로 합니다. 이름 조회는 옛 기록을 위한 대비책입니다.
+export function crewById(crewId) {
+  return ADMIN_CREW.find((c) => c.id === crewId) || null
+}
+export function crewFor(coach) {
+  if (!coach) return null
+  return crewById(coach.crewId) || ADMIN_CREW.find((c) => c.name && c.name === coach.name) || null
+}
+
+// 이름이 겹치는 사람만 닉네임을 함께 보여줍니다. 모두에게 붙이면 길기만 하고,
+// 정작 가려야 할 두 사람은 여전히 똑같아 보입니다.
+const DUPLICATE_CREW_NAMES = new Set(
+  ADMIN_CREW.map((c) => c.name).filter((name, i, all) => name && all.indexOf(name) !== i),
+)
+// 이름만으로 사람을 특정할 수 있는지 — 겹치는 이름이면 false
+export function crewNameIsUnique(name) {
+  return !!name && !DUPLICATE_CREW_NAMES.has(name)
+}
+export function crewLabel(member) {
+  if (!member) return ""
+  return DUPLICATE_CREW_NAMES.has(member.name) && member.nickname
+    ? member.name + " (" + member.nickname + ")"
+    : member.name
+}
+
+// 담당 구간이 없는 게 정상인 사람들 — 비워두면 배정을 빠뜨린 것처럼 보입니다
+export function crewRoleLabel(member) {
+  if (!member) return ""
+  if (member.callManager) return "총관리자"
+  if (member.orderManager) return "식음 운영"
+  return ""
+}
 
 // ---------------------------------------------------------------
 // 4. 알레르기 선택지

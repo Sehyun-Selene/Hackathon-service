@@ -529,7 +529,7 @@ const server = http.createServer(async (req, res) => {
   // 마스터 메이트 입장: coach-roster.coaches 를 id 기준으로 갱신
   if (req.method === 'POST' && url.pathname === '/api/coach-upsert') {
     try {
-      const { id, name } = await readBody(req)
+      const { id, name, crewId } = await readBody(req)
       if (!id || typeof id !== 'string') {
         sendJson(res, 400, { error: 'id required' })
         return
@@ -542,7 +542,12 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 400, { error: 'name required' })
         return
       }
-      const next = { coaches: [...others, { id, name: safeName, lastSeen: Date.now() }] }
+      // crewId는 설정 파일의 명단 항목 id입니다. 이름이 같은 사람이 있어
+      // 이름만으로는 담당 팀을 가릴 수 없어 함께 저장합니다.
+      const safeCrewId = /^[a-z0-9-]{1,20}$/.test(String(crewId || '')) ? String(crewId) : ''
+      const next = {
+        coaches: [...others, { id, name: safeName, crewId: safeCrewId, lastSeen: Date.now() }],
+      }
       store.set('coach-roster', next)
       const persisted = await persistKey('coach-roster', next)
       sendWriteResult(res, { ok: true, count: next.coaches.length }, persisted)
