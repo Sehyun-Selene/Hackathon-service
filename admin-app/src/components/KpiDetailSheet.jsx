@@ -3,7 +3,9 @@ import {
   COACH_ASSIGNMENTS,
   MEALS,
   MEAL_BY_ID,
-  TOTAL_TEAMS,
+  ALL_TEAM_IDS,
+  LEAGUES,
+  groupByLeague,
   formatTeamRange,
   getAssignedCoachForTeam,
 } from '../config.js'
@@ -15,12 +17,11 @@ import { useDialogFocus } from '../lib/useDialogFocus.js'
 //
 // 등록·주문·입장은 "누가 했는가"보다 **누가 아직 안 했는가**를 찾는 것이 목적입니다
 // (미등록 팀 독려, 미주문 팀 독려, 미입장 메이트 확인). 그래서 한 항목씩 나열하지
-// 않고 전체 대상(팀 1~TOTAL_TEAMS / 명단 전원)을 미리 깔아두고 완료 여부를
+// 않고 전체 대상(모든 테이블 번호 / 명단 전원)을 미리 깔아두고 완료 여부를
 // 표시하는 격자로 보여줍니다. 빠진 칸이 곧 할 일이 됩니다.
 //
 // 대기 중 호출은 성격이 달라(대상이 정해져 있지 않은 사건 목록) 그대로 목록입니다.
 
-const teamNo = (id) => parseInt(id, 10)
 
 export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast, onClose }) {
   // KPI 카드가 전체 숫자를 보여주므로, 눌러서 열리는 격자도 전체를 보여줍니다.
@@ -82,21 +83,21 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
     }
 
     // 팀 격자 — 등록 / 주문
-    const registered = new Set(Object.keys(scan.teams).map(teamNo))
+    const registered = new Set(Object.keys(scan.teams))
     const ordered = new Set(
       Object.entries(scan.orders)
         .filter(([, o]) => MEALS.some((m) => (o?.meals?.[m.id]?.items || []).length > 0))
-        .map(([id]) => teamNo(id)),
+        .map(([id]) => id),
     )
     const isOrders = kind === 'orders'
     const mine = new Set(myTeams)
-    const targetTeams = Array.from({ length: TOTAL_TEAMS }, (_, i) => i + 1).filter(
-      (n) => !onlyMine || mine.has(n),
-    )
-    const cells = targetTeams.map((n) => ({
-      key: n,
-      label: n,
-      done: isOrders ? ordered.has(n) : registered.has(n),
+    const targetTeams = ALL_TEAM_IDS.filter((id) => !onlyMine || mine.has(id))
+    // 팀 번호가 'E-45'라 격자는 리그별로 나눠 그립니다 (숫자만 칸에 표시)
+    const cells = targetTeams.map((id) => ({
+      key: id,
+      label: id.slice(2),
+      league: id.charAt(0),
+      done: isOrders ? ordered.has(id) : registered.has(id),
     }))
     const missing = cells.filter((c) => !c.done).map((c) => c.key)
     return {
@@ -148,7 +149,7 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
     try {
       const r = await notifyMissing({
         kind: kind === 'orders' ? 'orders' : 'teams',
-        totalTeams: TOTAL_TEAMS,
+        leagues: LEAGUES.map((l) => ({ prefix: l.prefix, count: l.count })),
         mealId: mealFilter,
         label: MEAL_BY_ID[mealFilter]?.label || '',
       })
@@ -292,14 +293,25 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
           ) : cells.length === 0 ? (
             <p className="empty-text">모두 완료됐습니다. 🎉</p>
           ) : data.mode === 'team-grid' ? (
-            <div className="check-grid">
-              {cells.map((c) => (
-                <span key={c.key} className={`check-cell${c.done ? ' done' : ''}`}>
-                  {c.label}
-                  {c.done && <b aria-hidden="true">✓</b>}
-                </span>
-              ))}
-            </div>
+            LEAGUES.map((league) => {
+              const 칸 = cells.filter((c) => c.league === league.prefix)
+              if (!칸.length) return null
+              return (
+                <div key={league.id} className="league-block">
+                  <div className="league-block-head">
+                    {league.label} <span>{league.prefix}-</span>
+                  </div>
+                  <div className="check-grid">
+                    {칸.map((c) => (
+                      <span key={c.key} className={`check-cell${c.done ? ' done' : ''}`}>
+                        {c.label}
+                        {c.done && <b aria-hidden="true">✓</b>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )
+            })
           ) : (
             <div className="check-names">
               {cells.map((c) => (

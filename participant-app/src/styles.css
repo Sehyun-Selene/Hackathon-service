@@ -744,3 +744,26 @@ html.dark .board-countdown.urgent .board-countdown-label { color: #fca5a5; }
 .nudge-banner-text { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
 .nudge-banner-text span { font-size: 13.5px; line-height: 1.5; opacity: 0.95; }
 .nudge-banner-go { font-size: 20px; opacity: 0.9; }
+
+/* ---- 리그 선택 + 테이블 번호 ---- */
+/* 테이블에 붙은 번호가 곧 팀 번호입니다(E-45 / G-12). 접두어를 칸 안에 고정으로
+   보여주고 숫자만 받으면, 참가자는 눈앞의 번호를 그대로 옮겨 적으면 됩니다 */
+.league-tabs { display: flex; gap: 8px; }
+.league-tab {
+  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px;
+  align-items: center; justify-content: center;
+  padding: 11px 10px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--card);
+  color: var(--sub); font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.league-tab.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.league-tab-code { font-size: 12px; font-weight: 800; opacity: 0.75; }
+.team-no-field { display: flex; align-items: center; gap: 8px; }
+.team-no-prefix {
+  flex: 0 0 auto; font-size: 20px; font-weight: 800; color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+.team-no-input { flex: 1; min-width: 0; }
+.team-no-found { margin-top: 8px; font-size: 13.5px; line-height: 1.5; color: var(--green); font-weight: 700; }
+.team-no-found b { color: var(--text); }
+.stepper-cap { font-size: 12px; color: var(--sub); font-weight: 600; }

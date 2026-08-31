@@ -990,3 +990,10 @@ html.dark .btn-outline:hover { background: var(--violet-soft); }
 }
 /* 격자 스위치 두 개 — 미주문만 / 내 담당만 */
 .grid-toggles { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+/* 리그별 격자 묶음 — 팀 번호가 E-45 / G-12 라 리그를 나눠 그립니다 */
+.league-block + .league-block { margin-top: 14px; }
+.league-block-head {
+  font-size: 12.5px; font-weight: 700; color: var(--sub); margin-bottom: 6px;
+}
+.league-block-head span { color: var(--primary-dark); font-weight: 800; }

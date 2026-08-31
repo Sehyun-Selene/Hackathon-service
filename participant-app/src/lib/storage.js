@@ -187,8 +187,19 @@ export const SOLDOUT_KEY = 'soldout'
 export const NUDGE_KEY = 'nudge'
 
 // ---- 팀 번호 정규화: "5", "05", "005" → "05" (100 이상은 "105") ----
-export function normalizeTeam(raw) {
-  const n = parseInt(raw, 10)
+// ---- 팀 번호 정규화 ----
+// 리그 접두어를 붙여 'E-03' 형태로 맞춥니다. 접두어가 없으면 두 리그의 같은
+// 숫자가 한 팀으로 섞이기 때문에, 리그를 모르면 만들지 않고 null을 냅니다.
+//   normalizeTeam('3', 'E')     → 'E-03'
+//   normalizeTeam('E-3')        → 'E-03'
+//   normalizeTeam('e104')       → 'E-104'   (세 자리는 그대로)
+export function normalizeTeam(raw, prefix) {
+  const text = String(raw ?? '').trim().toUpperCase()
+  const m = text.match(/^([EG])?[^0-9]*([0-9]{1,3})$/)
+  if (!m) return null
+  const p = (m[1] || String(prefix || '').toUpperCase()).trim()
+  if (p !== 'E' && p !== 'G') return null
+  const n = parseInt(m[2], 10)
   if (!Number.isFinite(n) || n <= 0) return null
-  return String(n).padStart(2, '0')
+  return p + '-' + String(n).padStart(2, '0')
 }

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import {
   CALL_LIMIT_PER_TEAM,
   COACH_ASSIGNMENTS,
-  TOTAL_TEAMS,
+  ALL_TEAM_IDS,
+  groupByLeague,
   getAssignedCoachForTeam,
 } from '../config.js'
 import { now, fmtCountdown, fmtClock } from '../lib/time.js'
@@ -48,9 +49,9 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
   const myAssignment = COACH_ASSIGNMENTS.find((a) => a.name === coach.name)
   const myTeams = myAssignment?.teamNumbers || []
   const showAllTeams = !!myAssignment?.callManager || myTeams.length === 0
-  const countTeams = showAllTeams
-    ? Array.from({ length: TOTAL_TEAMS }, (_, i) => i + 1)
-    : [...myTeams].sort((a, b) => a - b)
+  // 팀 번호는 'E-45' 같은 문자열입니다. 리그가 다르면 같은 숫자라도 다른 팀이라
+  // 격자도 리그별로 나눠 그립니다.
+  const countGroups = groupByLeague(showAllTeams ? ALL_TEAM_IDS : myTeams)
 
   return (
     <div>
@@ -158,22 +159,30 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
           {showAllTeams ? '전체 팀 호출 횟수' : '내 담당 팀 호출 횟수'} (제한{' '}
           {CALL_LIMIT_PER_TEAM}회)
         </summary>
-        <div className="check-grid">
-          {countTeams.map((n) => {
-            const teamId = String(n).padStart(2, '0')
-            const used = scan.counts[teamId] || 0
-            const full = used >= CALL_LIMIT_PER_TEAM
-            return (
-              <span
-                key={teamId}
-                className={`call-count-cell${used ? ' used' : ''}${full ? ' full' : ''}`}
-              >
-                {n}
-                <b>{used}</b>
-              </span>
-            )
-          })}
-        </div>
+        {countGroups.map(({ league, ids }) => (
+          <div key={league.id} className="league-block">
+            {countGroups.length > 1 && (
+              <div className="league-block-head">
+                {league.label} <span>{league.prefix}-</span>
+              </div>
+            )}
+            <div className="check-grid">
+              {ids.map((teamId) => {
+                const used = scan.counts[teamId] || 0
+                const full = used >= CALL_LIMIT_PER_TEAM
+                return (
+                  <span
+                    key={teamId}
+                    className={`call-count-cell${used ? ' used' : ''}${full ? ' full' : ''}`}
+                  >
+                    {teamId.slice(2)}
+                    <b>{used}</b>
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </details>
     </div>
   )

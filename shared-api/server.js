@@ -47,7 +47,7 @@
 //    POST /api/call-status   body: { teamId, callId, ... } → 호출 하나만 원자적 변경
 //    POST /api/flag-set      body: { key, field, value }   → 품절·배부 표시 원자적 변경
 //    POST /api/nudge         body: { mealId }              → 참가자 화면 재촉 배너
-//    POST /api/notify-missing body: { kind, totalTeams, mealId, label }
+//    POST /api/notify-missing body: { kind, leagues, mealId, label }
 //                                                          → 미등록·미주문 팀을 슬랙에 재촉
 //    POST /api/reset  body: { token: string }         → 전체 삭제(행사 전 초기화용)
 //    GET  /health                                     → 상태 확인용(크론 대상)
@@ -67,7 +67,18 @@ const REDIS_URL = (process.env.UPSTASH_REDIS_REST_URL || '').replace(/\/$/, '')
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || ''
 const REDIS_HASH = process.env.REDIS_HASH || 'torder'
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || ''
-const TOTAL_TEAMS = Number(process.env.TOTAL_TEAMS || 125)
+// 팀 번호는 자리배치의 테이블 번호를 그대로 씁니다 — 'E-45'(필드) / 'G-12'(개발).
+// 접두어가 없으면 두 리그의 같은 숫자가 한 팀으로 섞입니다.
+// 앱 config.LEAGUES와 같은 값이어야 하며, 바꿀 때는 환경변수로 함께 조정하세요.
+//   예) TEAM_LEAGUES="E:104,G:31"
+const TEAM_LEAGUES = (process.env.TEAM_LEAGUES || 'E:104,G:31')
+  .split(',')
+  .map((part) => {
+    const [prefix, count] = part.split(':')
+    return { prefix: String(prefix || '').trim().toUpperCase(), count: Number(count) || 0 }
+  })
+  .filter((l) => /^[A-Z]$/.test(l.prefix) && l.count > 0)
+const TEAM_COUNT_BY_PREFIX = Object.fromEntries(TEAM_LEAGUES.map((l) => [l.prefix, l.count]))
 const COACH_ACTIVE_TTL_MS = Number(process.env.COACH_ACTIVE_TTL_MS || 2 * 60 * 1000)
 // 팀당 호출 제한. 화면에서만 막으면 두 기기로 열어두면 넘길 수 있어
 // 서버가 최종 판단합니다. 앱 config의 CALL_LIMIT_PER_TEAM과 같은 값이어야
@@ -213,9 +224,14 @@ function sendWriteResult(res, body, persisted) {
 }
 
 function validTeamId(teamId) {
-  if (typeof teamId !== 'string' || !/^\d{2,3}$/.test(teamId)) return false
-  const n = Number(teamId)
-  return Number.isInteger(n) && n >= 1 && n <= TOTAL_TEAMS && teamId === String(n).padStart(2, '0')
+  if (typeof teamId !== 'string') return false
+  const m = teamId.match(/^([A-Z])-(\d{2,3})$/)
+  if (!m) return false
+  const max = TEAM_COUNT_BY_PREFIX[m[1]]
+  if (!max) return false
+  const n = Number(m[2])
+  // 0 채움까지 일치해야 같은 팀이 두 키로 갈라지지 않습니다 ('E-5' vs 'E-05')
+  return Number.isInteger(n) && n >= 1 && n <= max && m[2] === String(n).padStart(2, '0')
 }
 
 
@@ -722,7 +738,18 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await readBody(req)
       const kind = body.kind === 'orders' ? 'orders' : 'teams'
-      const totalTeams = Math.min(Math.max(Number(body.totalTeams) || 0, 1), 500)
+      // 팀 번호는 'E-45' / 'G-12' 형태입니다. 앱이 리그 정의(접두어·개수)만
+      // 넘겨주고, 어떤 팀이 빠졌는지는 서버가 자기 데이터로 계산합니다.
+      const leagues = (Array.isArray(body.leagues) ? body.leagues : [])
+        .map((l) => ({
+          prefix: String(l?.prefix || '').toUpperCase(),
+          count: Math.min(Math.max(Number(l?.count) || 0, 0), 500),
+        }))
+        .filter((l) => /^[A-Z]$/.test(l.prefix) && l.count > 0)
+      if (!leagues.length) {
+        sendJson(res, 400, { error: 'leagues required' })
+        return
+      }
       const mealId = typeof body.mealId === 'string' ? body.mealId : ''
       // 멘션 문자와 줄바꿈을 제거해 문구 조작을 막습니다
       const label = String(body.label || '')
@@ -747,19 +774,18 @@ const server = http.createServer(async (req, res) => {
       }
 
       const roster = store.get('team-roster')
-      const registered = new Set(
-        (Array.isArray(roster?.ids) ? roster.ids : []).map((id) => parseInt(id, 10)),
-      )
+      const registered = new Set(Array.isArray(roster?.ids) ? roster.ids : [])
       const teams = []
-      for (let n = 1; n <= totalTeams; n++) {
-        if (kind === 'teams') {
-          if (!registered.has(n)) teams.push(n)
-        } else {
-          if (!registered.has(n)) continue // 등록도 안 한 팀은 주문 재촉 대상이 아님
-          const id = String(n).padStart(2, '0')
-          const order = store.get('order:' + id)
-          const items = order?.meals?.[mealId]?.items || []
-          if (!items.length) teams.push(n)
+      for (const league of leagues) {
+        for (let n = 1; n <= league.count; n++) {
+          const id = league.prefix + '-' + String(n).padStart(2, '0')
+          if (kind === 'teams') {
+            if (!registered.has(id)) teams.push(id)
+          } else {
+            if (!registered.has(id)) continue // 등록도 안 한 팀은 주문 재촉 대상이 아님
+            const items = store.get('order:' + id)?.meals?.[mealId]?.items || []
+            if (!items.length) teams.push(id)
+          }
         }
       }
       if (!teams.length) {

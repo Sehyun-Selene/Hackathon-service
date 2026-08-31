@@ -50,13 +50,13 @@ after(() => {
   child?.kill()
 })
 
-test('125팀과 40명의 동시 등록을 유실하지 않고 snapshot 한 번에 반환한다', async () => {
+test('104팀과 40명의 동시 등록을 유실하지 않고 snapshot 한 번에 반환한다', async () => {
   const teams = await Promise.all(
-    Array.from({ length: 125 }, (_, index) =>
-      post('/api/roster-add', { teamId: String(index + 1).padStart(2, '0') }),
+    Array.from({ length: 104 }, (_, index) =>
+      post('/api/roster-add', { teamId: 'E-' + String(index + 1).padStart(2, '0') }),
     ),
   )
-  assert.equal(teams.filter((result) => result.status === 200).length, 125)
+  assert.equal(teams.filter((result) => result.status === 200).length, 104)
 
   const coaches = await Promise.all(
     Array.from({ length: 40 }, (_, index) =>
@@ -67,7 +67,7 @@ test('125팀과 40명의 동시 등록을 유실하지 않고 snapshot 한 번�
 
   const snapshot = await post('/api/snapshot', {})
   assert.equal(snapshot.status, 200)
-  assert.equal(Object.keys(snapshot.body.counts).length, 125)
+  assert.equal(Object.keys(snapshot.body.counts).length, 104)
   assert.equal(snapshot.body.coaches.length, 40)
 })
 
@@ -76,7 +76,7 @@ test('동시 호출은 정확히 5건만 받고 생성 시각은 서버가 기�
   const results = await Promise.all(
     Array.from({ length: 8 }, (_, index) =>
       post('/api/call-add', {
-        teamId: '01',
+        teamId: 'E-01',
         call: {
           id: `call-${index}`,
           reason: '동시 호출 테스트',
@@ -88,17 +88,17 @@ test('동시 호출은 정확히 5건만 받고 생성 시각은 서버가 기�
   assert.equal(results.filter((result) => result.status === 200).length, 5)
   assert.equal(results.filter((result) => result.status === 409).length, 3)
 
-  const calls = await post('/api/get', { keys: ['call:01', 'call-count:01'] })
-  assert.equal(calls.body['call:01'].calls.length, 5)
-  assert.equal(calls.body['call-count:01'], 5)
-  assert.ok(calls.body['call:01'].calls.every((call) => call.createdAt >= startedAt))
-  assert.ok(calls.body['call:01'].calls.every((call) => call.createdAt <= Date.now()))
+  const calls = await post('/api/get', { keys: ['call:E-01', 'call-count:E-01'] })
+  assert.equal(calls.body['call:E-01'].calls.length, 5)
+  assert.equal(calls.body['call-count:E-01'], 5)
+  assert.ok(calls.body['call:E-01'].calls.every((call) => call.createdAt >= startedAt))
+  assert.ok(calls.body['call:E-01'].calls.every((call) => call.createdAt <= Date.now()))
 })
 
 test('같은 호출을 동시에 잡으면 한 명만 성공한다', async () => {
   const results = await Promise.all([
     post('/api/call-status', {
-      teamId: '01',
+      teamId: 'E-01',
       callId: 'call-0',
       status: 'in_progress',
       expectedStatus: 'waiting',
@@ -106,7 +106,7 @@ test('같은 호출을 동시에 잡으면 한 명만 성공한다', async () =>
       handledById: 'a',
     }),
     post('/api/call-status', {
-      teamId: '01',
+      teamId: 'E-01',
       callId: 'call-0',
       status: 'in_progress',
       expectedStatus: 'waiting',
@@ -120,7 +120,10 @@ test('같은 호출을 동시에 잡으면 한 명만 성공한다', async () =>
 
 test('범위를 벗어나거나 정규화되지 않은 팀 번호를 거절한다', async () => {
   assert.equal((await post('/api/roster-add', { teamId: '1' })).status, 400)
-  assert.equal((await post('/api/roster-add', { teamId: '126' })).status, 400)
+  assert.equal((await post('/api/roster-add', { teamId: 'E-1' })).status, 400)
+  assert.equal((await post('/api/roster-add', { teamId: 'E-105' })).status, 400)
+  assert.equal((await post('/api/roster-add', { teamId: 'G-32' })).status, 400)
+  assert.equal((await post('/api/roster-add', { teamId: 'X-01' })).status, 400)
 })
 
 test('참가자 호출 사유의 Slack 멘션 문법을 일반 문자열로 바꾼다', () => {
@@ -129,7 +132,7 @@ test('참가자 호출 사유의 Slack 멘션 문법을 일반 문자열로 바�
   assert.ok(!text.includes('\n> <!channel>'))
 })
 
-test('Redis 쓰기 배치가 동시 팀 등록의 최신 125팀 목록을 보존한다', async () => {
+test('Redis 쓰기 배치가 동시 팀 등록의 최신 104팀 목록을 보존한다', async () => {
   const redisPort = 3296
   const servicePort = 3297
   const fields = new Map()
@@ -185,17 +188,17 @@ test('Redis 쓰기 배치가 동시 팀 등록의 최신 125팀 목록을 보존
     }
 
     const responses = await Promise.all(
-      Array.from({ length: 125 }, (_, index) =>
+      Array.from({ length: 104 }, (_, index) =>
         fetch(serviceBase + '/api/roster-add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ teamId: String(index + 1).padStart(2, '0') }),
+          body: JSON.stringify({ teamId: 'E-' + String(index + 1).padStart(2, '0') }),
         }),
       ),
     )
-    assert.equal(responses.filter((response) => response.ok).length, 125)
+    assert.equal(responses.filter((response) => response.ok).length, 104)
     const roster = JSON.parse(fields.get('team-roster'))
-    assert.equal(roster.ids.length, 125)
+    assert.equal(roster.ids.length, 104)
     assert.ok(hsetCount < 25, `HSET 횟수가 과도합니다: ${hsetCount}`)
   } finally {
     service.kill()

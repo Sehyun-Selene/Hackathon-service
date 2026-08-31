@@ -65,7 +65,183 @@ export const MEALS = [
 export const CALL_LIMIT_PER_TEAM = 5
 
 // ---------------------------------------------------------------
-// 3. 마스터 메이트 개인별 담당 팀 번호  (TBD — 명단·팀 편성 확정 후 채우기)
+// 2-1. 리그와 팀 (자리배치 시트에서 옮김)
+//
+//   테이블에 붙은 번호가 그대로 팀 번호입니다 — 필드리그는 E-45,
+//   개발자리그는 G-12. 접두어가 없으면 두 리그의 같은 번호가 한 팀으로
+//   섞여 주문·호출이 엉킵니다.
+//   리모트리그(O-)는 현장에 오지 않아 이 서비스를 쓰지 않습니다.
+//
+//   size = 그 팀의 인원. 주문 수량 상한으로 쓰입니다.
+//     시트의 '인원' 열과 명단 이름 수가 다른 팀(E-40·E-75)은 큰 쪽을 썼습니다.
+//     막아서 못 받는 것보다 한 개 남는 편이 낫기 때문입니다.
+//   name = 팀명. 등록할 때 번호를 확인시켜 주는 용도입니다.
+// ---------------------------------------------------------------
+export const LEAGUES = [
+  { id: 'field', prefix: 'E', label: '필드리그', count: 104 },
+  { id: 'dev', prefix: 'G', label: '개발자리그', count: 31 },
+]
+
+export const TEAMS = {
+  'E-01': { name: "어벤처스", size: 2 },
+  'E-02': { name: "Grill Me", size: 3 },
+  'E-03': { name: "오디세이", size: 2 },
+  'E-04': { name: "CTRL + AI", size: 2 },
+  'E-05': { name: "리투(Lee Two)", size: 2 },
+  'E-06': { name: "KJ", size: 2 },
+  'E-07': { name: "안녕하세요차지비입니다잘부탁드립니다.", size: 3 },
+  'E-08': { name: "지금, 차지", size: 3 },
+  'E-09': { name: "당진파파", size: 3 },
+  'E-10': { name: "빌드업", size: 3 },
+  'E-11': { name: "스마트스퀘어", size: 2 },
+  'E-12': { name: "스마트터빈", size: 3 },
+  'E-13': { name: "파도", size: 2 },
+  'E-14': { name: "HOPE", size: 4 },
+  'E-15': { name: "Jun & Kun", size: 2 },
+  'E-16': { name: "고객운영팀", size: 3 },
+  'E-17': { name: "서든어택", size: 4 },
+  'E-18': { name: "성능주의", size: 4 },
+  'E-19': { name: "파울링 헌터스", size: 4 },
+  'E-20': { name: "20W50", size: 3 },
+  'E-21': { name: "시고시고", size: 3 },
+  'E-22': { name: "아장아장", size: 4 },
+  'E-23': { name: "오뒷에이아이야", size: 3 },
+  'E-24': { name: "지칼드림팀", size: 3 },
+  'E-25': { name: "체크메이트", size: 3 },
+  'E-26': { name: "컴플AI언스", size: 3 },
+  'E-27': { name: "Bid-Tamin", size: 2 },
+  'E-28': { name: "Fixipedia", size: 4 },
+  'E-29': { name: "MOC MATE", size: 3 },
+  'E-30': { name: "Pringles", size: 4 },
+  'E-31': { name: "RA", size: 4 },
+  'E-32': { name: "AIDEAL (에이디얼)", size: 4 },
+  'E-33': { name: "기사회생", size: 4 },
+  'E-34': { name: "보건보건", size: 3 },
+  'E-35': { name: "AIgnition", size: 4 },
+  'E-36': { name: "BID ONE(비드원)", size: 4 },
+  'E-37': { name: "BS", size: 4 },
+  'E-38': { name: "FanTAXtic", size: 2 },
+  'E-39': { name: "GS 공구리에이티브", size: 4 },
+  'E-40': { name: "MU", size: 3 },
+  'E-41': { name: "Noise Huntrix", size: 3 },
+  'E-42': { name: "XI-Nergy", size: 3 },
+  'E-43': { name: "NARASEE", size: 3 },
+  'E-44': { name: "Xisafety", size: 3 },
+  'E-45': { name: "3삼5오", size: 4 },
+  'E-46': { name: "강동어겐", size: 4 },
+  'E-47': { name: "김이조장", size: 4 },
+  'E-48': { name: "딱걸렸4", size: 4 },
+  'E-49': { name: "리스크 제로", size: 4 },
+  'E-50': { name: "미녀사총사", size: 4 },
+  'E-51': { name: "불티를깨워", size: 2 },
+  'E-52': { name: "블랙핑크", size: 4 },
+  'E-53': { name: "뽀삐", size: 2 },
+  'E-54': { name: "세끼통역", size: 3 },
+  'E-55': { name: "수퍼프롬프트", size: 2 },
+  'E-56': { name: "신선강화B", size: 4 },
+  'E-57': { name: "신선강화C", size: 3 },
+  'E-58': { name: "안AI잘부", size: 4 },
+  'E-59': { name: "온앤오프", size: 3 },
+  'E-60': { name: "우연이연", size: 4 },
+  'E-61': { name: "커넥트 you & me", size: 3 },
+  'E-62': { name: "커타고", size: 4 },
+  'E-63': { name: "햄샘수", size: 3 },
+  'E-64': { name: "홈동이들", size: 4 },
+  'E-65': { name: "효리수", size: 4 },
+  'E-66': { name: "Audit Say (오디세이)", size: 4 },
+  'E-67': { name: "GiveS", size: 4 },
+  'E-68': { name: "HiAi", size: 4 },
+  'E-69': { name: "HLH컴퍼니", size: 3 },
+  'E-70': { name: "SO, GOOD", size: 3 },
+  'E-71': { name: "Team Argo", size: 4 },
+  'E-72': { name: "Team Hermes", size: 4 },
+  'E-73': { name: "VOC세편살", size: 3 },
+  'E-74': { name: "끝까지 버팀", size: 3 },
+  'E-75': { name: "구미 야호", size: 3 },
+  'E-76': { name: "FC동해", size: 2 },
+  'E-77': { name: "위험한팀", size: 2 },
+  'E-78': { name: "공하Z", size: 2 },
+  'E-79': { name: "미철즈", size: 2 },
+  'E-80': { name: "신림파", size: 3 },
+  'E-81': { name: "DNA (Dining Needs Analyzer)", size: 4 },
+  'E-82': { name: "JOEvolution", size: 3 },
+  'E-83': { name: "JSS", size: 4 },
+  'E-84': { name: "W/IRD", size: 2 },
+  'E-85': { name: "쉬거라", size: 4 },
+  'E-86': { name: "용쑤형", size: 4 },
+  'E-87': { name: "지글 지글 식사팀", size: 4 },
+  'E-88': { name: "추심단", size: 4 },
+  'E-89': { name: "AI고 뭐고 일단 해", size: 4 },
+  'E-90': { name: "GSG26", size: 3 },
+  'E-91': { name: "Market Radar", size: 3 },
+  'E-92': { name: "MAY THE MISO BE WITH YOU", size: 2 },
+  'E-93': { name: "Zero Shot", size: 4 },
+  'E-94': { name: "잘찾조", size: 2 },
+  'E-95': { name: "서울의별", size: 3 },
+  'E-96': { name: "에푸씨", size: 2 },
+  'E-97': { name: "A-01", size: 4 },
+  'E-98': { name: "A-02", size: 3 },
+  'E-99': { name: "A-03", size: 3 },
+  'E-100': { name: "A-04", size: 4 },
+  'E-101': { name: "A-05", size: 3 },
+  'E-102': { name: "A-06", size: 4 },
+  'E-103': { name: "A-07", size: 4 },
+  'E-104': { name: "A-08", size: 4 },
+
+  'G-01': { name: "JDD", size: 3 },
+  'G-02': { name: "KNOW:HOW", size: 1 },
+  'G-03': { name: "TBD", size: 4 },
+  'G-04': { name: "샘탁", size: 2 },
+  'G-05': { name: "써브(Thermal Bridge)", size: 2 },
+  'G-06': { name: "AX퍼펭단", size: 2 },
+  'G-07': { name: "맥민희언즈", size: 4 },
+  'G-08': { name: "화공이지만, 개발은 하고 싶어", size: 3 },
+  'G-09': { name: "CATCH", size: 3 },
+  'G-10': { name: "CorroVision", size: 3 },
+  'G-11': { name: "CTRL+WHY", size: 3 },
+  'G-12': { name: "Wave Maker", size: 1 },
+  'G-13': { name: "2D2D", size: 3 },
+  'G-14': { name: "캠핑왕 랄프", size: 3 },
+  'G-15': { name: "AI구조대", size: 3 },
+  'G-16': { name: "AutoGeo", size: 2 },
+  'G-17': { name: "GS AIX", size: 2 },
+  'G-18': { name: "NDA 검토 자동화", size: 1 },
+  'G-19': { name: "RE:BUILDERS", size: 2 },
+  'G-20': { name: "2038", size: 4 },
+  'G-21': { name: "맥미닝(MakMeaning)", size: 3 },
+  'G-22': { name: "뭐해보카", size: 4 },
+  'G-23': { name: "비전트랙커", size: 2 },
+  'G-24': { name: "일단커밋", size: 3 },
+  'G-25': { name: "초경량", size: 2 },
+  'G-26': { name: "하데스", size: 2 },
+  'G-27': { name: "Josh", size: 1 },
+  'G-28': { name: "Team Synergy", size: 4 },
+  'G-29': { name: "SMP상한가", size: 2 },
+  'G-30': { name: "에방", size: 2 },
+  'G-31': { name: "D-01", size: 2 },
+}
+
+export const LEAGUE_BY_PREFIX = Object.fromEntries(LEAGUES.map((l) => [l.prefix, l]))
+// 리그별 팀 번호 목록 (E-01, E-02, …)
+export const TEAM_IDS_BY_LEAGUE = Object.fromEntries(
+  LEAGUES.map((l) => [
+    l.id,
+    Array.from({ length: l.count }, (_, i) => l.prefix + '-' + String(i + 1).padStart(2, '0')),
+  ]),
+)
+export const ALL_TEAM_IDS = LEAGUES.flatMap((l) => TEAM_IDS_BY_LEAGUE[l.id])
+// 팀 번호에서 리그 찾기 ('E-45' → 필드리그)
+export function leagueOf(teamId) {
+  return LEAGUE_BY_PREFIX[String(teamId || '').charAt(0)] || null
+}
+// 그 팀의 인원 (모르면 null — 시트에 없는 번호)
+export function teamSize(teamId) {
+  return TEAMS[teamId]?.size ?? null
+}
+
+
+// ---------------------------------------------------------------
+// 3. 마스터 메이트 개인별 담당 팀 번호  (TBD — 명단 확정 후 채우기)
 //    참가자는 팀 번호만 입력합니다. "어느 마스터 메이트가 어느 팀을 담당하는지"를
 //    개인 단위로 미리 정해둡니다. (코드 내부 식별자는 coach를 유지)
 //    - name       : 마스터 메이트 이름. 명단이 아직 미확정이라 지금은 빈 값(TBD).
@@ -113,9 +289,10 @@ export const ALLERGY_OPTIONS = ['우유', '밀', '돼지고기', '쇠고기', '�
 // ---------------------------------------------------------------
 // 5. 규모 · 운영 상수
 // ---------------------------------------------------------------
-export const TOTAL_TEAMS = 125 // TBD: 최종 참가팀 수 (팀 번호 01~125)
-export const DELIVERY_TEAM_RANGE_SIZE = 25 // TBD: 관리자 배부 화면의 팀 번호 구간 크기
-export const MAX_MEMBER_COUNT = 10 // 인원수 입력 상한
+export const TOTAL_TEAMS = ALL_TEAM_IDS.length // 현장 참가 팀 수 (필드 104 + 개발 31)
+export const DELIVERY_TEAM_RANGE_SIZE = 25 // 관리자 배부 화면의 팀 번호 구간 크기
+// 시트에 없는 번호로 등록할 때만 쓰이는 상한 (보통은 TEAMS[teamId].size가 상한)
+export const MAX_MEMBER_COUNT = 10
 export const PARTICIPANT_POLL_MS = 5000 // 참가자 화면 폴링 주기
 export const ADMIN_POLL_MS = 3000 // 관리자 화면 폴링 주기 (호출 알림 포함)
 
@@ -208,32 +385,52 @@ export const MENU_BY_ID = Object.fromEntries(ALL_MENUS.map((m) => [m.id, m]))
 export const MEAL_BY_ID = Object.fromEntries(MEALS.map((m) => [m.id, m]))
 
 // 팀 번호로 담당 마스터 메이트를 찾음 (teamNumbers가 비어있으면 null → 미배정)
+// teamNumbers에는 'E-01' 같은 팀 번호가 들어갑니다.
+// 리그가 다르면 같은 숫자라도 다른 팀이라 접두어까지 비교해야 합니다.
 export function getAssignedCoachForTeam(teamId) {
-  const n = parseInt(teamId, 10)
-  if (!Number.isFinite(n)) return null
-  return COACH_ASSIGNMENTS.find((c) => c.teamNumbers.includes(n)) || null
+  const id = String(teamId || '')
+  if (!id) return null
+  return COACH_ASSIGNMENTS.find((c) => c.teamNumbers.includes(id)) || null
 }
 
 // teamNumbers 배열을 "1~25번" / "1~10, 30~32번" 같은 범위 문자열로 압축
 // (연속 구간은 a~b로 묶음, 비어있으면 null → "미배정" 표시용)
-export function formatTeamRange(teamNumbers) {
-  const nums = [...(teamNumbers || [])].filter((n) => Number.isFinite(n)).sort((a, b) => a - b)
-  if (!nums.length) return null
-  const parts = []
-  let start = nums[0]
-  let prev = nums[0]
-  for (let i = 1; i <= nums.length; i++) {
-    if (i < nums.length && nums[i] === prev + 1) {
-      prev = nums[i]
-      continue
+// 팀 번호를 리그별로 묶습니다 — 화면에서 격자·목록을 나눌 때 씁니다.
+//   groupByLeague(['E-01','G-02']) → [{ league: 필드리그, ids: ['E-01'] }, ...]
+export function groupByLeague(teamIds) {
+  return LEAGUES.map((league) => ({
+    league,
+    ids: (teamIds || [])
+      .filter((id) => String(id).charAt(0) === league.prefix)
+      .sort((a, b) => parseInt(String(a).slice(2), 10) - parseInt(String(b).slice(2), 10)),
+  })).filter((g) => g.ids.length > 0)
+}
+
+// 담당 팀 번호를 "E-01~E-25" 처럼 압축합니다.
+// 리그가 섞이면 " · "로 나눠 씁니다 (E-01~E-20 · G-01~G-05).
+export function formatTeamRange(teamIds) {
+  const groups = groupByLeague(teamIds)
+  if (!groups.length) return null
+  const 조각 = groups.map(({ league, ids }) => {
+    const nums = ids.map((id) => parseInt(String(id).slice(2), 10))
+    const parts = []
+    let start = nums[0]
+    let prev = nums[0]
+    const 표기 = (n) => league.prefix + '-' + String(n).padStart(2, '0')
+    for (let i = 1; i <= nums.length; i++) {
+      if (i < nums.length && nums[i] === prev + 1) {
+        prev = nums[i]
+        continue
+      }
+      parts.push(start === prev ? 표기(start) : 표기(start) + '~' + 표기(prev))
+      if (i < nums.length) {
+        start = nums[i]
+        prev = nums[i]
+      }
     }
-    parts.push(start === prev ? `${start}` : `${start}~${prev}`)
-    if (i < nums.length) {
-      start = nums[i]
-      prev = nums[i]
-    }
-  }
-  return `${parts.join(', ')}번`
+    return parts.join(', ')
+  })
+  return 조각.join(' · ')
 }
 
 // ---------------------------------------------------------------

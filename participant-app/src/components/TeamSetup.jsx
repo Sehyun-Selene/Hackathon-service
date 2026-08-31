@@ -2,10 +2,12 @@ import { useState } from 'react'
 import logo52g from '../assets/52g-logo.png'
 import {
   ALLERGY_OPTIONS,
-  TOTAL_TEAMS,
+  LEAGUES,
+  TEAMS,
   MAX_MEMBER_COUNT,
   MEALS,
   MENUS,
+  leagueOf,
   personDiet,
 } from '../config.js'
 import { normalizeTeam } from '../lib/storage.js'
@@ -60,7 +62,14 @@ function DietSummary({ allergies }) {
 // ※ 계열사는 더 이상 참가자가 선택하지 않음 — 마스터 메이트 담당은 팀 번호 기준
 //   개인별 배정(config.COACH_ASSIGNMENTS)으로 대체됨
 export default function TeamSetup({ initial, existingLookup, onComplete, onSaving }) {
-  const [teamNo, setTeamNo] = useState(initial?.teamId ? String(parseInt(initial.teamId, 10)) : '')
+  // 테이블 번호는 리그 접두어까지가 한 팀입니다(E-45 / G-12).
+  // 리그를 먼저 고르면 입력칸 앞에 접두어가 붙고 숫자만 입력하면 됩니다.
+  const [league, setLeague] = useState(
+    () => leagueOf(initial?.teamId)?.id || LEAGUES[0].id,
+  )
+  const [teamNo, setTeamNo] = useState(
+    initial?.teamId ? String(parseInt(String(initial.teamId).slice(2), 10)) : '',
+  )
   const [memberCount, setMemberCount] = useState(initial?.memberCount || 4)
   const [allergyBlocks, setAllergyBlocks] = useState(() => toAllergyBlocks(initial?.allergies))
   const [saving, setSaving] = useState(false)
@@ -72,6 +81,13 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
   const [existingInfo, setExistingInfo] = useState(null)
   // 등록 직전 서버 조회 중 — 버튼을 잠가 두 번 눌리는 것을 막습니다
   const [checking, setChecking] = useState(false)
+
+  const leagueDef = LEAGUES.find((l) => l.id === league) || LEAGUES[0]
+  // 지금 입력한 번호가 가리키는 팀 (시트에 있으면 팀명·인원을 확인시켜 줍니다)
+  const typedId = normalizeTeam(teamNo, leagueDef.prefix)
+  const known = typedId ? TEAMS[typedId] : null
+  // 인원 상한 — 시트에 있는 팀은 그 팀 인원까지만. 초과 주문을 막는 것이 목적입니다.
+  const memberMax = known?.size ?? MAX_MEMBER_COUNT
 
   const allergyFull = allergyBlocks.length >= memberCount
   const addPerson = () => {
@@ -96,8 +112,11 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
 
   // 팀 번호를 입력하면, 이미 등록된 팀이면 정보를 미리 채워줌 (다른 팀원이 먼저 등록한 경우)
   const onTeamNoBlur = async () => {
-    const id = normalizeTeam(teamNo)
+    const id = normalizeTeam(teamNo, leagueDef.prefix)
     setExistingInfo(null)
+    // 시트에 있는 팀이면 인원을 그 값으로 채워둡니다 (사용자가 아직 안 건드린 경우만).
+    // 대부분 그대로 두면 되므로 입력할 일이 없어집니다.
+    if (id && TEAMS[id] && !touched) setMemberCount(TEAMS[id].size)
     if (!id || !existingLookup) return
     const existing = await existingLookup(id)
     if (!existing) return
@@ -112,10 +131,18 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
 
   const submit = async () => {
     setError('')
-    const teamId = normalizeTeam(teamNo)
-    if (!teamId) return setError('팀 번호를 입력해 주세요.')
-    if (parseInt(teamNo, 10) > TOTAL_TEAMS) return setError(`팀 번호는 1~${TOTAL_TEAMS} 사이여야 합니다.`)
+    const teamId = normalizeTeam(teamNo, leagueDef.prefix)
+    if (!teamId) return setError('테이블 번호를 입력해 주세요.')
+    // 자리배치 시트에 없는 번호 — 오타이거나 다른 리그일 가능성이 큽니다
+    if (!TEAMS[teamId]) {
+      return setError(
+        leagueDef.label + '에 ' + teamId + ' 테이블이 없습니다. 리그와 번호를 확인해 주세요.',
+      )
+    }
     if (!memberCount || memberCount < 1) return setError('인원수를 1명 이상 입력해 주세요.')
+    if (memberCount > memberMax) {
+      return setError(teamId + ' 테이블은 ' + memberMax + '명입니다. 인원수를 확인해 주세요.')
+    }
 
     // ── 이미 등록된 팀인지 여기서 직접 확인합니다 ──
     // blur가 채워둔 값(existingInfo)에 의존하면 안 됩니다. 버튼을 누르는 순간
@@ -202,24 +229,61 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
         <p className="setup-solo-note">👤 한 팀당 한 명씩만 팀 등록을 해주세요.</p>
 
         <div className="setup-field">
+          <label className="setup-label">리그</label>
+          {/* 필드리그 E-45, 개발자리그 G-12 — 접두어가 다르면 다른 팀입니다 */}
+          <div className="league-tabs">
+            {LEAGUES.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                className={`league-tab${league === l.id ? ' on' : ''}`}
+                onClick={() => {
+                  setLeague(l.id)
+                  setExistingInfo(null)
+                }}
+              >
+                {l.label}
+                <span className="league-tab-code">{l.prefix}-</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="setup-field">
           <label className="setup-label" htmlFor="team-no">
-            팀 번호
+            테이블 번호
           </label>
-          <input
-            id="team-no"
-            className="setup-input"
-            type="number"
-            inputMode="numeric"
-            min="1"
-            max={TOTAL_TEAMS}
-            placeholder={`1 ~ ${TOTAL_TEAMS}`}
-            value={teamNo}
-            onChange={(e) => {
-              setTeamNo(e.target.value)
-              setExistingInfo(null)
-            }}
-            onBlur={onTeamNoBlur}
-          />
+          {/* 접두어를 칸 안에 고정으로 보여줍니다. 참가자는 테이블에 붙은
+              번호의 숫자 부분만 입력하면 됩니다 */}
+          <div className="team-no-field">
+            <span className="team-no-prefix">{leagueDef.prefix}-</span>
+            <input
+              id="team-no"
+              className="setup-input team-no-input"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max={leagueDef.count}
+              placeholder={`1 ~ ${leagueDef.count}`}
+              value={teamNo}
+              onChange={(e) => {
+                setTeamNo(e.target.value)
+                setExistingInfo(null)
+              }}
+              onBlur={onTeamNoBlur}
+            />
+          </div>
+          {/* 번호를 맞게 넣었는지 팀명으로 확인시켜 줍니다 */}
+          {typedId && known && (
+            <p className="team-no-found">
+              ✅ {typedId} · <b>{known.name}</b> ({known.size}명)
+            </p>
+          )}
+          {typedId && !known && (
+            <p className="setup-exists">
+              ⚠️ {leagueDef.label}에 {typedId} 테이블이 없습니다. 리그와 번호를 확인해 주세요.
+            </p>
+          )}
           {/* 오타로 다른 팀 번호를 넣으면 그 팀 정보를 덮어쓰게 되므로 알려줍니다 */}
           {existingInfo && (
             <p className="setup-exists">
@@ -244,11 +308,14 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
               −
             </button>
             <span className="stepper-num">{memberCount}명</span>
+            {known && memberCount >= memberMax && (
+              <span className="stepper-cap">최대 {memberMax}명</span>
+            )}
             <button
               className="qty-btn"
               onClick={() => {
                 setTouched(true)
-                setMemberCount((n) => Math.min(MAX_MEMBER_COUNT, n + 1))
+                setMemberCount((n) => Math.min(memberMax, n + 1))
               }}
               aria-label="인원수 늘리기"
             >

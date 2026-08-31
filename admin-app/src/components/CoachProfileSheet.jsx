@@ -30,7 +30,7 @@ export default function CoachProfileSheet({ scan, coach, onClose, onChangeName }
     let doneByMe = 0 // 내가 완료 처리한 누적
 
     Object.entries(scan.calls || {}).forEach(([teamId, data]) => {
-      const mine = myTeams.includes(parseInt(teamId, 10))
+      const mine = myTeams.includes(teamId)
       ;(data.calls || []).forEach((c) => {
         if (c.status === 'waiting' && mine) waitingMine += 1
         if (c.status === 'in_progress' && isHandledByMe(c, coach)) inProgressByMe += 1

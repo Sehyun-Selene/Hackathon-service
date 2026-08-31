@@ -4,7 +4,7 @@ import {
   MENUS,
   MENU_BY_ID,
   MEAL_BY_ID,
-  TOTAL_TEAMS,
+  LEAGUES,
   DELIVERY_TEAM_RANGE_SIZE,
   getAssignedCoachForTeam,
   personDiet,
@@ -165,30 +165,45 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       .sort((a, b) => a.teamId.localeCompare(b.teamId, undefined, { numeric: true }))
   }, [scan.orders, scan.teams, mealFilter])
 
-  const queryNum = parseInt(teamQuery, 10)
-  const hasQuery = teamQuery.trim() !== '' && Number.isFinite(queryNum)
+  // 검색은 'E-45' / '45' / 'e45' 모두 받습니다 (숫자만 넣으면 두 리그 모두 매칭)
+  const query = teamQuery.trim().toUpperCase()
+  const hasQuery = query !== ''
+  const matchesQuery = (teamId) => {
+    const m = query.match(/^([EG])?[^0-9]*([0-9]{1,3})$/)
+    if (!m) return false
+    const num = String(parseInt(m[2], 10))
+    if (String(teamId.slice(2)).replace(/^0+/, '') !== num) return false
+    return m[1] ? teamId.charAt(0) === m[1] : true
+  }
   const isDelivered = (teamId) => singleMeal && !!scan.delivered?.[teamId]?.[mealFilter]
 
-  const rangeOptions = Array.from(
-    { length: Math.ceil(TOTAL_TEAMS / DELIVERY_TEAM_RANGE_SIZE) },
-    (_, index) => {
+  // 배부 구간은 리그별로 나눕니다. 필드리그 104팀은 25씩 끊고, 개발자리그
+  // 31팀은 한 구간이면 충분합니다. 두 리그가 한 구간에 섞이면 배부 동선이
+  // 엉킵니다(자리가 리그별로 떨어져 있음).
+  const rangeOptions = LEAGUES.flatMap((league) =>
+    Array.from({ length: Math.ceil(league.count / DELIVERY_TEAM_RANGE_SIZE) }, (_, index) => {
       const start = index * DELIVERY_TEAM_RANGE_SIZE + 1
-      const end = Math.min(start + DELIVERY_TEAM_RANGE_SIZE - 1, TOTAL_TEAMS)
-      return { id: `${start}-${end}`, start, end, label: `${start}~${end}` }
-    },
+      const end = Math.min(start + DELIVERY_TEAM_RANGE_SIZE - 1, league.count)
+      return {
+        id: `${league.prefix}-${start}-${end}`,
+        prefix: league.prefix,
+        start,
+        end,
+        label: `${league.prefix}-${start}~${end}`,
+      }
+    }),
   )
   const selectedRange = rangeOptions.find((range) => range.id === teamRange)
   const rangedRows = selectedRange
     ? teamRows.filter((row) => {
-        const teamNumber = parseInt(row.teamId, 10)
-        return teamNumber >= selectedRange.start && teamNumber <= selectedRange.end
+        if (row.teamId.charAt(0) !== selectedRange.prefix) return false
+        const n = parseInt(row.teamId.slice(2), 10)
+        return n >= selectedRange.start && n <= selectedRange.end
       })
     : teamRows
   const pendingRows = singleMeal ? rangedRows.filter((row) => !isDelivered(row.teamId)) : rangedRows
   const completedRows = singleMeal ? rangedRows.filter((row) => isDelivered(row.teamId)) : []
-  const visibleRows = hasQuery
-    ? teamRows.filter((row) => parseInt(row.teamId, 10) === queryNum)
-    : pendingRows
+  const visibleRows = hasQuery ? teamRows.filter((row) => matchesQuery(row.teamId)) : pendingRows
   // 검색 중에는 검색 결과를, 아니면 선택한 배부 탭의 목록을 보여줍니다
   const shownRows = hasQuery
     ? visibleRows
@@ -400,7 +415,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
               className="table-search"
               type="search"
               inputMode="numeric"
-              placeholder="팀 번호로 검색 (예: 47)"
+              placeholder="테이블 번호로 검색 (예: E-45)"
               value={teamQuery}
               onChange={(e) => setTeamQuery(e.target.value)}
               aria-label="팀 번호 검색"
@@ -653,7 +668,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
             <h3>
               {'팀별 주문'}
               {!singleMeal && ` (${visibleRows.length}팀)`}
-              {hasQuery && ` — "${queryNum}번" 검색 중`}
+              {hasQuery && ` — "${teamQuery.trim()}" 검색 중`}
             </h3>
           </div>
         )}
@@ -667,7 +682,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
         {shownRows.length === 0 ? (
           <p className="empty-text">
             {hasQuery
-              ? `팀 ${String(queryNum).padStart(2, '0')}의 주문 내역이 없습니다.`
+              ? `"${teamQuery.trim()}"에 해당하는 주문 내역이 없습니다.`
               : !singleMeal
                 ? '아직 주문이 없습니다.'
                 : deliveryTab === 'done'
