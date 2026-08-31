@@ -401,9 +401,7 @@ export function crewFor(coach) {
   return crewById(resolveCrewId(coach))
 }
 
-// 크루는 서로를 닉네임으로 부르므로 이름 옆에 함께 씁니다 — 이름만 적으면
-// 누구인지 못 알아보는 경우가 있습니다. 닉네임이 비어 있으면 이름만 나옵니다.
-// (겹치는 이름을 가리는 것도 이 표기가 겸합니다: 이상윤 (Yunie) / 이상윤 (Yun))
+// 겹치는 이름 목록 — 이름만으로 사람을 특정할 수 없는 경우를 가려냅니다
 const DUPLICATE_CREW_NAMES = new Set(
   ADMIN_CREW.map((c) => c.name).filter((name, i, all) => name && all.indexOf(name) !== i),
 )
@@ -411,9 +409,18 @@ const DUPLICATE_CREW_NAMES = new Set(
 export function crewNameIsUnique(name) {
   return !!name && !DUPLICATE_CREW_NAMES.has(name)
 }
+// 크루는 서로를 닉네임으로 부르므로 이름 옆에 함께 씁니다 — 이름만 적으면
+// 누구인지 못 알아보는 경우가 있습니다.
+// (겹치는 이름을 가리는 것도 이 표기가 겸합니다: 이상윤 (Yunie) / 이상윤 (Yun))
+//
+// 닉네임이 없는 분은 소속을 대신 씁니다. 지금은 캐롯글로벌 12분이 그렇습니다
+// — 시트의 닉네임 칸이 회사 이메일이라 비워 뒀습니다. 이름만 적히면 누구인지
+// 짚을 단서가 없습니다.
+const COMPANY_SHORT = { 캐롯글로벌: '캐롯' }
 export function crewLabel(member) {
   if (!member) return ""
-  return member.nickname ? member.name + " (" + member.nickname + ")" : member.name
+  const tag = member.nickname || COMPANY_SHORT[member.company] || member.company
+  return tag ? member.name + " (" + tag + ")" : member.name
 }
 
 // 팀 번호로 담당자를 찾아 표기까지 만들어 줍니다 (화면 표시 전용).
