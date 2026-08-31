@@ -12,7 +12,7 @@ import {
   crewFor,
   crewLabel,
   crewRoleLabel,
-  crewNameIsUnique,
+  resolveCrewId,
 } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { notifyMissing, nudgeParticipants } from '../lib/storage.js'
@@ -60,8 +60,7 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
       // 명단 전원을 깔고 입장 여부를 표시 (미입장 파악이 목적)
       // 입장 여부는 명단 id로 봅니다. 이름이 같은 두 분이 있어, 이름으로만
       // 보면 한 분이 들어와도 두 분 다 들어온 것처럼 보입니다.
-      const enteredIds = new Set(scan.coaches.map((c) => c.crewId).filter(Boolean))
-      const enteredNames = new Set(scan.coaches.map((c) => c.name))
+      const enteredIds = new Set(scan.coaches.map(resolveCrewId).filter(Boolean))
       const roster = COACH_ASSIGNMENTS.filter((c) => c.name)
       // 명단이 아직 비어 있으면 입장한 사람만이라도 보여줍니다
       const cells = roster.length
@@ -72,11 +71,7 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
               note: c.teamNumbers.length
                 ? `팀 ${formatTeamRange(c.teamNumbers)}`
                 : crewRoleLabel(c) || '담당 미배정',
-              // 이름이 겹치지 않는 사람은 예전 기록(crewId 없는 입장)으로도
-              // 판단할 수 있습니다. 겹치는 이름은 id로만 — 한 분이 들어왔을 때
-              // 두 분 다 들어온 것처럼 보이면 안 됩니다.
-              done:
-                enteredIds.has(c.id) || (crewNameIsUnique(c.name) && enteredNames.has(c.name)),
+              done: enteredIds.has(c.id),
               sortKey: c.teamNumbers.length
                 ? Math.min(...c.teamNumbers.map(teamSortKey))
                 : Number.MAX_SAFE_INTEGER,

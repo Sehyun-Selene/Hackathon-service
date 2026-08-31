@@ -6,6 +6,7 @@ import {
   groupByLeague,
   getAssignedCoachForTeam,
   crewFor,
+  assignedCoachLabel,
 } from '../config.js'
 import { now, fmtCountdown, fmtClock } from '../lib/time.js'
 import { isHandledByMe } from '../lib/storage.js'
@@ -22,10 +23,18 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
   }, [])
 
   const t = now().getTime()
-  const assignedNameOf = (teamId) => getAssignedCoachForTeam(teamId)?.name || '미배정'
+  // 화면에는 닉네임까지, 짝 비교에는 이름만 씁니다. 표기를 그대로 비교하면
+  // 닉네임이 없는 분(캐롯글로벌)과 있는 분의 형식이 달라 어긋납니다.
+  const assignedNameOf = (teamId) => getAssignedCoachForTeam(teamId)?.name || ''
+  const assignedLabelOf = (teamId) => assignedCoachLabel(teamId) || '미배정'
 
   const all = Object.entries(scan.calls).flatMap(([teamId, data]) =>
-    (data.calls || []).map((c) => ({ ...c, team: teamId, assignedName: assignedNameOf(teamId) })),
+    (data.calls || []).map((c) => ({
+      ...c,
+      team: teamId,
+      assignedName: assignedNameOf(teamId),
+      assignedLabel: assignedLabelOf(teamId),
+    })),
   )
   let active = all.filter((c) => c.status !== 'done')
   // 내 담당 호출을 먼저 정렬 → 그다음 오래된 순
@@ -83,7 +92,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                 <div key={c.id} className={`call-card ${c.status}${mine ? ' mine-company' : ''}`}>
                   <div className="call-card-main">
                     <span className="call-table">팀 {c.team}</span>
-                    <span className={`call-company${mine ? ' mine' : ''}`}>담당 {c.assignedName}</span>
+                    <span className={`call-company${mine ? ' mine' : ''}`}>담당 {c.assignedLabel}</span>
                     <span className="call-elapsed">⏱ {fmtCountdown(t - c.createdAt)} 경과</span>
                   </div>
                   <div className="call-card-actions">
@@ -143,7 +152,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
             <div key={c.id} className="call-card done">
               <div className="call-card-main">
                 <span className="call-table">팀 {c.team}</span>
-                <span className="call-company">담당 {c.assignedName}</span>
+                <span className="call-company">담당 {c.assignedLabel}</span>
                 <span className="call-elapsed">
                   {fmtClock(new Date(c.createdAt))} 호출 → {c.doneAt ? fmtClock(new Date(c.doneAt)) : '-'} 완료
                 </span>

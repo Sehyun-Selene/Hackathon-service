@@ -19,7 +19,7 @@
 //    coach-roster            등록된 마스터 메이트 목록 [{id, name, company}]
 //    soldout                 품절 메뉴 map { menuId: true } (관리자만 씀)
 // =====================================================================
-import { API_BASE_URL } from '../config.js'
+import { API_BASE_URL, crewNameIsUnique } from '../config.js'
 
 const LOCAL_PREFIX = 'hackathon-torder:'
 const REQUEST_TIMEOUT_MS = 8000
@@ -238,8 +238,11 @@ export async function flagSet(key, field, value) {
 // 이름이 비어 있는 옛 기록만 기기 id로 보완합니다.
 export function isHandledByMe(call, coach) {
   if (!call || !coach) return false
-  if (call.handledBy && coach.name) return call.handledBy === coach.name
-  return !!call.handledById && call.handledById === coach.id
+  // 같은 기기면 확실합니다. 이름 비교는 한 사람이 폰·노트북 두 대로 열었을
+  // 때를 위한 것인데, 이름이 겹치는 분(이상윤 두 분)에게는 쓸 수 없습니다 —
+  // 남이 처리한 호출까지 내 것으로 세어집니다.
+  if (call.handledById && call.handledById === coach.id) return true
+  return !!call.handledBy && call.handledBy === coach.name && crewNameIsUnique(coach.name)
 }
 
 // 미등록·미주문 팀을 슬랙으로 재촉합니다.

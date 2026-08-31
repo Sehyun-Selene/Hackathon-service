@@ -7,6 +7,7 @@ import {
   MEALS,
   MENU_BY_ID,
   crewLabel,
+  crewFor,
 } from './config.js'
 import {
   storageGet,
@@ -472,7 +473,7 @@ export default function App() {
             aria-haspopup="dialog"
             aria-label="내 프로필 보기"
           >
-            🧑‍🏫 {coach.name}
+            🧑‍🏫 {crewLabel(crewFor(coach)) || coach.name}
           </button>
         </div>
         <nav className={`side-nav${menuOpen ? ' open' : ''}`}>
@@ -528,7 +529,7 @@ export default function App() {
             aria-haspopup="dialog"
             aria-label="내 프로필 보기"
           >
-            🧑‍🏫 {coach.name}
+            🧑‍🏫 {crewLabel(crewFor(coach)) || coach.name}
             <span className="side-coach-chevron" aria-hidden="true">›</span>
           </button>
           <img className="side-foot-logo" src={logo52g} alt="52g" />

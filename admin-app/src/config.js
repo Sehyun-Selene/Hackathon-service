@@ -388,13 +388,22 @@ export const ADMIN_CREW = [...COACH_ASSIGNMENTS, ...FOOD_CREW]
 export function crewById(crewId) {
   return ADMIN_CREW.find((c) => c.id === crewId) || null
 }
+// 입장 기록에서 명단 id를 되찾습니다. crewId를 저장하기 전에 들어온 기록에도
+// 쓰려고 이름으로 한 번 더 찾아보되, 겹치는 이름은 포기합니다 — 둘 중
+// 누구인지 모르는 채로 한 사람을 고르면 남의 담당 팀이 붙습니다.
+export function resolveCrewId(coach) {
+  if (!coach) return ""
+  if (coach.crewId) return coach.crewId
+  if (!crewNameIsUnique(coach.name)) return ""
+  return ADMIN_CREW.find((c) => c.name === coach.name)?.id || ""
+}
 export function crewFor(coach) {
-  if (!coach) return null
-  return crewById(coach.crewId) || ADMIN_CREW.find((c) => c.name && c.name === coach.name) || null
+  return crewById(resolveCrewId(coach))
 }
 
-// 이름이 겹치는 사람만 닉네임을 함께 보여줍니다. 모두에게 붙이면 길기만 하고,
-// 정작 가려야 할 두 사람은 여전히 똑같아 보입니다.
+// 크루는 서로를 닉네임으로 부르므로 이름 옆에 함께 씁니다 — 이름만 적으면
+// 누구인지 못 알아보는 경우가 있습니다. 닉네임이 비어 있으면 이름만 나옵니다.
+// (겹치는 이름을 가리는 것도 이 표기가 겸합니다: 이상윤 (Yunie) / 이상윤 (Yun))
 const DUPLICATE_CREW_NAMES = new Set(
   ADMIN_CREW.map((c) => c.name).filter((name, i, all) => name && all.indexOf(name) !== i),
 )
@@ -404,9 +413,13 @@ export function crewNameIsUnique(name) {
 }
 export function crewLabel(member) {
   if (!member) return ""
-  return DUPLICATE_CREW_NAMES.has(member.name) && member.nickname
-    ? member.name + " (" + member.nickname + ")"
-    : member.name
+  return member.nickname ? member.name + " (" + member.nickname + ")" : member.name
+}
+
+// 팀 번호로 담당자를 찾아 표기까지 만들어 줍니다 (화면 표시 전용).
+// 짝을 이루는 비교는 이름이 아니라 crewId로 하세요 — 이름은 겹칩니다.
+export function assignedCoachLabel(teamId) {
+  return crewLabel(getAssignedCoachForTeam(teamId))
 }
 
 // 담당 구간이 없는 게 정상인 사람들 — 비워두면 배정을 빠뜨린 것처럼 보입니다

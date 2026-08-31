@@ -6,6 +6,7 @@ import {
   crewFor,
   crewLabel,
   crewRoleLabel,
+  resolveCrewId,
 } from '../config.js'
 
 // 마스터 메이트 현황 (PRD 요청 #5): 위치 지도 대신, 마스터 메이트 개인별 리스트를 한눈에.
@@ -50,7 +51,7 @@ export default function CoachStatusTab({ scan, coach }) {
     // 합쳐지지 않게 합니다. 명단에 없는 이름은 이름으로 묶습니다.
     const byName = new Map()
     scan.coaches.forEach((c) => {
-      const key = c.crewId || 'name:' + c.name
+      const key = resolveCrewId(c) || 'name:' + c.name
       const entry = byName.get(key) || { name: c.name, crewId: c.crewId, ids: [] }
       entry.ids.push(c.id)
       byName.set(key, entry)
