@@ -121,8 +121,11 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
 
   const filteredMealIds = mealFilter === 'all' ? MEALS.map((m) => m.id) : [mealFilter]
   const singleMeal = mealFilter !== 'all' // 배부 체크는 끼니 단위로만 의미 있음
-  // 지금 주문받는 중인 식사들 (저녁·야식·아침은 같은 구간을 공유해 동시에 열림)
-  const soldoutMeals = getOpenMeals(now().getTime())
+  // 품절 관리는 시간과 상관없이 모든 메뉴를 보여줍니다. 운영진만 쓰는 화면이고,
+  // 주문 구간이 열리기 전에 미리 품절을 걸어두는 편이 실제 진행에 맞습니다
+  // (업체 사정은 주문 시작 전에 먼저 전달됩니다).
+  // 어느 식사가 지금 열려 있는지는 표시만 해줍니다.
+  const openMealIds = new Set(getOpenMeals(now().getTime()).map((m) => m.id))
 
   // total = 총 주문 수량, remaining = 아직 배부 안 된 수량 (배부 완료 팀은 차감)
   // 배부 진행에 따라 remaining이 실시간으로 줄어듦 → 개수 검증용
@@ -602,37 +605,35 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
             <div className="sheet-head">
               <h3 id="soldout-sheet-title">
                 품절 관리
-                {soldoutMeals.length > 0 && ` · ${soldoutMeals.map((m) => m.label).join('·')}`}
               </h3>
               <button className="sheet-close" onClick={closeUtilityPanels}>닫기</button>
             </div>
             <p className="sheet-description">
-              {soldoutMeals.length
-                ? '메뉴를 누르면 참가자 화면에서 즉시 주문할 수 없게 됩니다.'
-                : '현재 주문 가능한 식사가 없습니다.'}
+              메뉴를 누르면 참가자 화면에서 즉시 주문할 수 없게 됩니다. 주문 시간 전에 미리
+              걸어둘 수 있습니다.
             </p>
             <div className="sheet-body">
-              {soldoutMeals.length ? (
-                soldoutMeals.map((meal) => (
-                  <div key={meal.id} className="soldout-row soldout-row-current">
-                    <b>{meal.label}</b>
-                    <div className="soldout-chips">
-                      {(MENUS[meal.id] || []).map((m) => (
-                        <button
-                          key={m.id}
-                          className={`chip${scan.soldout[m.id] ? ' soldout-on' : ''}`}
-                          onClick={() => onToggleSoldout(m.id)}
-                        >
-                          {scan.soldout[m.id] ? '🚫 ' : ''}
-                          {m.baseName || m.name}
-                        </button>
-                      ))}
-                    </div>
+              {MEALS.map((meal) => (
+                <div key={meal.id} className="soldout-row">
+                  <b>
+                    {meal.label}
+                    {/* 지금 열려 있는 식사는 누르는 즉시 참가자 화면에 반영됩니다 */}
+                    {openMealIds.has(meal.id) && <span className="meal-tag">주문 중</span>}
+                  </b>
+                  <div className="soldout-chips">
+                    {(MENUS[meal.id] || []).map((m) => (
+                      <button
+                        key={m.id}
+                        className={`chip${scan.soldout[m.id] ? ' soldout-on' : ''}`}
+                        onClick={() => onToggleSoldout(m.id)}
+                      >
+                        {scan.soldout[m.id] ? '🚫 ' : ''}
+                        {m.baseName || m.name}
+                      </button>
+                    ))}
                   </div>
-                ))
-              ) : (
-                <p className="empty-text">주문 가능 시간이 되면 해당 식사의 메뉴가 표시됩니다.</p>
-              )}
+                </div>
+              ))}
             </div>
           </section>
         </div>
