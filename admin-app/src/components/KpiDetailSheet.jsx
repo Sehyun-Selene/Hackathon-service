@@ -160,11 +160,13 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
     setBusy(null)
   }
 
+  // 슬랙 알림은 미등록 팀에만 씁니다 — 주문 독촉은 마스터 메이트가 맡은
+  // 일이 아니라 버튼 자체를 두지 않았습니다.
   const sendNudge = async () => {
     setBusy('slack')
     try {
       const r = await notifyMissing({
-        kind: kind === 'orders' ? 'orders' : 'teams',
+        kind: 'teams',
         leagues: LEAGUES.map((l) => ({ prefix: l.prefix, count: l.count })),
         mealId: mealFilter,
         label: MEAL_BY_ID[mealFilter]?.label || '',
@@ -247,10 +249,13 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
                   빈 공간만 늘어납니다 */}
               {data.mode === 'team-grid' && data.missing.length > 0 && canNudge && (
                 <div className="nudge-actions">
-                  {/* 주문 재촉만 참가자에게 띄웁니다. 등록은 아직 앱에 들어온
-                      적이 없는 팀이라 띄울 화면 자체가 없습니다.
+                  {/* 주문은 참가자에게 직접 띄웁니다. 주문을 재촉하는 건
+                      마스터 메이트가 맡은 일이 아니라 슬랙으로 알리지 않습니다.
+                      등록은 반대입니다 — 아직 앱에 들어온 적이 없는 팀이라
+                      띄울 화면 자체가 없어, 테이블로 찾아갈 수 있는
+                      마스터 메이트에게 슬랙으로 알립니다.
                       이모지를 붙이면 버튼 글자가 줄바꿈돼 빼두었습니다 */}
-                  {kind === 'orders' && (
+                  {kind === 'orders' ? (
                     <button
                       className="btn-primary sm"
                       onClick={sendPopup}
@@ -262,18 +267,19 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
                           ? leftSec('popup') + '초 후 가능'
                           : '주문 페이지에 띄우기'}
                     </button>
+                  ) : (
+                    <button
+                      className="btn-primary sm"
+                      onClick={sendNudge}
+                      disabled={busy === 'slack' || leftSec('slack') > 0}
+                    >
+                      {busy === 'slack'
+                        ? '보내는 중…'
+                        : leftSec('slack') > 0
+                          ? leftSec('slack') + '초 후 가능'
+                          : '슬랙으로 알리기'}
+                    </button>
                   )}
-                  <button
-                    className="btn-outline sm"
-                    onClick={sendNudge}
-                    disabled={busy === 'slack' || leftSec('slack') > 0}
-                  >
-                    {busy === 'slack'
-                      ? '보내는 중…'
-                      : leftSec('slack') > 0
-                        ? leftSec('slack') + '초 후 가능'
-                        : '슬랙으로 알리기'}
-                  </button>
                 </div>
               )}
             </div>
