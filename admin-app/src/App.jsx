@@ -415,28 +415,6 @@ export default function App() {
         .length
     : 0
 
-  // 상단 KPI 스트립용 요약값 — 항상 의미 있는 4개
-  const kpis = scan
-    ? [
-        {
-          kind: 'waiting',
-          label: '대기 중 호출',
-          short: '대기 호출',
-          value: waitingCount,
-          tone: waitingCount > 0 ? 'alert' : undefined,
-        },
-        { kind: 'orders', label: '주문한 팀', short: '주문 팀', value: Object.keys(scan.orders).length },
-        { kind: 'teams', label: '등록한 팀', short: '등록 팀', value: Object.keys(scan.teams).length },
-        {
-          kind: 'coaches',
-          label: '입장한 마스터 메이트',
-          short: '메이트',
-          // 기기 단위로 기록되므로 한 사람이 폰·노트북에서 열면 두 개가 됩니다.
-          // 세는 단위는 사람이라 이름으로 묶습니다.
-          value: new Set(scan.coaches.map((c) => c.name)).size,
-        },
-      ]
-    : []
 
   const activeTab = TAB_DEFS.find((t) => t.id === tab)
   const selectTab = (id) => {
@@ -534,28 +512,6 @@ export default function App() {
       </aside>
 
       <div className="main">
-        {/* 고정 지표를 맨 위로 — 목록에 따라 바뀌지 않는 내용이라
-            화면 제목·조작부보다 앞에 두는 편이 눈이 덜 움직입니다 */}
-        {kpis.length > 0 && (
-          <div className="kpi-strip">
-            {kpis.map((k) => (
-              <button
-                key={k.label}
-                className={`kpi-card${k.tone ? ` ${k.tone}` : ''}`}
-                onClick={() => setKpiDetail(k.kind)}
-                aria-haspopup="dialog"
-                aria-label={`${k.label} 목록 보기`}
-              >
-                <div className="kpi-label">
-                  <span className="kpi-label-full">{k.label}</span>
-                  <span className="kpi-label-short">{k.short || k.label}</span>
-                </div>
-                <div className="kpi-value">{k.value}</div>
-              </button>
-            ))}
-          </div>
-        )}
-
         <header className="topbar">
           <div className="topbar-title">
             <span className="topbar-icon" aria-hidden="true">{activeTab?.icon}</span>
@@ -632,6 +588,10 @@ export default function App() {
         <CoachProfileSheet
           scan={scan}
           coach={coach}
+          onOpenDetail={(kind) => {
+            setShowProfile(false)
+            setKpiDetail(kind)
+          }}
           onClose={() => setShowProfile(false)}
           onChangeName={() => {
             // 기기를 다른 사람이 쓰게 될 때: 저장된 이름을 지우고 입장 화면으로

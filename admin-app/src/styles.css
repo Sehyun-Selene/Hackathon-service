@@ -118,21 +118,8 @@ body {
 @media (max-width: 620px) { .narrow-hide { display: none; } }
 
 /* KPI 스트립 (시그니처) */
-.kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
 /* 본문 카드(흰색)와 구분되는 한 덩어리로 — 네 칸이 같은 그룹임이 보이고
    아래 내용 영역과 경계가 생깁니다 */
-.kpi-card {
-  background: #dcd5f7; border: 1px solid #c7bdf2; border-radius: 10px;
-  padding: 15px 18px; box-shadow: var(--shadow);
-}
-.kpi-label { font-size: 12.5px; color: #514b78; font-weight: 600; }
-.kpi-value {
-  color: var(--text);
-  font-size: 28px; font-weight: 800; margin-top: 5px; line-height: 1.1;
-  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
-}
-.kpi-card.alert { border-color: #f4b4b7; background: #fde7e8; }
-.kpi-card.alert .kpi-value { color: var(--red); }
 
 .loading-card {
   background: var(--card); border: 1px solid var(--line); border-radius: 10px;
@@ -779,22 +766,12 @@ body {
 
 /* KPI 카드 상세 — 숫자만 보고 "그래서 어느 팀?"을 찾아 헤매지 않도록
    카드를 눌러 해당 목록을 그대로 펼침 */
-.kpi-card { text-align: left; font: inherit; cursor: pointer; width: 100%; }
-.kpi-card:hover { border-color: #ab9dea; }
-.kpi-card.alert:hover { border-color: #ec9195; }
 /* 폰: 2×2로 두면 KPI만 180px 가까이 차지해 각 탭 본문이 첫 화면에서 밀려남.
    숫자는 대시보드의 핵심이라 빼지 않고, 한 줄로 눌러 담습니다 */
 @media (max-width: 720px) {
-  .kpi-strip { grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
-  .kpi-card { padding: 8px 6px; border-radius: 9px; text-align: center; }
-  .kpi-label { font-size: 10.5px; letter-spacing: -0.03em; white-space: nowrap; }
-  .kpi-value { font-size: 19px; margin-top: 1px; }
 }
 /* 좁은 칸에서는 짧은 라벨로 바꿔 한 줄에 담습니다 */
-.kpi-label-short { display: none; }
 @media (max-width: 720px) {
-  .kpi-label-full { display: none; }
-  .kpi-label-short { display: inline; }
 }
 .kpi-detail-list { display: flex; flex-direction: column; gap: 6px; }
 .kpi-detail-row { border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; }
@@ -897,11 +874,6 @@ html.dark .gate-input { background: #171a20; color: var(--text); border-color: v
 html.dark .gate-input:focus { background: #1c1f26; }
 
 /* 상단 지표 */
-html.dark .kpi-card { background: #2a2450; border-color: #3d3572; }
-html.dark .kpi-card:hover { border-color: #564a9b; }
-html.dark .kpi-label { color: #b4abee; }
-html.dark .kpi-card.alert { background: #3a1f22; border-color: #6b3034; }
-html.dark .kpi-card.alert:hover { border-color: #8d3d43; }
 
 /* 버튼 */
 html.dark .btn-primary:disabled { background: #3a3660; }
@@ -997,3 +969,6 @@ html.dark .btn-outline:hover { background: var(--violet-soft); }
   font-size: 12.5px; font-weight: 700; color: var(--sub); margin-bottom: 6px;
 }
 .league-block-head span { color: var(--primary-dark); font-weight: 800; }
+/* 총관리자 프로필의 진행 현황 — 눌러서 상세 목록을 엽니다 */
+.profile-stat-btn { cursor: pointer; font: inherit; text-align: center; width: 100%; }
+.profile-stat-btn:hover { border-color: var(--primary); }

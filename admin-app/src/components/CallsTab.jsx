@@ -42,13 +42,12 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
 
   const shown = onlyMine ? active.filter((c) => c.assignedName === coach.name) : active
 
-  // 호출 횟수는 기본적으로 내 담당 팀만.
-  //   - config의 callManager: true (호출 총관리자) → 전체 팀
-  //   - 담당 팀이 배정되지 않은 경우 → 전체 팀 (배정 전이거나 지원 인력이라
-  //     남의 담당 팀도 봐야 하므로)
+  // 호출 횟수는 내 담당 팀만 봅니다. 남의 담당 팀 잔여 횟수는 내가 판단할
+  // 일이 아니고, 메이트에게 다른 팀 정보가 필요한 곳은 '진행 중인 호출'뿐입니다.
+  // 전체를 보는 건 총관리자(callManager)뿐입니다.
   const myAssignment = COACH_ASSIGNMENTS.find((a) => a.name === coach.name)
   const myTeams = myAssignment?.teamNumbers || []
-  const showAllTeams = !!myAssignment?.callManager || myTeams.length === 0
+  const showAllTeams = !!myAssignment?.callManager
   // 팀 번호는 'E-45' 같은 문자열입니다. 리그가 다르면 같은 숫자라도 다른 팀이라
   // 격자도 리그별로 나눠 그립니다.
   const countGroups = groupByLeague(showAllTeams ? ALL_TEAM_IDS : myTeams)
@@ -153,13 +152,18 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
 
       {/* 팀별 호출 횟수 — 내가 담당하는 팀만. 남의 담당 팀 잔여 횟수는
           내가 판단할 일이 아니고, 125칸을 훑으면 내 팀을 못 찾음.
-          담당이 배정되지 않았으면 전체를 보여줍니다(지원용). */}
+          전체를 보는 건 총관리자뿐입니다. */}
       <details className="panel done-panel">
         <summary>
           {showAllTeams ? '전체 팀 호출 횟수' : '내 담당 팀 호출 횟수'} (제한{' '}
           {CALL_LIMIT_PER_TEAM}회)
         </summary>
-        {countGroups.map(({ league, ids }) => (
+        {countGroups.length === 0 ? (
+          <p className="empty-text">
+            담당 팀이 배정되지 않았습니다. 진행 중인 호출은 위에서 모두 볼 수 있습니다.
+          </p>
+        ) : (
+          countGroups.map(({ league, ids }) => (
           <div key={league.id} className="league-block">
             {countGroups.length > 1 && (
               <div className="league-block-head">
@@ -181,8 +185,9 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                 )
               })}
             </div>
-          </div>
-        ))}
+            </div>
+          ))
+        )}
       </details>
     </div>
   )

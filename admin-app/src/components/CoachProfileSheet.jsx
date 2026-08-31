@@ -13,7 +13,7 @@ import { isHandledByMe } from '../lib/storage.js'
 //      않아 호출이 나에게 연결되지 않습니다 (오타로 조용히 누락되기 쉬움).
 //   ② slackUserId가 비어 있으면 호출 시 슬랙 개인 알림이 오지 않습니다.
 //      관리자 페이지를 계속 보고 있지 않으면 놓치게 되므로 미리 알려줍니다.
-export default function CoachProfileSheet({ scan, coach, onClose, onChangeName }) {
+export default function CoachProfileSheet({ scan, coach, onOpenDetail, onClose, onChangeName }) {
   const drag = useSheetDrag(onClose)
   const dialogRef = useDialogFocus(true, onClose)
 
@@ -23,6 +23,20 @@ export default function CoachProfileSheet({ scan, coach, onClose, onChangeName }
     [coach.name],
   )
   const myTeams = assignment?.teamNumbers || []
+  // 총관리자는 담당 구간이 없고 슬랙 개인 알림도 쓰지 않습니다.
+  // 대신 "다들 등록했나 · 주문했나 · 들어왔나"를 확인하는 자리로 씁니다.
+  const isManager = !!assignment?.callManager
+  const overview = [
+    { kind: 'teams', label: '등록한 팀', value: Object.keys(scan.teams || {}).length },
+    { kind: 'orders', label: '주문한 팀', value: Object.keys(scan.orders || {}).length },
+    {
+      kind: 'coaches',
+      label: '입장한 메이트',
+      // 기기 단위로 기록되므로 한 사람이 폰·노트북에서 열면 두 개가 됩니다.
+      // 세는 단위는 사람이라 이름으로 묶습니다.
+      value: new Set((scan.coaches || []).map((c) => c.name)).size,
+    },
+  ]
 
   const stats = useMemo(() => {
     let waitingMine = 0 // 내 담당 팀의 대기 호출
@@ -61,6 +75,27 @@ export default function CoachProfileSheet({ scan, coach, onClose, onChangeName }
           </button>
         </div>
         <div className="sheet-body">
+          {isManager ? (
+            /* 총관리자 — 눌러서 "누가 아직 안 했나" 목록을 엽니다 */
+            <div className="profile-block">
+              <div className="profile-label">행사 진행 현황</div>
+              <div className="profile-stats">
+                {overview.map((o) => (
+                  <button
+                    key={o.kind}
+                    className="profile-stat profile-stat-btn"
+                    onClick={() => onOpenDetail?.(o.kind)}
+                    aria-haspopup="dialog"
+                  >
+                    <b>{o.value}</b>
+                    <span>{o.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="profile-sub">눌러서 아직 안 한 팀·인원을 확인할 수 있습니다.</div>
+            </div>
+          ) : (
+          <>
           {/* 담당 팀 — 이 시트의 핵심 정보 */}
           <div className="profile-block">
             <div className="profile-label">담당 팀</div>
@@ -114,6 +149,9 @@ export default function CoachProfileSheet({ scan, coach, onClose, onChangeName }
               </div>
             </div>
           </div>
+
+          </>
+          )}
 
           <button className="btn-secondary profile-change" onClick={onChangeName}>
             다른 이름으로 입장하기
