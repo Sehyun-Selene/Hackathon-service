@@ -151,7 +151,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
       </details>
 
       {/* 팀별 호출 횟수 — 내가 담당하는 팀만. 남의 담당 팀 잔여 횟수는
-          내가 판단할 일이 아니고, 125칸을 훑으면 내 팀을 못 찾음.
+          내가 판단할 일이 아니고, 135칸을 훑으면 내 팀을 못 찾음.
           전체를 보는 건 총관리자뿐입니다. */}
       <details className="panel done-panel">
         <summary>

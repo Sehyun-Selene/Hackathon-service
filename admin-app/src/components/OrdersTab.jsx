@@ -189,7 +189,8 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
         prefix: league.prefix,
         start,
         end,
-        label: `${league.prefix}-${start}~${end}`,
+        // 테이블에 붙은 번호와 같은 두 자리 표기로 씁니다(E-01~25).
+        label: `${league.prefix}-${String(start).padStart(2, '0')}~${String(end).padStart(2, '0')}`,
       }
     }),
   )

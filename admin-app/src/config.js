@@ -238,6 +238,16 @@ export function leagueOf(teamId) {
 export function teamSize(teamId) {
   return TEAMS[teamId]?.size ?? null
 }
+// 정렬용 숫자 키. 'E-01' 같은 문자열은 그냥 빼면 NaN이 되므로,
+// 리그 순서(LEAGUES 배열 순) × 1000 + 번호로 바꿔 씁니다.
+// 모르는 번호는 맨 뒤로 보냅니다.
+export function teamSortKey(teamId) {
+  const prefix = String(teamId || '').charAt(0)
+  const index = LEAGUES.findIndex((l) => l.prefix === prefix)
+  const num = parseInt(String(teamId || '').slice(2), 10)
+  if (index < 0 || !Number.isFinite(num)) return Number.MAX_SAFE_INTEGER
+  return index * 1000 + num
+}
 
 
 // ---------------------------------------------------------------
@@ -246,8 +256,11 @@ export function teamSize(teamId) {
 //    개인 단위로 미리 정해둡니다. (코드 내부 식별자는 coach를 유지)
 //    - name       : 마스터 메이트 이름. 명단이 아직 미확정이라 지금은 빈 값(TBD).
 //                   확정되면 이름을 채우세요 (예: '김민준').
-//    - teamNumbers: 그 마스터 메이트가 담당하는 팀 번호(숫자) 배열.
-//                   예: teamNumbers: [1, 2, 3, 4, 5]
+//    - teamNumbers: 그 마스터 메이트가 담당하는 팀 번호 배열. 자리배치표와
+//                   같은 표기(필드리그 'E-01', 개발자리그 'G-01')를 씁니다.
+//                   예: teamNumbers: ['E-01', 'E-02', 'E-03']
+//                   ※ 두 자리로 맞춰 쓰세요('E-1' ✗ / 'E-01' ✓).
+//                   ※ 한 사람이 두 리그를 겹쳐 맡지 않습니다(자리가 떨어져 있음).
 //    - callManager: true면 '호출 총관리자'로, 관리자 앱에서 전체 팀의 호출
 //                   횟수를 볼 수 있습니다. 담당 팀이 있는 일반 메이트는 자기
 //                   담당 팀만 보이므로, 전체를 봐야 하는 운영 총괄에게만

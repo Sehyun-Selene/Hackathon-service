@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { COACH_ASSIGNMENTS, formatTeamRange } from '../config.js'
+import { COACH_ASSIGNMENTS, formatTeamRange, teamSortKey } from '../config.js'
 
 // 마스터 메이트 현황 (PRD 요청 #5): 위치 지도 대신, 마스터 메이트 개인별 리스트를 한눈에.
 // 목적: 특정 마스터 메이트가 바쁘면(대응 중이면) 다른 마스터 메이트가 그 담당 팀
@@ -56,7 +56,9 @@ export default function CoachStatusTab({ scan, coach }) {
             ...person.ids.flatMap((id) => busyByKey['id:' + id] || []),
           ],
           range: formatTeamRange(teams),
-          sortKey: teams.length ? Math.min(...teams) : Number.MAX_SAFE_INTEGER,
+          // 총관리자는 담당 구간이 없는 게 정상입니다 — 미배정과 구분해 표시
+          isManager: !!assigned?.callManager,
+          sortKey: teams.length ? Math.min(...teams.map(teamSortKey)) : Number.MAX_SAFE_INTEGER,
         }
       })
       .sort((a, b) => a.sortKey - b.sortKey || a.coach.name.localeCompare(b.coach.name))
@@ -129,7 +131,7 @@ export default function CoachStatusTab({ scan, coach }) {
                 </p>
               ) : (
                 <div className="coach-list">
-                  {g.rows.map(({ coach: c, busy: b, range, ids }) => {
+                  {g.rows.map(({ coach: c, busy: b, range, ids, isManager }) => {
                     // 내 기기가 그 사람의 기기 목록에 있으면 '나'
                     const isMe = ids.includes(coach.id) || c.name === coach.name
                     return (
@@ -137,7 +139,7 @@ export default function CoachStatusTab({ scan, coach }) {
                         <span className="coach-name">
                           🧑‍🏫 {c.name}
                           <span className="coach-range">
-                            {range ? `팀 ${range}` : '담당 미배정'}
+                            {range ? `팀 ${range}` : isManager ? '총관리자' : '담당 미배정'}
                           </span>
                           {isMe && <span className="coach-me">나</span>}
                         </span>

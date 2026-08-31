@@ -8,6 +8,7 @@ import {
   groupByLeague,
   formatTeamRange,
   getAssignedCoachForTeam,
+  teamSortKey,
 } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { notifyMissing, nudgeParticipants } from '../lib/storage.js'
@@ -61,9 +62,15 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
             .map((c) => ({
               key: c.id,
               label: c.name,
-              note: c.teamNumbers.length ? `팀 ${formatTeamRange(c.teamNumbers)}` : '담당 미배정',
+              note: c.teamNumbers.length
+                ? `팀 ${formatTeamRange(c.teamNumbers)}`
+                : c.callManager
+                  ? '총관리자'
+                  : '담당 미배정',
               done: enteredNames.has(c.name),
-              sortKey: c.teamNumbers.length ? Math.min(...c.teamNumbers) : Number.MAX_SAFE_INTEGER,
+              sortKey: c.teamNumbers.length
+                ? Math.min(...c.teamNumbers.map(teamSortKey))
+                : Number.MAX_SAFE_INTEGER,
             }))
             .sort((a, b) => a.sortKey - b.sortKey || a.label.localeCompare(b.label))
         : [...new Set(scan.coaches.map((c) => c.name))].map((name) => ({
