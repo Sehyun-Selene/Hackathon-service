@@ -57,7 +57,7 @@ function DietSummary({ allergies }) {
 }
 
 // QR은 모든 팀이 공유 → 첫 진입 시 팀 정보를 직접 입력 (PRD 요청 #2)
-// 팀 번호 / 인원수 / 알레르기(인원별로 구분 입력 — 1명이 여러 개인지,
+// 팀 번호 / 알레르기(인원별로 구분 입력 — 1명이 여러 개인지,
 // 여러 명이 각각 하나씩인지에 따라 대체 메뉴 준비량이 달라지므로 사람 단위로 관리)
 // ※ 계열사는 더 이상 참가자가 선택하지 않음 — 마스터 메이트 담당은 팀 번호 기준
 //   개인별 배정(config.COACH_ASSIGNMENTS)으로 대체됨
@@ -70,11 +70,10 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
   const [teamNo, setTeamNo] = useState(
     initial?.teamId ? String(parseInt(String(initial.teamId).slice(2), 10)) : '',
   )
-  const [memberCount, setMemberCount] = useState(initial?.memberCount || 4)
   const [allergyBlocks, setAllergyBlocks] = useState(() => toAllergyBlocks(initial?.allergies))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  // 사용자가 인원수·알레르기를 건드렸는지 — 건드린 뒤에는 서버 값으로 덮어쓰지
+  // 사용자가 알레르기를 건드렸는지 — 건드린 뒤에는 서버 값으로 덮어쓰지
   // 않습니다 (팀 번호 칸을 다시 눌렀다 나오면 입력이 되돌아가던 문제)
   const [touched, setTouched] = useState(false)
   // 입력한 번호가 이미 등록된 팀일 때 알려줍니다 (오타로 남의 팀을 덮어쓰는 것 방지)
@@ -83,13 +82,16 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
   const [checking, setChecking] = useState(false)
 
   const leagueDef = LEAGUES.find((l) => l.id === league) || LEAGUES[0]
-  // 지금 입력한 번호가 가리키는 팀 (시트에 있으면 팀명·인원을 확인시켜 줍니다)
+  // 지금 입력한 번호가 가리키는 팀 (등록 버튼을 누를 때 확인창으로 보여줍니다)
   const typedId = normalizeTeam(teamNo, leagueDef.prefix)
   const known = typedId ? TEAMS[typedId] : null
-  // 인원 상한 — 시트에 있는 팀은 그 팀 인원까지만. 초과 주문을 막는 것이 목적입니다.
-  const memberMax = known?.size ?? MAX_MEMBER_COUNT
+  // 인원수는 자리배치 시트에 이미 있으니 입력받지 않습니다.
+  // 번호를 고르면 그 팀 인원이 그대로 쓰입니다.
+  const memberCount = known?.size ?? initial?.memberCount ?? null
+  // 번호를 아직 안 넣었으면 알레르기 인원을 임시 상한으로 받아둡니다
+  const allergyMax = memberCount ?? MAX_MEMBER_COUNT
 
-  const allergyFull = allergyBlocks.length >= memberCount
+  const allergyFull = allergyBlocks.length >= allergyMax
   const addPerson = () => {
     if (allergyFull) return
     setTouched(true)
@@ -114,9 +116,6 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
   const onTeamNoBlur = async () => {
     const id = normalizeTeam(teamNo, leagueDef.prefix)
     setExistingInfo(null)
-    // 시트에 있는 팀이면 인원을 그 값으로 채워둡니다 (사용자가 아직 안 건드린 경우만).
-    // 대부분 그대로 두면 되므로 입력할 일이 없어집니다.
-    if (id && TEAMS[id] && !touched) setMemberCount(TEAMS[id].size)
     if (!id || !existingLookup) return
     const existing = await existingLookup(id)
     if (!existing) return
@@ -125,7 +124,6 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     if (!isMine) setExistingInfo({ teamId: id, memberCount: existing.memberCount })
     // 사용자가 이미 값을 고쳤다면 덮어쓰지 않습니다 — 입력이 되돌아가는 것 방지
     if (touched) return
-    setMemberCount(existing.memberCount || memberCount)
     setAllergyBlocks(toAllergyBlocks(existing.allergies))
   }
 
@@ -139,16 +137,21 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
         leagueDef.label + '에 ' + teamId + ' 테이블이 없습니다. 리그와 번호를 확인해 주세요.',
       )
     }
-    if (!memberCount || memberCount < 1) return setError('인원수를 1명 이상 입력해 주세요.')
-    if (memberCount > memberMax) {
-      return setError(teamId + ' 테이블은 ' + memberMax + '명입니다. 인원수를 확인해 주세요.')
+
+    const 팀 = TEAMS[teamId]
+    const isEditingSelf = initial?.teamId === teamId
+    // 번호가 맞는지 한 번 확인받습니다 — 잘못 누르면 남의 팀으로 주문이 들어갑니다
+    if (!isEditingSelf) {
+      const ok = window.confirm(
+        `${teamId} · ${팀.name} (${팀.size}명)\n\n이 팀이 맞으신가요?`,
+      )
+      if (!ok) return
     }
 
     // ── 이미 등록된 팀인지 여기서 직접 확인합니다 ──
     // blur가 채워둔 값(existingInfo)에 의존하면 안 됩니다. 버튼을 누르는 순간
     // blur의 서버 조회가 막 시작되므로, 조회가 끝나기 전에 등록이 진행돼
     // 경고가 뜨자마자 다음 화면으로 넘어가 버립니다.
-    const isEditingSelf = initial?.teamId === teamId
     if (!isEditingSelf && existingLookup) {
       setChecking(true)
       let existing = null
@@ -192,14 +195,14 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     // 알레르기를 하나도 선택 안 한 빈 블록은 제외하고 저장 (사람별 배열)
     const allergies = allergyBlocks.map((b) => b.list).filter((list) => list.length > 0)
     // 알레르기 인원이 팀 인원수를 넘으면 대체식 준비 수량이 실제보다 많아집니다
-    if (allergies.length > memberCount) {
+    if (allergies.length > 팀.size) {
       return setError(
-        '알레르기 인원(' + allergies.length + '명)이 팀 인원수(' + memberCount +
-          '명)보다 많습니다. 인원수를 확인해 주세요.',
+        '알레르기 인원(' + allergies.length + '명)이 팀 인원(' + 팀.size +
+          '명)보다 많습니다. 확인해 주세요.',
       )
     }
 
-    const team = { teamId, memberCount, allergies }
+    const team = { teamId, memberCount: 팀.size, allergies }
     setSaving(true)
     onSaving?.(true)
     try {
@@ -273,17 +276,6 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
               onBlur={onTeamNoBlur}
             />
           </div>
-          {/* 번호를 맞게 넣었는지 팀명으로 확인시켜 줍니다 */}
-          {typedId && known && (
-            <p className="team-no-found">
-              ✅ {typedId} · <b>{known.name}</b> ({known.size}명)
-            </p>
-          )}
-          {typedId && !known && (
-            <p className="setup-exists">
-              ⚠️ {leagueDef.label}에 {typedId} 테이블이 없습니다. 리그와 번호를 확인해 주세요.
-            </p>
-          )}
           {/* 오타로 다른 팀 번호를 넣으면 그 팀 정보를 덮어쓰게 되므로 알려줍니다 */}
           {existingInfo && (
             <p className="setup-exists">
@@ -292,36 +284,6 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
               맞는지 확인해 주세요.
             </p>
           )}
-        </div>
-
-        <div className="setup-field">
-          <label className="setup-label">인원수</label>
-          <div className="stepper">
-            <button
-              className="qty-btn"
-              onClick={() => {
-                setTouched(true)
-                setMemberCount((n) => Math.max(1, n - 1))
-              }}
-              aria-label="인원수 줄이기"
-            >
-              −
-            </button>
-            <span className="stepper-num">{memberCount}명</span>
-            {known && memberCount >= memberMax && (
-              <span className="stepper-cap">최대 {memberMax}명</span>
-            )}
-            <button
-              className="qty-btn"
-              onClick={() => {
-                setTouched(true)
-                setMemberCount((n) => Math.min(memberMax, n + 1))
-              }}
-              aria-label="인원수 늘리기"
-            >
-              +
-            </button>
-          </div>
         </div>
 
         <div className="setup-field">
@@ -368,7 +330,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
             disabled={allergyFull}
           >
             {allergyFull
-              ? '팀 인원수(' + memberCount + '명)만큼 추가했습니다'
+              ? '팀 인원(' + allergyMax + '명)만큼 추가했습니다'
               : '+ 알레르기 있는 인원 추가'}
           </button>
         </div>

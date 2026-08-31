@@ -764,6 +764,3 @@ html.dark .board-countdown.urgent .board-countdown-label { color: #fca5a5; }
   font-variant-numeric: tabular-nums;
 }
 .team-no-input { flex: 1; min-width: 0; }
-.team-no-found { margin-top: 8px; font-size: 13.5px; line-height: 1.5; color: var(--green); font-weight: 700; }
-.team-no-found b { color: var(--text); }
-.stepper-cap { font-size: 12px; color: var(--sub); font-weight: 600; }
