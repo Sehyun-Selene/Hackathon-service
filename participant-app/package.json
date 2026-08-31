@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "해커톤 음식 주문 & 코치 호출 서비스 — 참가자용 모바일 웹",
+  "description": "해커톤 음식 주문 및 마스터 메이트 호출 서비스 — 참가자용 모바일 웹",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
