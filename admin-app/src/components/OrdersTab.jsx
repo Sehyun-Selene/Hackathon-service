@@ -177,23 +177,29 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   }
   const isDelivered = (teamId) => singleMeal && !!scan.delivered?.[teamId]?.[mealFilter]
 
-  // 배부 구간은 리그별로 나눕니다. 필드리그 104팀은 25씩 끊고, 개발자리그
-  // 31팀은 한 구간이면 충분합니다. 두 리그가 한 구간에 섞이면 배부 동선이
-  // 엉킵니다(자리가 리그별로 떨어져 있음).
-  const rangeOptions = LEAGUES.flatMap((league) =>
-    Array.from({ length: Math.ceil(league.count / DELIVERY_TEAM_RANGE_SIZE) }, (_, index) => {
-      const start = index * DELIVERY_TEAM_RANGE_SIZE + 1
-      const end = Math.min(start + DELIVERY_TEAM_RANGE_SIZE - 1, league.count)
-      return {
-        id: `${league.prefix}-${start}-${end}`,
-        prefix: league.prefix,
-        start,
-        end,
-        // 테이블에 붙은 번호와 같은 두 자리 표기로 씁니다(E-01~25).
-        label: `${league.prefix}-${String(start).padStart(2, '0')}~${String(end).padStart(2, '0')}`,
-      }
-    }),
-  )
+  // 배부 구간은 리그별로 25팀씩 끊습니다. 두 리그가 한 구간에 섞이면 배부
+  // 동선이 엉킵니다(자리가 리그별로 떨어져 있음).
+  // 끝에 반 구간도 안 되게 남으면 앞 구간에 붙입니다 — 필드리그는 101~104
+  // 네 팀, 개발자리그는 26~31 여섯 팀만 있는 칩이 생겨 한 번 더 눌러야
+  // 하는 것에 비해 얻는 게 없습니다. → E-76~104, G-01~31
+  const rangeOptions = LEAGUES.flatMap((league) => {
+    const ranges = []
+    for (let start = 1; start <= league.count; start += DELIVERY_TEAM_RANGE_SIZE) {
+      ranges.push({ start, end: Math.min(start + DELIVERY_TEAM_RANGE_SIZE - 1, league.count) })
+    }
+    const last = ranges[ranges.length - 1]
+    if (ranges.length > 1 && last.end - last.start + 1 < DELIVERY_TEAM_RANGE_SIZE / 2) {
+      ranges.splice(ranges.length - 2, 2, { start: ranges[ranges.length - 2].start, end: last.end })
+    }
+    return ranges.map(({ start, end }) => ({
+      id: `${league.prefix}-${start}-${end}`,
+      prefix: league.prefix,
+      start,
+      end,
+      // 테이블에 붙은 번호와 같은 두 자리 표기로 씁니다(E-01~25).
+      label: `${league.prefix}-${String(start).padStart(2, '0')}~${String(end).padStart(2, '0')}`,
+    }))
+  })
   const selectedRange = rangeOptions.find((range) => range.id === teamRange)
   const rangedRows = selectedRange
     ? teamRows.filter((row) => {

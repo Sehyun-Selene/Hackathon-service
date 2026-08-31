@@ -114,7 +114,10 @@ export default function App() {
   const [mealFilter, setMealFilter] = useState(getDefaultMealId)
   const [menuOpen, setMenuOpen] = useState(false) // 모바일 좌상단 메뉴 팝업
   const [showProfile, setShowProfile] = useState(false) // 내 프로필 시트
-  const [kpiDetail, setKpiDetail] = useState(null) // 눌린 KPI 카드의 상세 목록
+  const [kpiDetail, setKpiDetail] = useState(null) // 눌린 진행 현황의 상세 목록
+  // 프로필에서 연 상세를 닫으면 프로필로 돌아갑니다. 열었던 자리로 돌아가지
+  // 않으면 숫자 세 개를 차례로 확인할 때마다 프로필을 다시 열어야 합니다.
+  const [detailFromProfile, setDetailFromProfile] = useState(false)
   const [scan, setScan] = useState(null)
   const [soundOn, setSoundOn] = useState(true)
   const [syncError, setSyncError] = useState(false)
@@ -580,7 +583,11 @@ export default function App() {
           coach={coach}
           mealFilter={mealFilter}
           onToast={showToast}
-          onClose={() => setKpiDetail(null)}
+          onClose={() => {
+            setKpiDetail(null)
+            if (detailFromProfile) setShowProfile(true)
+            setDetailFromProfile(false)
+          }}
         />
       )}
 
@@ -590,6 +597,7 @@ export default function App() {
           coach={coach}
           onOpenDetail={(kind) => {
             setShowProfile(false)
+            setDetailFromProfile(true)
             setKpiDetail(kind)
           }}
           onClose={() => setShowProfile(false)}
