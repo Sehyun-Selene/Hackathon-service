@@ -251,36 +251,128 @@ export function teamSortKey(teamId) {
 
 
 // ---------------------------------------------------------------
-// 3. 마스터 메이트 개인별 담당 팀 번호  (TBD — 명단 확정 후 채우기)
-//    참가자는 팀 번호만 입력합니다. "어느 마스터 메이트가 어느 팀을 담당하는지"를
-//    개인 단위로 미리 정해둡니다. (코드 내부 식별자는 coach를 유지)
-//    - name       : 마스터 메이트 이름. 명단이 아직 미확정이라 지금은 빈 값(TBD).
-//                   확정되면 이름을 채우세요 (예: '김민준').
-//    - teamNumbers: 그 마스터 메이트가 담당하는 팀 번호 배열. 자리배치표와
-//                   같은 표기(필드리그 'E-01', 개발자리그 'G-01')를 씁니다.
-//                   예: teamNumbers: ['E-01', 'E-02', 'E-03']
-//                   ※ 두 자리로 맞춰 쓰세요('E-1' ✗ / 'E-01' ✓).
-//                   ※ 한 사람이 두 리그를 겹쳐 맡지 않습니다(자리가 떨어져 있음).
-//    - callManager: true면 '호출 총관리자'로, 관리자 앱에서 전체 팀의 호출
-//                   횟수를 볼 수 있습니다. 담당 팀이 있는 일반 메이트는 자기
-//                   담당 팀만 보이므로, 전체를 봐야 하는 운영 총괄에게만
-//                   true를 주세요 (비워두면 false).
-//    - slackUserId : 슬랙 멤버 ID (예: 'U01ABCDEF'). 채우면 호출 발생 시
-//                   그 사람만 슬랙에서 멘션되어 개인 알림을 받습니다.
-//                   비어 있으면 멘션 없이 이름만 표기됩니다(채널 알림).
-//                   ※ 슬랙 프로필 → 더보기 → '멤버 ID 복사'로 확인.
-//    - 마스터 메이트는 관리자 앱 입장 시 이름을 직접 입력합니다. 여기 채워둔
-//      이름과 정확히 같은 글자로 입력해야 담당 팀이 자동으로 연결됩니다.
-//    - 인원 자체도 확정 전이라, 배열에 항목을 자유롭게 추가/삭제하면
-//      됩니다 (지금은 자리 4개만 미리 만들어둔 상태).
+// 3. 크루 명단  (담당 팀 배정은 확정 후 teamNumbers에 채우기)
+//
+//    시트 「해커톤 크루 R&R」에서 옮겨온 명단입니다. 역할이 하는 일이
+//    서로 달라 목록을 나눠 둡니다.
+//      COACH_ASSIGNMENTS — 호출을 받는 사람 (마스터 메이트 + 호출 총관리자)
+//      PLAY_MATES        — 플레이 메이트. 호출 대상이 아닙니다
+//      FOOD_CREW         — 식음 운영. 주문 현황을 맡습니다
+//
+//    ※ 닉네임 칸이 이메일이던 분들은 비워 뒀습니다 — 화면에 쓰지 않는
+//      개인 연락처를 설정 파일에 담을 이유가 없습니다.
 // ---------------------------------------------------------------
+
+// 3-1. 마스터 메이트 — 참가자의 호출을 받아 찾아가는 사람들
+//    - name       : 관리자 앱 입장 시 입력하는 이름. 여기 적힌 글자와
+//                   정확히 같아야 담당 팀이 연결됩니다.
+//    - nickname   : 시트의 닉네임. 이름이 겹칠 때 누구인지 가리는 용도입니다.
+//                   ⚠️ 이름이 같은 분이 있습니다: 이상윤(Yunie·GS 엔텍) /
+//                   이상윤(Yun·GS파워). 이름만으로는 두 사람을 가릴 수
+//                   없어, 담당 팀을 채우기 전에 입장 방식을 정해야 합니다.
+//    - teamNumbers: 담당 팀 번호 배열. 자리배치표와 같은 표기를 씁니다
+//                   (예: ['E-01', 'E-02', 'E-03']). 두 자리로 맞춰 주세요.
+//                   한 사람이 두 리그를 겹쳐 맡지 않습니다.
+//    - slackUserId: 슬랙 멤버 ID (예: 'U01ABCDEF'). 채우면 그 사람만
+//                   멘션되어 개인 알림을 받습니다. 비어 있으면 이름만 표기.
+//                   ※ 슬랙 프로필 → 더보기 → '멤버 ID 복사'
+//    - callManager: true면 전체 팀의 호출 횟수와 미등록·미주문 재촉 권한을
+//                   가집니다. 담당 구간 없이 전체를 보는 운영 총괄 한 명에게만.
 export const COACH_ASSIGNMENTS = [
-  // 호출 총관리자 — 담당 구간 없이 전체를 봅니다.
-  //   callManager: true → 전체 팀 호출 횟수 + 미주문·미등록 재촉 권한
-  { id: 'coach-1', name: '김세현', teamNumbers: [], slackUserId: 'U0BED7LG02D', callManager: true },
-  { id: 'coach-2', name: '', teamNumbers: [], slackUserId: '', callManager: false },
-  { id: 'coach-3', name: '', teamNumbers: [], slackUserId: '', callManager: false },
-  { id: 'coach-4', name: '', teamNumbers: [], slackUserId: '', callManager: false },
+  // 호출 총관리자 — 담당 구간 없이 전체를 봅니다
+  { id: 'call-manager', name: '김세현', nickname: 'Selene', company: '(주)GS', teamNumbers: [], slackUserId: 'U0BED7LG02D', callManager: true },
+  { id: 'mate-01', name: '고병현', nickname: 'Joseph', company: '(주)GS', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-02', name: '한만호', nickname: 'Ryan', company: '(주)GS', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-03', name: '이진수', nickname: 'Jin', company: '(주)GS', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-04', name: '장희원', nickname: 'Eric', company: '(주)GS', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-05', name: '김민규', nickname: 'Tomi', company: '(주)GS', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-06', name: '김진호', nickname: 'Hugo', company: '(주)GS', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-07', name: '정승현', nickname: 'Josh', company: '보령LNG터미널', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-08', name: '이성규', nickname: 'Connor', company: '위드인천에너지', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-09', name: '정승환', nickname: 'Gon', company: '인천종합에너지', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-10', name: '김한희', nickname: 'Hani', company: 'GS에너지', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-11', name: '방민규', nickname: 'Mr.Q', company: '파르나스호텔', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-12', name: '이한호', nickname: 'Lars', company: 'E&R', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-13', name: '한준이', nickname: 'Aiden', company: '구미열병합발전', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-14', name: '황정섭', nickname: 'jay', company: '동해전력', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-15', name: '박태준', nickname: 'Tony', company: '포천그린에너지', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-16', name: '정다운', nickname: 'William', company: 'GS EPS', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-17', name: '김태윤', nickname: 'Kai', company: 'GS EPS', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-18', name: '신창호', nickname: 'Kyle', company: 'GS건설', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-19', name: '박일락', nickname: 'Ryan', company: 'GS 엔텍', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-20', name: '이상윤', nickname: 'Yunie', company: 'GS 엔텍', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-21', name: '김경미', nickname: 'May', company: 'GS글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-22', name: '김승철', nickname: 'Ciso', company: 'GS리테일', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-23', name: '박지훈', nickname: 'Ready', company: 'GS리테일', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-24', name: '안효진', nickname: 'Mario', company: 'GS리테일', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-25', name: '이재현', nickname: 'L', company: 'GS스포츠', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-26', name: '박형남', nickname: 'Jason', company: 'GSC 예울마루', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-27', name: '신명화', nickname: 'Cindy', company: 'GS엠비즈', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-28', name: '진영주', nickname: 'Pablo', company: 'GS칼텍스', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-29', name: '홍승표', nickname: 'Pio', company: 'GS칼텍스', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-30', name: '김민엽', nickname: 'Tyler', company: 'GS파워', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-31', name: '이상윤', nickname: 'Yun', company: 'GS파워', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-32', name: '공민우', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-33', name: '조현아', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-34', name: '장지수', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-35', name: '문관균', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-36', name: '마재훈', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-37', name: '이혜준', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-38', name: '황시아', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-39', name: '권두순', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-40', name: '김현중', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-41', name: '이영미', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-42', name: '이소연', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-43', name: '임현주', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+]
+
+// 3-2. 플레이 메이트 — 팀 곁에서 아이디어를 함께 보는 사람들.
+//    호출 대상이 아니라 관리자 앱의 호출 배정에는 들어가지 않습니다.
+//    (지금은 명단만 보관합니다 — 코드에서 읽는 곳이 아직 없습니다)
+export const PLAY_MATES = [
+  { id: 'play-01', name: '김현민', nickname: 'Charlie', company: 'GS에너지' },
+  { id: 'play-02', name: '이상욱', nickname: 'Lodi', company: 'GS차지비' },
+  { id: 'play-03', name: '정원재', nickname: 'Jeff', company: '파르나스호텔' },
+  { id: 'play-04', name: '허재연', nickname: 'Jenna', company: '파르나스호텔' },
+  { id: 'play-05', name: '곽서림', nickname: 'Lisa', company: '파르나스호텔' },
+  { id: 'play-06', name: '신명준', nickname: 'M', company: '반월열병합발전' },
+  { id: 'play-07', name: '곽동욱', nickname: 'Levi', company: 'GS EPS' },
+  { id: 'play-08', name: '장윤수', nickname: 'Paul', company: 'GS건설' },
+  { id: 'play-09', name: '이형민', nickname: 'Lee Leo', company: 'GS건설' },
+  { id: 'play-10', name: '문정길', nickname: 'Jade', company: 'GS글로벌' },
+  { id: 'play-11', name: '박재학', nickname: 'Jack', company: 'GS 엔텍' },
+  { id: 'play-12', name: '고영남', nickname: 'Kevin', company: 'GS 엔텍' },
+  { id: 'play-13', name: '천지인', nickname: 'Jinny', company: 'GS글로벌' },
+  { id: 'play-14', name: '권태홍', nickname: 'HONG', company: 'GS리테일' },
+  { id: 'play-15', name: '김정화', nickname: 'Kevin', company: 'GS리테일' },
+  { id: 'play-16', name: '김유진', nickname: 'Jia', company: 'GS리테일' },
+  { id: 'play-17', name: '배지수', nickname: 'Suzanne', company: 'GS문화재단' },
+  { id: 'play-18', name: '김용일', nickname: 'Henry', company: 'GS스포츠' },
+  { id: 'play-19', name: '하지희', nickname: 'Lia', company: 'GS스포츠' },
+  { id: 'play-20', name: '지동한', nickname: 'David', company: 'GS칼텍스' },
+  { id: 'play-21', name: '홍지영', nickname: 'JY', company: 'GS칼텍스' },
+  { id: 'play-22', name: '노엘', nickname: 'Eddy', company: 'GS칼텍스' },
+  { id: 'play-23', name: '유용희', nickname: 'Willie', company: 'GS파워' },
+  { id: 'play-24', name: '윤동환', nickname: 'Chris', company: '자이에스엔디' },
+  { id: 'play-25', name: '권용환', nickname: 'Quan', company: 'GS파워' },
+  { id: 'play-26', name: '이승재', nickname: 'Jerry', company: '광동제약' },
+  { id: 'play-27', name: '채지혜', nickname: 'Day', company: '광동제약' },
+  { id: 'play-28', name: '이진주', nickname: 'Judy', company: '광동제약' },
+  { id: 'play-29', name: '서기호', nickname: 'Kyo', company: '광동제약' },
+  { id: 'play-30', name: '장지원', nickname: 'Anna', company: '광동제약' },
+  { id: 'play-31', name: '이성덕', nickname: 'Lee', company: '삼양인터내셔날' },
+  { id: 'play-32', name: '장수연', nickname: 'Jen', company: '삼양인터내셔날' },
+  { id: 'play-33', name: '김민수', nickname: 'Liam', company: '삼양통상' },
+  { id: 'play-34', name: '황세현', nickname: 'Sean', company: '삼양통상' },
+  { id: 'play-35', name: '이제승', nickname: 'Jason', company: '일동제약' },
+  { id: 'play-36', name: '유동환', nickname: 'Brody', company: '일동제약' },
+  { id: 'play-37', name: '권순형', nickname: 'Mike', company: '일동제약' },
+]
+
+// 3-3. 식음 운영 — 주문·배부 현황을 맡습니다.
+//    (지금은 명단만 보관합니다 — 권한을 따로 주지는 않았습니다)
+export const FOOD_CREW = [
+  { id: 'food-01', name: '한성우', nickname: 'Austin', company: '(주)GS' },
 ]
 
 // ---------------------------------------------------------------
