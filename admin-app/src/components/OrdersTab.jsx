@@ -165,15 +165,20 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       .sort((a, b) => a.teamId.localeCompare(b.teamId, undefined, { numeric: true }))
   }, [scan.orders, scan.teams, mealFilter])
 
-  // 검색은 'E-45' / '45' / 'e45' 모두 받습니다 (숫자만 넣으면 두 리그 모두 매칭)
+  // 검색은 손에 잡히는 대로 받습니다 — 'E-45' / 'e45' / '45' / '-45'.
+  //   숫자만    → 두 리그 모두 (45 → E-45와 G-45)
+  //   글자만    → 그 리그 전체 (G → G-01~G-31)
+  //   하이픈·공백은 있든 없든 무시합니다.
+  // 번호는 딱 맞는 것만 찾습니다. 4를 쳤을 때 40~49·104가 함께 뜨면
+  // 배부하다 엉뚱한 테이블을 짚게 됩니다.
   const query = teamQuery.trim().toUpperCase()
   const hasQuery = query !== ''
   const matchesQuery = (teamId) => {
-    const m = query.match(/^([EG])?[^0-9]*([0-9]{1,3})$/)
-    if (!m) return false
-    const num = String(parseInt(m[2], 10))
-    if (String(teamId.slice(2)).replace(/^0+/, '') !== num) return false
-    return m[1] ? teamId.charAt(0) === m[1] : true
+    const m = query.match(/^([EG])?[^0-9]*([0-9]{1,3})?$/)
+    if (!m || (!m[1] && !m[2])) return false
+    if (m[1] && teamId.charAt(0) !== m[1]) return false
+    if (!m[2]) return true
+    return String(teamId.slice(2)).replace(/^0+/, '') === String(parseInt(m[2], 10))
   }
   const isDelivered = (teamId) => singleMeal && !!scan.delivered?.[teamId]?.[mealFilter]
 
