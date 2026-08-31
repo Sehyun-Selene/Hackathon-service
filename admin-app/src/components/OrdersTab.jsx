@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { Fragment, useCallback, useMemo, useState } from 'react'
 import {
   MEALS,
   MENUS,
@@ -99,7 +99,10 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   const [showSoldoutPanel, setShowSoldoutPanel] = useState(false)
   const [showAllergyPanel, setShowAllergyPanel] = useState(false)
   const [teamQuery, setTeamQuery] = useState('')
-  const [teamRange, setTeamRange] = useState('all')
+  // 배부 구간은 두 단계입니다: 리그를 고르고(leagueFilter) → 그 안의
+  // 번호 구간을 고릅니다(teamRange, 고르지 않으면 그 리그 전체).
+  const [leagueFilter, setLeagueFilter] = useState('all') // 'all' | 'E' | 'G'
+  const [teamRange, setTeamRange] = useState(null)
   // 배부 목록 탭 — 'pending'(미배부) 기본, 'done'(배부 완료)
   const [deliveryTab, setDeliveryTab] = useState('pending')
   // 폰에서는 도구가 두 개뿐이라 버튼 줄을 따로 두지 않고, 검색칸 오른쪽의
@@ -203,16 +206,18 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       end,
       // 테이블에 붙은 번호와 같은 두 자리 표기로 씁니다(E-01~25).
       label: `${league.prefix}-${String(start).padStart(2, '0')}~${String(end).padStart(2, '0')}`,
+      // 리그 칩 옆에 붙을 때는 리그가 이미 드러나 번호만 씁니다
+      shortLabel: `${String(start).padStart(2, '0')}~${String(end).padStart(2, '0')}`,
     }))
   })
   const selectedRange = rangeOptions.find((range) => range.id === teamRange)
-  const rangedRows = selectedRange
-    ? teamRows.filter((row) => {
-        if (row.teamId.charAt(0) !== selectedRange.prefix) return false
-        const n = parseInt(row.teamId.slice(2), 10)
-        return n >= selectedRange.start && n <= selectedRange.end
-      })
-    : teamRows
+  // 리그로 한 번, 그 안의 구간으로 한 번 더 좁힙니다
+  const rangedRows = teamRows.filter((row) => {
+    if (leagueFilter !== 'all' && row.teamId.charAt(0) !== leagueFilter) return false
+    if (!selectedRange) return true
+    const n = parseInt(row.teamId.slice(2), 10)
+    return n >= selectedRange.start && n <= selectedRange.end
+  })
   const pendingRows = singleMeal ? rangedRows.filter((row) => !isDelivered(row.teamId)) : rangedRows
   const completedRows = singleMeal ? rangedRows.filter((row) => isDelivered(row.teamId)) : []
   const visibleRows = hasQuery ? teamRows.filter((row) => matchesQuery(row.teamId)) : pendingRows
@@ -645,20 +650,52 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
               aria-label="배부할 팀 번호 구간"
             >
               <button
-                className={`coach-tab${teamRange === 'all' ? ' on' : ''}`}
-                onClick={() => setTeamRange('all')}
+                className={`coach-tab${leagueFilter === 'all' ? ' on' : ''}`}
+                onClick={() => {
+                  setLeagueFilter('all')
+                  setTeamRange(null)
+                }}
               >
                 전체
               </button>
-              {rangeOptions.map((range) => (
-                <button
-                  key={range.id}
-                  className={`coach-tab${teamRange === range.id ? ' on' : ''}`}
-                  onClick={() => setTeamRange(range.id)}
-                >
-                  {range.label}
-                </button>
-              ))}
+              {/* 리그를 고르면 그 리그의 구간이 바로 옆으로 펼쳐집니다.
+                  두 리그의 구간 여섯 개를 한 줄에 늘어놓으면 자기 리그가
+                  아닌 칩까지 훑게 되고, 폰에서는 세 줄을 차지했습니다. */}
+              {LEAGUES.map((league) => {
+                const open = leagueFilter === league.prefix
+                const leagueRanges = rangeOptions.filter((r) => r.prefix === league.prefix)
+                return (
+                  <Fragment key={league.id}>
+                    <button
+                      className={`coach-tab${open ? ' on' : ''}`}
+                      aria-expanded={open}
+                      onClick={() => {
+                        // 열려 있는 리그를 다시 누르면 접고 전체로 돌아갑니다
+                        setLeagueFilter(open ? 'all' : league.prefix)
+                        setTeamRange(null)
+                      }}
+                    >
+                      {league.label}
+                    </button>
+                    {/* 구간이 하나뿐인 리그(개발자리그 31팀)는 리그 칩과 범위가
+                        같아, 눌러도 아무것도 좁혀지지 않는 칩이 됩니다 */}
+                    {open &&
+                      leagueRanges.length > 1 &&
+                      leagueRanges.map((range) => (
+                        <button
+                          key={range.id}
+                          className={`coach-tab range-sub${teamRange === range.id ? ' on' : ''}`}
+                          // 리그 칩이 이미 켜져 있어 화면에서는 번호만으로
+                          // 충분하지만, 읽어주는 순서에는 리그가 필요합니다
+                          aria-label={range.label}
+                          onClick={() => setTeamRange(teamRange === range.id ? null : range.id)}
+                        >
+                          {range.shortLabel}
+                        </button>
+                      ))}
+                  </Fragment>
+                )
+              })}
             </div>
             <div className="coach-tabs delivery-status-tabs">
               <button

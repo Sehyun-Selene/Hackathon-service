@@ -441,10 +441,21 @@ body {
   margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
   margin-bottom: 0;
 }
-/* 배부 구간 — 가로 스크롤 가능한 사각 탭. 자주 누르는 조작이라 조금 더 크게 */
-.delivery-ranges { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 2px; }
+/* 배부 구간 — 자주 누르는 조작이라 사각 탭을 조금 더 크게.
+   리그를 고르면 구간이 옆으로 늘어나므로 칩 수가 변합니다. 줄바꿈을 허용해
+   가로 스크롤 뒤로 칩이 숨지 않게 합니다. */
+.delivery-ranges { flex-wrap: wrap; }
 .delivery-ranges .coach-tab {
   flex: 0 0 auto; font-size: 14px; padding: 10px 16px; min-height: 42px;
+}
+/* 리그 칩에 딸린 번호 구간 — 같은 크기면 형제처럼 보여 한 단계 낮춥니다 */
+.delivery-ranges .coach-tab.range-sub {
+  font-size: 13.5px; padding: 9px 13px; min-height: 38px;
+  border-color: transparent; background: var(--violet-soft); color: var(--primary-dark);
+}
+.delivery-ranges .coach-tab.range-sub:hover { border-color: var(--primary); }
+.delivery-ranges .coach-tab.range-sub.on {
+  background: var(--primary); border-color: var(--primary); color: #fff;
 }
 .delivery-team-panel { border: 1px solid var(--line); }
 .meal-tag {
@@ -748,13 +759,12 @@ body {
 }
 .coach-tab.tone-idle.on .tab-count,
 .coach-tab.tone-busy.on .tab-count { background: rgba(255, 255, 255, 0.24); color: #fff; }
-/* 폰: 구간 버튼 6개가 4+2로 어긋나 보이므로 3×2 격자로 가지런히.
-   (.coach-tabs의 flex 정의보다 뒤에 있어야 그리드가 적용됩니다) */
+/* 폰: 칩이 몇 개든 가로로 차곡차곡 채워지도록. 리그를 접으면 세 개가
+   한 줄에 들어가고, 펼치면 구간이 그 아래로 이어집니다. */
 @media (max-width: 560px) {
-  .delivery-ranges {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; overflow: visible;
-  }
-  .delivery-ranges .coach-tab { width: 100%; padding: 10px 4px; font-size: 13.5px; }
+  .delivery-ranges { gap: 6px; }
+  .delivery-ranges .coach-tab { padding: 10px 12px; font-size: 13.5px; }
+  .delivery-ranges .coach-tab.range-sub { padding: 9px 11px; }
 }
 /* 대기/대응 그룹 구분 — '전체'에서도 두 상태가 섞이지 않게 */
 .coach-group + .coach-group { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
