@@ -9,6 +9,7 @@ import {
   assignedCoachLabel,
 } from '../config.js'
 import { fmtTimeOnly } from '../lib/time.js'
+import { useMediaQuery } from '../lib/useMediaQuery.js'
 import { isHandledByMe } from '../lib/storage.js'
 
 // 마스터 메이트 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 마스터 메이트 개인별 배정.
@@ -16,6 +17,10 @@ import { isHandledByMe } from '../lib/storage.js'
 // "내 담당 팀만" 필터로 담당 호출을 빠르게 걸러 처리.
 export default function CallsTab({ scan, coach, onUpdateStatus }) {
   const [onlyMine, setOnlyMine] = useState(false)
+  // 넓은 화면에서는 '완료 처리'를 '대기로' 옆에 둡니다. 자리가 넉넉해
+  // 굳이 아래로 내릴 이유가 없고, 두 버튼이 붙어 있는 편이 찾기 쉽습니다.
+  // 폰에서는 한 줄에 들어가지 않아 사유 아래 전폭 버튼으로 내립니다.
+  const wideEnough = useMediaQuery('(min-width: 561px)')
   // 총관리자는 담당 구간이 없어 '내 담당 팀만'이 쓸모가 없습니다. 대신 아무도
   // 갈 사람이 없는 호출만 추려 봅니다 — 실제로 개입해야 하는 건 그것뿐입니다.
   const [onlyUnassigned, setOnlyUnassigned] = useState(false)
@@ -150,6 +155,14 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                             >
                               대기로
                             </button>
+                            {wideEnough && (
+                              <button
+                                className="btn-secondary sm"
+                                onClick={() => onUpdateStatus(c.team, c.id, 'done')}
+                              >
+                                완료 처리
+                              </button>
+                            )}
                           </span>
                         )}
                       </>
@@ -160,9 +173,10 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                     <span className="call-at">{fmtTimeOnly(new Date(c.createdAt))}</span>
                     {c.reason ? `“${c.reason}”` : '사유 미작성'}
                   </p>
-                  {/* 완료는 카드를 끝내는 동작이라 사유를 읽은 다음 자리에 둡니다.
-                      폭을 꽉 채워 장갑 낀 손으로도 누를 수 있게 했습니다. */}
-                  {c.status !== 'waiting' && canControl && (
+                  {/* 폰에서는 머리줄에 버튼 둘이 들어가지 않습니다. 완료는 카드를
+                      끝내는 동작이라 사유를 읽은 다음 자리가 순서에도 맞고,
+                      폭을 꽉 채우면 장갑 낀 손으로도 누를 수 있습니다. */}
+                  {c.status !== 'waiting' && canControl && !wideEnough && (
                     <button
                       className="btn-secondary call-done-btn"
                       onClick={() => onUpdateStatus(c.team, c.id, 'done')}
