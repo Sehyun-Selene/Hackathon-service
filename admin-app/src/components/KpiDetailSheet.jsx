@@ -162,6 +162,10 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
     try {
       const r = await notifyMissing({
         kind: 'teams',
+        // 실제 있는 팀 번호만 넘깁니다. 서버가 1..개수로 만들어 쓰면
+        // 빈자리(G-05)가 미등록 팀으로 끼어듭니다.
+        teamIds: ALL_TEAM_IDS,
+        // 예전 서버(teamIds를 모르는 판)를 위한 대비책
         leagues: LEAGUES.map((l) => ({ prefix: l.prefix, count: l.count })),
         mealId: mealFilter,
         label: MEAL_BY_ID[mealFilter]?.label || '',

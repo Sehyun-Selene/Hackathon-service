@@ -70,8 +70,8 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || ''
 // 팀 번호는 자리배치의 테이블 번호를 그대로 씁니다 — 'E-45'(필드) / 'G-12'(개발).
 // 접두어가 없으면 두 리그의 같은 숫자가 한 팀으로 섞입니다.
 // 앱 config.LEAGUES와 같은 값이어야 하며, 바꿀 때는 환경변수로 함께 조정하세요.
-//   예) TEAM_LEAGUES="E:104,G:31"
-const TEAM_LEAGUES = (process.env.TEAM_LEAGUES || 'E:104,G:31')
+//   예) TEAM_LEAGUES="E:105,G:31"
+const TEAM_LEAGUES = (process.env.TEAM_LEAGUES || 'E:105,G:31')
   .split(',')
   .map((part) => {
     const [prefix, count] = part.split(':')
@@ -745,14 +745,30 @@ const server = http.createServer(async (req, res) => {
       const kind = body.kind === 'orders' ? 'orders' : 'teams'
       // 팀 번호는 'E-45' / 'G-12' 형태입니다. 앱이 리그 정의(접두어·개수)만
       // 넘겨주고, 어떤 팀이 빠졌는지는 서버가 자기 데이터로 계산합니다.
-      const leagues = (Array.isArray(body.leagues) ? body.leagues : [])
-        .map((l) => ({
-          prefix: String(l?.prefix || '').toUpperCase(),
-          count: Math.min(Math.max(Number(l?.count) || 0, 0), 500),
-        }))
-        .filter((l) => /^[A-Z]$/.test(l.prefix) && l.count > 0)
-      if (!leagues.length) {
-        sendJson(res, 400, { error: 'leagues required' })
+      // 앱이 실제 팀 번호 목록을 넘깁니다. 번호 사이가 비어 있는 리그가
+      // 있어(G-05는 빈자리) 1..개수로 만들어 쓰면 없는 팀이 끼어듭니다.
+      // 넘어온 번호는 형식을 검사해 걸러냅니다.
+      let candidateIds = (Array.isArray(body.teamIds) ? body.teamIds : [])
+        .map((x) => String(x || '').trim().toUpperCase())
+        .filter(validTeamId)
+        .slice(0, 1000)
+      if (!candidateIds.length) {
+        // 예전 앱 대비 — 리그 정의만 왔으면 번호를 만들어 씁니다
+        const leagues = (Array.isArray(body.leagues) ? body.leagues : [])
+          .map((l) => ({
+            prefix: String(l?.prefix || '').toUpperCase(),
+            count: Math.min(Math.max(Number(l?.count) || 0, 0), 500),
+          }))
+          .filter((l) => /^[A-Z]$/.test(l.prefix) && l.count > 0)
+        candidateIds = leagues.flatMap((l) =>
+          Array.from(
+            { length: l.count },
+            (_, i) => l.prefix + '-' + String(i + 1).padStart(2, '0'),
+          ),
+        )
+      }
+      if (!candidateIds.length) {
+        sendJson(res, 400, { error: 'teamIds required' })
         return
       }
       const mealId = typeof body.mealId === 'string' ? body.mealId : ''
@@ -781,16 +797,13 @@ const server = http.createServer(async (req, res) => {
       const roster = store.get('team-roster')
       const registered = new Set(Array.isArray(roster?.ids) ? roster.ids : [])
       const teams = []
-      for (const league of leagues) {
-        for (let n = 1; n <= league.count; n++) {
-          const id = league.prefix + '-' + String(n).padStart(2, '0')
-          if (kind === 'teams') {
-            if (!registered.has(id)) teams.push(id)
-          } else {
-            if (!registered.has(id)) continue // 등록도 안 한 팀은 주문 재촉 대상이 아님
-            const items = store.get('order:' + id)?.meals?.[mealId]?.items || []
-            if (!items.length) teams.push(id)
-          }
+      for (const id of candidateIds) {
+        if (kind === 'teams') {
+          if (!registered.has(id)) teams.push(id)
+        } else {
+          if (!registered.has(id)) continue // 등록도 안 한 팀은 주문 재촉 대상이 아님
+          const items = store.get('order:' + id)?.meals?.[mealId]?.items || []
+          if (!items.length) teams.push(id)
         }
       }
       if (!teams.length) {

@@ -121,7 +121,9 @@ test('같은 호출을 동시에 잡으면 한 명만 성공한다', async () =>
 test('범위를 벗어나거나 정규화되지 않은 팀 번호를 거절한다', async () => {
   assert.equal((await post('/api/roster-add', { teamId: '1' })).status, 400)
   assert.equal((await post('/api/roster-add', { teamId: 'E-1' })).status, 400)
-  assert.equal((await post('/api/roster-add', { teamId: 'E-105' })).status, 400)
+  assert.equal((await post('/api/roster-add', { teamId: 'E-106' })).status, 400)
+  // E-105는 개발자리그 G-05에서 옮겨온 실제 자리라 받아야 합니다
+  assert.equal((await post('/api/roster-add', { teamId: 'E-105' })).status, 200)
   assert.equal((await post('/api/roster-add', { teamId: 'G-32' })).status, 400)
   assert.equal((await post('/api/roster-add', { teamId: 'X-01' })).status, 400)
 })

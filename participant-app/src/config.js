@@ -77,8 +77,11 @@ export const CALL_LIMIT_PER_TEAM = 5
 //     막아서 못 받는 것보다 한 개 남는 편이 낫기 때문입니다.
 //   name = 팀명. 등록할 때 번호를 확인시켜 주는 용도입니다.
 // ---------------------------------------------------------------
+// count = 그 리그에서 가장 큰 테이블 번호입니다. 팀 수와 다를 수 있습니다 —
+// 개발자리그는 번호가 G-31까지 가지만 G-05는 빈자리여서 30팀입니다.
+// 실제 팀 목록은 아래 TEAMS에서 뽑습니다.
 export const LEAGUES = [
-  { id: 'field', prefix: 'E', label: '필드리그', count: 104 },
+  { id: 'field', prefix: 'E', label: '필드리그', count: 105 },
   { id: 'dev', prefix: 'G', label: '개발자리그', count: 31 },
 ]
 
@@ -187,12 +190,13 @@ export const TEAMS = {
   'E-102': { name: "A-06", size: 4 },
   'E-103': { name: "A-07", size: 4 },
   'E-104': { name: "A-08", size: 4 },
+  // 개발자리그 G-05에 있다가 필드리그로 옮겨온 팀입니다
+  'E-105': { name: "써브(Thermal Bridge)", size: 2 },
 
   'G-01': { name: "JDD", size: 3 },
   'G-02': { name: "KNOW:HOW", size: 1 },
   'G-03': { name: "TBD", size: 4 },
   'G-04': { name: "샘탁", size: 2 },
-  'G-05': { name: "써브(Thermal Bridge)", size: 2 },
   'G-06': { name: "AX퍼펭단", size: 2 },
   'G-07': { name: "맥민희언즈", size: 4 },
   'G-08': { name: "화공이지만, 개발은 하고 싶어", size: 3 },
@@ -222,11 +226,14 @@ export const TEAMS = {
 }
 
 export const LEAGUE_BY_PREFIX = Object.fromEntries(LEAGUES.map((l) => [l.prefix, l]))
-// 리그별 팀 번호 목록 (E-01, E-02, …)
+// 리그별 팀 번호 목록 — 번호를 1부터 만들어 쓰지 않고 TEAMS에 실제로 있는
+// 것만 모읍니다. G-05처럼 중간이 빈 리그에서 없는 팀이 격자에 생기기 때문입니다.
 export const TEAM_IDS_BY_LEAGUE = Object.fromEntries(
   LEAGUES.map((l) => [
     l.id,
-    Array.from({ length: l.count }, (_, i) => l.prefix + '-' + String(i + 1).padStart(2, '0')),
+    Object.keys(TEAMS)
+      .filter((id) => id.charAt(0) === l.prefix)
+      .sort((a, b) => parseInt(a.slice(2), 10) - parseInt(b.slice(2), 10)),
   ]),
 )
 export const ALL_TEAM_IDS = LEAGUES.flatMap((l) => TEAM_IDS_BY_LEAGUE[l.id])
