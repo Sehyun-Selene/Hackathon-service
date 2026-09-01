@@ -483,8 +483,22 @@ body {
 .call-card.waiting { border-color: #f0b6b8; background: #fef5f5; }
 .call-card.in_progress { border-color: #c8c0f4; background: var(--violet-soft); }
 .call-card.done { opacity: 0.72; }
-.call-card-main { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.call-table { font-weight: 800; font-size: 16px; }
+/* 호출 카드 머리줄 — 팀 번호 · 담당 · 접수 시각 · 현황 · 버튼을 한 줄에.
+   좁아지면 담당 이름이 먼저 줄어듭니다(min-width:0 + 말줄임). 팀 번호와
+   버튼은 줄지 않게 두어, 어떤 폭에서도 무엇을 눌러야 할지 보이게 합니다. */
+.call-head { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+/* 줄바꿈을 막고(nowrap) 대신 글자를 줄입니다. 줄바꿈을 허용하면 폭이 모자랄 때
+   버튼이 아래로 내려가, 카드마다 버튼 위치가 달라집니다. 줄어드는 쪽은 담당
+   이름과 처리자 이름 — 팀 번호와 버튼은 그대로 둡니다. */
+.call-head .status-pill.in-progress {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* 현황과 버튼은 오른쪽에 붙입니다 — 카드가 여러 장 쌓여도 누를 자리가
+   같은 세로선에 놓여 손이 헤매지 않습니다 */
+.call-head .status-pill { margin-left: auto; }
+.call-head .status-pill.done-pill { background: #eef0f3; color: var(--sub); font-weight: 600; }
+.call-head .btn-primary, .call-head .btn-secondary, .call-head .btn-ghost { flex: 0 0 auto; }
+.call-table { font-weight: 800; font-size: 16px; flex: 0 0 auto; white-space: nowrap; }
 /* 참가자가 작성한 호출 사유 — 카드 전체 폭(두 번째 줄) */
 .call-reason {
   flex: 0 0 100%; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--primary);
@@ -493,16 +507,24 @@ body {
 }
 .call-reason.empty { color: var(--sub); font-style: italic; border-left-color: var(--line); }
 .call-card.done .call-reason { background: transparent; }
-.call-elapsed { font-size: 13px; color: var(--red); font-weight: 600; font-variant-numeric: tabular-nums; }
-.call-card.done .call-elapsed { color: var(--sub); font-weight: 400; }
+/* 접수 시각 — 흐르는 숫자가 아니라 고정된 값이라 담담하게, 사유 앞에 둡니다 */
+.call-at {
+  font-size: 12.5px; color: var(--sub); font-weight: 700;
+  font-variant-numeric: tabular-nums; margin-right: 7px;
+}
+
 .call-used { font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; }
-.call-card-actions { display: flex; align-items: center; gap: 8px; }
-.status-pill { font-size: 13px; font-weight: 700; border-radius: 999px; padding: 5px 12px; }
+/* 상태 글자와 팀 번호는 줄바꿈되면 안 됩니다 — 좁아지면 담당 이름만 줄입니다 */
+.status-pill {
+  font-size: 13px; font-weight: 700; border-radius: 999px; padding: 5px 12px;
+  flex: 0 0 auto; white-space: nowrap;
+}
 .status-pill.waiting { background: #fdecec; color: var(--red); }
 .status-pill.in-progress { background: var(--violet-soft); color: var(--primary-dark); }
 .done-panel summary { cursor: pointer; font-weight: 800; font-size: 15px; padding: 2px 0; }
 .done-panel[open] summary { margin-bottom: 12px; }
 .call-company {
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 12px; background: #f2f3f5; color: var(--sub);
   border-radius: 999px; padding: 3px 9px; font-weight: 600;
 }
@@ -603,8 +625,6 @@ body {
   .total-name-full { display: none; }
   .total-name-short { display: inline; }
     .call-card { flex-direction: column; align-items: stretch; }
-  .call-card-actions { justify-content: flex-end; }
-  .call-card-actions .btn-primary, .call-card-actions .btn-secondary { width: auto; }
   .table-search-wrap .table-search {
     width: 100%; padding: 10px 8px 10px 36px; font-size: 16px; min-height: 44px;
   }

@@ -8,21 +8,16 @@ import {
   crewFor,
   assignedCoachLabel,
 } from '../config.js'
-import { now, fmtCountdown, fmtClock } from '../lib/time.js'
+import { fmtTimeOnly } from '../lib/time.js'
 import { isHandledByMe } from '../lib/storage.js'
 
 // 마스터 메이트 호출 알림 (PRD 5.3 + 요청 #5): 팀 번호 기준 마스터 메이트 개인별 배정.
 // 내가 담당하는 팀의 호출을 우선 대응하되, 다른 마스터 메이트도 지원 가능.
 // "내 담당 팀만" 필터로 담당 호출을 빠르게 걸러 처리.
 export default function CallsTab({ scan, coach, onUpdateStatus }) {
-  const [, setTick] = useState(0)
   const [onlyMine, setOnlyMine] = useState(false)
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 1000)
-    return () => clearInterval(id)
-  }, [])
-
-  const t = now().getTime()
+  // 접수 시각은 고정된 값이라 1초마다 다시 그릴 이유가 없습니다.
+  // (전에는 경과 시간을 흘려보내느라 초마다 화면 전체를 다시 그렸습니다)
   // 화면에는 닉네임까지, 짝 비교에는 이름만 씁니다. 표기를 그대로 비교하면
   // 닉네임이 없는 분(캐롯글로벌)과 있는 분의 형식이 달라 어긋납니다.
   const assignedNameOf = (teamId) => getAssignedCoachForTeam(teamId)?.name || ''
@@ -90,12 +85,15 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
               const canControl = isHandledByMe(c, coach) || !!myAssignment?.callManager
               return (
                 <div key={c.id} className={`call-card ${c.status}${mine ? ' mine-company' : ''}`}>
-                  <div className="call-card-main">
+                  {/* 팀 번호 · 담당 · 현황 · 버튼을 한 줄에 둡니다. 흩어 놓으면
+                      카드마다 눈이 다시 자리를 찾아야 합니다. 좁아지면 담당
+                      이름부터 줄어듭니다(말줄임) — 팀 번호와 버튼은 어떤
+                      폭에서도 잘리면 안 되는 정보입니다.
+                      접수 시각은 사유 줄로 내렸습니다. 폰에서 다섯 항목을
+                      한 줄에 넣으면 버튼이 아래로 밀려납니다. */}
+                  <div className="call-head">
                     <span className="call-table">팀 {c.team}</span>
-                    <span className={`call-company${mine ? ' mine' : ''}`}>담당 {c.assignedLabel}</span>
-                    <span className="call-elapsed">⏱ {fmtCountdown(t - c.createdAt)} 경과</span>
-                  </div>
-                  <div className="call-card-actions">
+                    <span className={`call-company${mine ? ' mine' : ''}`}>{c.assignedLabel}</span>
                     {c.status === 'waiting' ? (
                       <>
                         <span className="status-pill waiting">대기중</span>
@@ -136,6 +134,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                   </div>
                   {/* 참가자가 작성한 호출 사유 — 이동 전에 상황을 파악하도록 카드 전체 폭으로 표시 */}
                   <p className={`call-reason${c.reason ? '' : ' empty'}`}>
+                    <span className="call-at">{fmtTimeOnly(new Date(c.createdAt))}</span>
                     {c.reason ? `“${c.reason}”` : '사유 미작성'}
                   </p>
                 </div>
@@ -150,11 +149,12 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
         <div className="call-list">
           {done.map((c) => (
             <div key={c.id} className="call-card done">
-              <div className="call-card-main">
+              <div className="call-head">
                 <span className="call-table">팀 {c.team}</span>
-                <span className="call-company">담당 {c.assignedLabel}</span>
-                <span className="call-elapsed">
-                  {fmtClock(new Date(c.createdAt))} 호출 → {c.doneAt ? fmtClock(new Date(c.doneAt)) : '-'} 완료
+                <span className="call-company">{c.assignedLabel}</span>
+                <span className="status-pill done-pill">
+                  {fmtTimeOnly(new Date(c.createdAt))} →{' '}
+                  {c.doneAt ? fmtTimeOnly(new Date(c.doneAt)) : '-'}
                 </span>
               </div>
               {c.reason && <p className="call-reason">“{c.reason}”</p>}
