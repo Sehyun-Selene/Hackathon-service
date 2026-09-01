@@ -494,6 +494,8 @@ body {
    아랫줄로 내려갑니다. 카드 밖으로 밀려나는 것보다 낫습니다. */
 .call-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .call-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: 0 0 auto; }
+/* 완료 처리 — 카드 하나에 하나뿐인 마무리 동작이라 폭을 채웁니다 */
+.call-done-btn { width: 100%; margin-top: 10px; }
 /* 줄바꿈을 막고(nowrap) 대신 글자를 줄입니다. 줄바꿈을 허용하면 폭이 모자랄 때
    버튼이 아래로 내려가, 카드마다 버튼 위치가 달라집니다. 줄어드는 쪽은 담당
    이름과 처리자 이름 — 팀 번호와 버튼은 그대로 둡니다. */
@@ -531,7 +533,8 @@ body {
 .done-panel summary { cursor: pointer; font-weight: 800; font-size: 15px; padding: 2px 0; }
 .done-panel[open] summary { margin-bottom: 12px; }
 .call-company {
-  flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1 1 0; max-width: max-content; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 12px; background: #f2f3f5; color: var(--sub);
   border-radius: 999px; padding: 3px 9px; font-weight: 600;
 }

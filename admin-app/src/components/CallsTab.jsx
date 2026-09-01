@@ -112,12 +112,11 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
               const canControl = isHandledByMe(c, coach) || !!myAssignment?.callManager
               return (
                 <div key={c.id} className={`call-card ${c.status}${mine ? ' mine-company' : ''}`}>
-                  {/* 팀 번호 · 담당 · 현황 · 버튼을 한 줄에 둡니다. 흩어 놓으면
-                      카드마다 눈이 다시 자리를 찾아야 합니다. 좁아지면 담당
-                      이름부터 줄어듭니다(말줄임) — 팀 번호와 버튼은 어떤
-                      폭에서도 잘리면 안 되는 정보입니다.
+                  {/* 팀 번호 · 담당 · 현황 · 버튼 하나를 한 줄에 둡니다.
+                      좁아지면 담당 이름만 줄어듭니다(말줄임) — 팀 번호와
+                      버튼은 어떤 폭에서도 잘리면 안 되는 정보입니다.
                       접수 시각은 사유 줄로 내렸습니다. 폰에서 다섯 항목을
-                      한 줄에 넣으면 버튼이 아래로 밀려납니다. */}
+                      한 줄에 넣으면 버튼이 카드 밖으로 밀려납니다. */}
                   <div className="call-head">
                     <span className="call-table">팀 {c.team}</span>
                     <span className={`call-company${mine ? ' mine' : ''}`}>{c.assignedLabel}</span>
@@ -140,7 +139,8 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                         </span>
                         {/* 잘못 누른 '처리 시작'을 되돌립니다. 되돌리지 못하면 그
                             호출이 대기 목록에서 사라지고, 슬랙 미처리 알림도
-                            대기 상태만 보므로 아무 알림 없이 묻힙니다. */}
+                            대기 상태만 보므로 아무 알림 없이 묻힙니다.
+                            '처리 시작'이 있던 자리를 그대로 물려받습니다. */}
                         {canControl && (
                           <span className="call-actions">
                             <button
@@ -149,12 +149,6 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                               title="대기 상태로 되돌립니다"
                             >
                               대기로
-                            </button>
-                            <button
-                              className="btn-secondary sm"
-                              onClick={() => onUpdateStatus(c.team, c.id, 'done')}
-                            >
-                              완료 처리
                             </button>
                           </span>
                         )}
@@ -166,6 +160,16 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                     <span className="call-at">{fmtTimeOnly(new Date(c.createdAt))}</span>
                     {c.reason ? `“${c.reason}”` : '사유 미작성'}
                   </p>
+                  {/* 완료는 카드를 끝내는 동작이라 사유를 읽은 다음 자리에 둡니다.
+                      폭을 꽉 채워 장갑 낀 손으로도 누를 수 있게 했습니다. */}
+                  {c.status !== 'waiting' && canControl && (
+                    <button
+                      className="btn-secondary call-done-btn"
+                      onClick={() => onUpdateStatus(c.team, c.id, 'done')}
+                    >
+                      완료 처리
+                    </button>
+                  )}
                 </div>
               )
             })}
