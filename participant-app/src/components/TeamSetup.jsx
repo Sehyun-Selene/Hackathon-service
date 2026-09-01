@@ -118,7 +118,16 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
   const onTeamNoBlur = async () => {
     const id = normalizeTeam(teamNo, leagueDef.prefix)
     setExistingInfo(null)
-    if (!id || !existingLookup) return
+    if (!id) return setError('')
+    // 자리배치표에 없는 번호면 여기서 끝냅니다. 등록 여부를 먼저 물으면
+    // 남아 있던 옛 기록 때문에 '이미 등록된 팀'이라는 엉뚱한 안내가 뜹니다.
+    if (!TEAMS[id]) {
+      return setError(
+        leagueDef.label + '에 ' + id + ' 테이블이 없습니다. 리그와 번호를 확인해 주세요.',
+      )
+    }
+    setError('')
+    if (!existingLookup) return
     const existing = await existingLookup(id)
     if (!existing) return
     // 우리 팀 정보를 편집하는 중이면 안내가 필요 없습니다
@@ -133,8 +142,10 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     setError('')
     const teamId = normalizeTeam(teamNo, leagueDef.prefix)
     if (!teamId) return setError('테이블 번호를 입력해 주세요.')
-    // 자리배치 시트에 없는 번호 — 오타이거나 다른 리그일 가능성이 큽니다
+    // 자리배치 시트에 없는 번호 — 오타이거나 다른 리그일 가능성이 큽니다.
+    // 등록 여부보다 먼저 봅니다: 없는 자리에 '이미 등록됨'은 말이 안 됩니다.
     if (!TEAMS[teamId]) {
+      setExistingInfo(null)
       return setError(
         leagueDef.label + '에 ' + teamId + ' 테이블이 없습니다. 리그와 번호를 확인해 주세요.',
       )
@@ -276,7 +287,10 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
               value={teamNo}
               onChange={(e) => {
                 setTeamNo(e.target.value)
+                // 고치는 중에는 이전 안내를 지웁니다 — 서로 어긋나는 문구가
+                // 위아래로 같이 떠 있으면 무엇이 문제인지 알 수 없습니다
                 setExistingInfo(null)
+                setError('')
               }}
               onBlur={onTeamNoBlur}
             />
