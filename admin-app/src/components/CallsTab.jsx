@@ -16,6 +16,9 @@ import { isHandledByMe } from '../lib/storage.js'
 // "내 담당 팀만" 필터로 담당 호출을 빠르게 걸러 처리.
 export default function CallsTab({ scan, coach, onUpdateStatus }) {
   const [onlyMine, setOnlyMine] = useState(false)
+  // 총관리자는 담당 구간이 없어 '내 담당 팀만'이 쓸모가 없습니다. 대신 아무도
+  // 갈 사람이 없는 호출만 추려 봅니다 — 실제로 개입해야 하는 건 그것뿐입니다.
+  const [onlyUnassigned, setOnlyUnassigned] = useState(false)
   // 접수 시각은 고정된 값이라 1초마다 다시 그릴 이유가 없습니다.
   // (전에는 경과 시간을 흘려보내느라 초마다 화면 전체를 다시 그렸습니다)
   // 화면에는 닉네임까지, 짝 비교에는 이름만 씁니다. 표기를 그대로 비교하면
@@ -45,7 +48,11 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
     .filter((c) => c.status === 'done' && isHandledByMe(c, coach))
     .sort((a, b) => b.doneAt - a.doneAt)
 
-  const shown = onlyMine ? active.filter((c) => c.assignedName === coach.name) : active
+  const shown = active.filter((c) => {
+    if (onlyMine && c.assignedName !== coach.name) return false
+    if (onlyUnassigned && c.assignedName) return false
+    return true
+  })
 
   // 호출 횟수는 내 담당 팀만 봅니다. 남의 담당 팀 잔여 횟수는 내가 판단할
   // 일이 아니고, 메이트에게 다른 팀 정보가 필요한 곳은 '진행 중인 호출'뿐입니다.
@@ -65,18 +72,38 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
       <section className="panel">
         <div className="panel-head-row">
           <h3>진행 중인 호출 ({shown.length}건)</h3>
-          <label className="mine-toggle">
-            <input
-              type="checkbox"
-              checked={onlyMine}
-              onChange={(e) => setOnlyMine(e.target.checked)}
-            />
-            내 담당 팀만
-          </label>
+          <div className="call-filters">
+            {/* 담당 구간이 있는 사람에게만 의미가 있습니다 */}
+            {myTeams.length > 0 && (
+              <label className="mine-toggle">
+                <input
+                  type="checkbox"
+                  checked={onlyMine}
+                  onChange={(e) => setOnlyMine(e.target.checked)}
+                />
+                내 담당 팀만
+              </label>
+            )}
+            {/* 총관리자 전용 — 담당자가 없어 아무도 가지 않을 호출만 */}
+            {showAllTeams && (
+              <label className="mine-toggle">
+                <input
+                  type="checkbox"
+                  checked={onlyUnassigned}
+                  onChange={(e) => setOnlyUnassigned(e.target.checked)}
+                />
+                미배정만
+              </label>
+            )}
+          </div>
         </div>
         {shown.length === 0 ? (
           <p className="empty-text">
-            {onlyMine ? '내가 담당하는 진행 중 호출이 없습니다.' : '진행 중인 호출이 없습니다.'}
+            {onlyUnassigned
+              ? '담당자가 없는 호출이 없습니다.'
+              : onlyMine
+                ? '내가 담당하는 진행 중 호출이 없습니다.'
+                : '진행 중인 호출이 없습니다.'}
           </p>
         ) : (
           <div className="call-list">
@@ -97,12 +124,14 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                     {c.status === 'waiting' ? (
                       <>
                         <span className="status-pill waiting">대기중</span>
-                        <button
-                          className="btn-primary sm"
-                          onClick={() => onUpdateStatus(c.team, c.id, 'in_progress')}
-                        >
-                          처리 시작
-                        </button>
+                        <span className="call-actions">
+                          <button
+                            className="btn-primary sm"
+                            onClick={() => onUpdateStatus(c.team, c.id, 'in_progress')}
+                          >
+                            처리 시작
+                          </button>
+                        </span>
                       </>
                     ) : (
                       <>
@@ -113,7 +142,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                             호출이 대기 목록에서 사라지고, 슬랙 미처리 알림도
                             대기 상태만 보므로 아무 알림 없이 묻힙니다. */}
                         {canControl && (
-                          <>
+                          <span className="call-actions">
                             <button
                               className="btn-ghost sm call-revert"
                               onClick={() => onUpdateStatus(c.team, c.id, 'waiting', c)}
@@ -127,7 +156,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                             >
                               완료 처리
                             </button>
-                          </>
+                          </span>
                         )}
                       </>
                     )}
