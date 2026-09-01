@@ -70,8 +70,8 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || ''
 // 팀 번호는 자리배치의 테이블 번호를 그대로 씁니다 — 'E-45'(필드) / 'G-12'(개발).
 // 접두어가 없으면 두 리그의 같은 숫자가 한 팀으로 섞입니다.
 // 앱 config.LEAGUES와 같은 값이어야 하며, 바꿀 때는 환경변수로 함께 조정하세요.
-//   예) TEAM_LEAGUES="E:105,G:31"
-const TEAM_LEAGUES = (process.env.TEAM_LEAGUES || 'E:105,G:31')
+//   예) TEAM_LEAGUES="E:206,G:31"  (외부사 자리가 E-200번대라 상한이 206)
+const TEAM_LEAGUES = (process.env.TEAM_LEAGUES || 'E:206,G:31')
   .split(',')
   .map((part) => {
     const [prefix, count] = part.split(':')

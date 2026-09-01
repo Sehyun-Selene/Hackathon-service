@@ -121,10 +121,13 @@ test('같은 호출을 동시에 잡으면 한 명만 성공한다', async () =>
 test('범위를 벗어나거나 정규화되지 않은 팀 번호를 거절한다', async () => {
   assert.equal((await post('/api/roster-add', { teamId: '1' })).status, 400)
   assert.equal((await post('/api/roster-add', { teamId: 'E-1' })).status, 400)
-  assert.equal((await post('/api/roster-add', { teamId: 'E-106' })).status, 400)
-  // E-105는 개발자리그 G-05에서 옮겨온 실제 자리라 받아야 합니다
-  assert.equal((await post('/api/roster-add', { teamId: 'E-105' })).status, 200)
+  assert.equal((await post('/api/roster-add', { teamId: 'E-207' })).status, 400)
   assert.equal((await post('/api/roster-add', { teamId: 'G-32' })).status, 400)
+  // 실제로 쓰는 번호는 받습니다 — E-105(개발자리그에서 옮겨온 자리),
+  // E-200(외부사 자리). 서버는 접두어별 상한만 알고 중간 빈자리(G-05,
+  // E-106~199)는 모릅니다. 그건 참가자 앱이 팀 목록으로 막습니다.
+  assert.equal((await post('/api/roster-add', { teamId: 'E-105' })).status, 200)
+  assert.equal((await post('/api/roster-add', { teamId: 'E-200' })).status, 200)
   assert.equal((await post('/api/roster-add', { teamId: 'X-01' })).status, 400)
 })
 

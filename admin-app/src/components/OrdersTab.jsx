@@ -8,6 +8,7 @@ import {
   DELIVERY_TEAM_RANGE_SIZE,
   getAssignedCoachForTeam,
   personDiet,
+  TEAM_IDS_BY_LEAGUE,
 } from '../config.js'
 import { getOpenMeals, now } from '../lib/time.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
@@ -194,14 +195,26 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   // 네 팀, 개발자리그는 26~31 여섯 팀만 있는 칩이 생겨 한 번 더 눌러야
   // 하는 것에 비해 얻는 게 없습니다. → E-76~104, G-01~31
   const rangeOptions = LEAGUES.flatMap((league) => {
+    // 번호가 이어진 구역별로 먼저 나눕니다. 필드리그는 1~105 다음이 외부사
+    // 200~206이라, 1부터 죽 끊으면 아무도 없는 구간 칩이 잔뜩 생깁니다.
+    const nums = (TEAM_IDS_BY_LEAGUE[league.id] || []).map((id) => parseInt(id.slice(2), 10))
+    const blocks = []
+    nums.forEach((n, i) => {
+      if (i === 0 || n - nums[i - 1] > DELIVERY_TEAM_RANGE_SIZE) blocks.push([n, n])
+      else blocks[blocks.length - 1][1] = n
+    })
     const ranges = []
-    for (let start = 1; start <= league.count; start += DELIVERY_TEAM_RANGE_SIZE) {
-      ranges.push({ start, end: Math.min(start + DELIVERY_TEAM_RANGE_SIZE - 1, league.count) })
-    }
-    const last = ranges[ranges.length - 1]
-    if (ranges.length > 1 && last.end - last.start + 1 < DELIVERY_TEAM_RANGE_SIZE / 2) {
-      ranges.splice(ranges.length - 2, 2, { start: ranges[ranges.length - 2].start, end: last.end })
-    }
+    blocks.forEach(([from, to]) => {
+      const madeAt = ranges.length
+      for (let start = from; start <= to; start += DELIVERY_TEAM_RANGE_SIZE) {
+        ranges.push({ start, end: Math.min(start + DELIVERY_TEAM_RANGE_SIZE - 1, to) })
+      }
+      // 끝에 반 구간도 안 되게 남으면 앞 구간에 붙입니다 (E-101~105 → E-76~105)
+      const last = ranges[ranges.length - 1]
+      if (ranges.length - madeAt > 1 && last.end - last.start + 1 < DELIVERY_TEAM_RANGE_SIZE / 2) {
+        ranges.splice(ranges.length - 2, 2, { start: ranges[ranges.length - 2].start, end: last.end })
+      }
+    })
     return ranges.map(({ start, end }) => ({
       id: `${league.prefix}-${start}-${end}`,
       prefix: league.prefix,

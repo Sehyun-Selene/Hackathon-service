@@ -78,10 +78,11 @@ export const CALL_LIMIT_PER_TEAM = 5
 //   name = 팀명. 등록할 때 번호를 확인시켜 주는 용도입니다.
 // ---------------------------------------------------------------
 // count = 그 리그에서 가장 큰 테이블 번호입니다. 팀 수와 다를 수 있습니다 —
-// 개발자리그는 번호가 G-31까지 가지만 G-05는 빈자리여서 30팀입니다.
+// 개발자리그는 번호가 G-31까지 가지만 G-05는 빈자리여서 30팀이고,
+// 필드리그는 외부사 자리가 E-200번대라 번호만 206까지 갑니다(실제 112팀).
 // 실제 팀 목록은 아래 TEAMS에서 뽑습니다.
 export const LEAGUES = [
-  { id: 'field', prefix: 'E', label: '필드리그', count: 105 },
+  { id: 'field', prefix: 'E', label: '필드리그', count: 206 },
   { id: 'dev', prefix: 'G', label: '개발자리그', count: 31 },
 ]
 
@@ -193,6 +194,16 @@ export const TEAMS = {
   // 개발자리그 G-05에 있다가 필드리그로 옮겨온 팀입니다
   'E-105': { name: "써브(Thermal Bridge)", size: 2 },
 
+  // 외부사 — 자리배치표에는 자리가 없고 번호만 시트에 적혀 있습니다.
+  // 팀명이 아직 없어 회사명으로 확인시켜 줍니다(company). 정해지면 name을 채우세요.
+  'E-200': { name: "", company: "오리온", size: 4 },
+  'E-201': { name: "", company: "오리온", size: 4 },
+  'E-202': { name: "", company: "오리온", size: 4 },
+  'E-203': { name: "", company: "한전", size: 4 },
+  'E-204': { name: "", company: "한국표준과학연구원", size: 2 },
+  'E-205': { name: "", company: "한국경제신문", size: 4 },
+  'E-206': { name: "", company: "한국동서발전", size: 4 },
+
   'G-01': { name: "JDD", size: 3 },
   'G-02': { name: "KNOW:HOW", size: 1 },
   'G-03': { name: "TBD", size: 4 },
@@ -244,6 +255,31 @@ export function leagueOf(teamId) {
 // 그 팀의 인원 (모르면 null — 시트에 없는 번호)
 export function teamSize(teamId) {
   return TEAMS[teamId]?.size ?? null
+}
+// 등록할 때 "이 팀이 맞나"를 확인시켜 주는 이름. 팀명이 아직 없는 외부사는
+// 회사명으로 대신합니다 — 빈 이름을 보여주면 확인이 되지 않습니다.
+export function teamLabel(teamId) {
+  const team = TEAMS[teamId]
+  if (!team) return ""
+  return team.name || team.company || ""
+}
+// 그 리그에서 실제로 쓰는 번호 구간 — 입력칸 안내에 씁니다 (예: "1~105 · 200~206")
+export function leagueNumberHint(leagueId) {
+  const nums = (TEAM_IDS_BY_LEAGUE[leagueId] || []).map((id) => parseInt(id.slice(2), 10))
+  if (!nums.length) return ""
+  const parts = []
+  let start = nums[0]
+  let prev = nums[0]
+  for (let i = 1; i <= nums.length; i++) {
+    const n = nums[i]
+    // 번호가 크게 뛰면 다른 구역입니다 (필드리그 105 → 200)
+    if (n === undefined || n - prev > DELIVERY_TEAM_RANGE_SIZE) {
+      parts.push(start === prev ? String(start) : start + '~' + prev)
+      start = n
+    }
+    prev = n
+  }
+  return parts.join(' · ')
 }
 // 정렬용 숫자 키. 'E-01' 같은 문자열은 그냥 빼면 NaN이 되므로,
 // 리그 순서(LEAGUES 배열 순) × 1000 + 번호로 바꿔 씁니다.

@@ -9,6 +9,8 @@ import {
   MENUS,
   leagueOf,
   personDiet,
+  teamLabel,
+  leagueNumberHint,
 } from '../config.js'
 import { normalizeTeam } from '../lib/storage.js'
 import GuideSection from './GuideSection.jsx'
@@ -142,8 +144,11 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     const isEditingSelf = initial?.teamId === teamId
     // 번호가 맞는지 한 번 확인받습니다 — 잘못 누르면 남의 팀으로 주문이 들어갑니다
     if (!isEditingSelf) {
+      // 팀명이 아직 정해지지 않은 외부사는 회사명으로 확인시켜 줍니다.
+      // 빈 이름을 보여주면 확인이 되지 않습니다.
+      const 이름 = teamLabel(teamId)
       const ok = window.confirm(
-        `${teamId} · ${팀.name} (${팀.size}명)\n\n이 팀이 맞으신가요?`,
+        `${teamId}${이름 ? ` · ${이름}` : ''} (${팀.size}명)\n\n이 팀이 맞으신가요?`,
       )
       if (!ok) return
     }
@@ -267,7 +272,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
               inputMode="numeric"
               min="1"
               max={leagueDef.count}
-              placeholder={`1 ~ ${leagueDef.count}`}
+              placeholder={leagueNumberHint(leagueDef.id)}
               value={teamNo}
               onChange={(e) => {
                 setTeamNo(e.target.value)
