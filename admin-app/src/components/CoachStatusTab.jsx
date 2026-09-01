@@ -149,7 +149,9 @@ export default function CoachStatusTab({ scan, coach }) {
                     return (
                       <div key={c.id} className={`coach-item${b.length ? ' busy' : ' idle'}`}>
                         <span className="coach-name">
-                          🧑‍🏫 {c.name}
+                          {/* 이름을 따로 감싸야 담당 구간만 줄어듭니다.
+                              감싸지 않으면 이름도 같이 줄어 글자가 잘립니다. */}
+                          <span className="coach-person">🧑‍🏫 {c.name}</span>
                           <span className="coach-range">
                             {range ? `팀 ${range}` : roleLabel || '담당 미배정'}
                           </span>
