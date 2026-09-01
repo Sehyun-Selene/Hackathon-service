@@ -36,6 +36,15 @@ export function fmtTimeOnly(d) {
   return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
 }
 
+// 초까지 — 동기화 시각처럼 "방금 갱신됐다"를 보여줘야 하는 자리에 씁니다.
+// 분 단위로 두면 새로고침을 눌러도 숫자가 그대로라 동작했는지 알 수 없습니다.
+export function fmtTimeWithSec(d) {
+  const dt = d instanceof Date ? d : new Date(d)
+  return (
+    fmtTimeOnly(dt) + ':' + String(dt.getSeconds()).padStart(2, '0')
+  )
+}
+
 export function fmtCountdown(ms) {
   if (ms < 0) ms = 0
   const s = Math.floor(ms / 1000)

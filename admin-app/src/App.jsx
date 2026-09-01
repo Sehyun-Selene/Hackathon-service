@@ -24,7 +24,14 @@ import {
   flagSet,
   SOLDOUT_KEY,
 } from './lib/storage.js'
-import { now, fmtAgo, fmtClock, getNextMeal, getOpenMeals, getVisibleMeals } from './lib/time.js'
+import {
+  now,
+  fmtAgo,
+  getNextMeal,
+  getOpenMeals,
+  getVisibleMeals,
+  fmtTimeWithSec,
+} from './lib/time.js'
 import { initAudio, playCallAlert } from './lib/audio.js'
 import OrdersTab from './components/OrdersTab.jsx'
 import CallsTab from './components/CallsTab.jsx'
@@ -133,6 +140,9 @@ export default function App() {
   const [undoToast, setUndoToast] = useState(null)
   const knownWaitingIds = useRef(null)
   const refreshRunning = useRef(false)
+  // 새로고침이 눌렸다는 신호. 요청은 대개 1초 안에 끝나 그냥 두면 아무 일도
+  // 없었던 것처럼 보입니다 — 최소 0.5초는 돌려서 눌린 걸 보여줍니다.
+  const [refreshing, setRefreshing] = useState(false)
   const undoTimer = useRef(null)
   const undoActionRef = useRef(null)
   const soundOnRef = useRef(true)
@@ -169,7 +179,20 @@ export default function App() {
   }, [isDark])
 
   const refresh = useCallback(async () => {
-    if (refreshRunning.current) return
+    // 누른 티는 먼저 냅니다. 3초마다 도는 자동 갱신과 겹치면 아래에서
+    // 곧장 빠져나가는데, 그때도 아무 반응이 없으면 버튼이 고장 난 것처럼 보입니다.
+    setRefreshing(true)
+    const spunUntil = Date.now() + 500
+    const stopSpinning = async () => {
+      const left = spunUntil - Date.now()
+      if (left > 0) await new Promise((r) => setTimeout(r, left))
+      setRefreshing(false)
+    }
+    // 요청까지 겹쳐 보내지는 않습니다 — 이미 받고 있는 응답이 곧 반영됩니다
+    if (refreshRunning.current) {
+      stopSpinning()
+      return
+    }
     refreshRunning.current = true
     let result
     try {
@@ -178,6 +201,7 @@ export default function App() {
     } catch {
       setSyncError(true)
       refreshRunning.current = false
+      stopSpinning()
       return
     }
     const waitingIds = new Set(
@@ -192,6 +216,7 @@ export default function App() {
     knownWaitingIds.current = waitingIds
     setScan(result)
     refreshRunning.current = false
+    stopSpinning()
   }, [])
 
   const runUndo = useCallback(async () => {
@@ -557,11 +582,21 @@ export default function App() {
             {scan && (
               <span className="sync-time">
                 <span className="narrow-hide">동기화 </span>
-                {fmtClock(new Date(scan.at))}
+                {/* 초까지 보여줍니다. 3초마다 저절로 바뀌므로, 누르지 않아도
+                    화면이 살아 있다는 것이 이 숫자로 드러납니다. */}
+                {fmtTimeWithSec(new Date(scan.at))}
               </span>
             )}
-            <button className="btn-ghost" onClick={refresh} aria-label="새로고침">
-              ⟳<span className="narrow-hide"> 새로고침</span>
+            <button
+              className={`btn-ghost sync-refresh${refreshing ? ' spinning' : ''}`}
+              onClick={refresh}
+              disabled={refreshing}
+              aria-label="새로고침"
+            >
+              <span className="sync-refresh-icon" aria-hidden="true">
+                ⟳
+              </span>
+              <span className="narrow-hide"> 새로고침</span>
             </button>
           </div>
         </header>
