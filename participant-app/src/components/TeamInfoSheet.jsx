@@ -1,3 +1,4 @@
+import { teamLabel } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 
@@ -31,6 +32,15 @@ export default function TeamInfoSheet({ team, onClose, onEdit }) {
             <span>팀 번호</span>
             <strong>팀 {team.teamId}</strong>
           </div>
+          {/* 번호만 보면 우리 팀이 맞는지 확신이 서지 않습니다. 자리배치표에
+              팀명이 함께 있으니 같이 보여줍니다. 외부사처럼 팀명이 아직
+              정해지지 않은 경우에는 회사명이 대신 나옵니다(teamLabel). */}
+          {teamLabel(team.teamId) && (
+            <div className="team-sheet-row">
+              <span>팀 이름</span>
+              <strong>{teamLabel(team.teamId)}</strong>
+            </div>
+          )}
           <div className="team-sheet-row">
             <span>팀원 수</span>
             <strong>{team.memberCount}명</strong>
