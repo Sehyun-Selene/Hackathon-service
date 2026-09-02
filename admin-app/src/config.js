@@ -380,54 +380,57 @@ export const COACH_ASSIGNMENTS = [
 ]
 
 // 3-2. 플레이 메이트 — 팀 곁에서 아이디어를 함께 보는 사람들.
+//    호출 알림을 받지 않으므로 슬랙 ID를 두지 않습니다.
 //    호출 대상이 아니라 관리자 앱의 호출 배정에는 들어가지 않습니다.
 //    (지금은 명단만 보관합니다 — 코드에서 읽는 곳이 아직 없습니다)
 export const PLAY_MATES = [
-  { id: 'play-01', name: '김현민', nickname: 'Charlie', company: 'GS에너지', slackUserId: 'U0A749Q7TD4' },
-  { id: 'play-02', name: '이상욱', nickname: 'Lodi', company: 'GS차지비', slackUserId: 'U0A82DA597S' },
-  { id: 'play-03', name: '정원재', nickname: 'Jeff', company: '파르나스호텔', slackUserId: 'U0A7K7HE6DP' },
-  { id: 'play-04', name: '허재연', nickname: 'Jenna', company: '파르나스호텔', slackUserId: 'U0A7AQSAHBN' },
-  { id: 'play-05', name: '곽서림', nickname: 'Lisa', company: '파르나스호텔', slackUserId: 'U0A7AQSHUTW' },
-  { id: 'play-06', name: '신명준', nickname: 'M', company: '반월열병합발전', slackUserId: 'U0A70RHU5B5' },
-  { id: 'play-07', name: '곽동욱', nickname: 'Levi', company: 'GS EPS', slackUserId: 'U0A6RPS7SGP' },
-  { id: 'play-08', name: '장윤수', nickname: 'Paul', company: 'GS건설', slackUserId: 'U0A783L3G9M' },
-  { id: 'play-09', name: '이형민', nickname: 'Lee Leo', company: 'GS건설', slackUserId: 'U0A82E987UZ' },
-  { id: 'play-10', name: '문정길', nickname: 'Jade', company: 'GS글로벌', slackUserId: 'U0A6ZTXHZHR' },
-  { id: 'play-11', name: '박재학', nickname: 'Jack', company: 'GS 엔텍', slackUserId: 'U0A7AQS9C4C' },
-  { id: 'play-12', name: '고영남', nickname: 'Kevin', company: 'GS 엔텍', slackUserId: 'U0A7AQSGP52' },
-  { id: 'play-13', name: '천지인', nickname: 'Jinny', company: 'GS글로벌', slackUserId: 'U0A777674TC' },
-  { id: 'play-14', name: '권태홍', nickname: 'HONG', company: 'GS리테일', slackUserId: 'U0A769LAGRY' },
+  { id: 'play-01', name: '김현민', nickname: 'Charlie', company: 'GS에너지' },
+  { id: 'play-02', name: '이상욱', nickname: 'Lodi', company: 'GS차지비' },
+  { id: 'play-03', name: '정원재', nickname: 'Jeff', company: '파르나스호텔' },
+  { id: 'play-04', name: '허재연', nickname: 'Jenna', company: '파르나스호텔' },
+  { id: 'play-05', name: '곽서림', nickname: 'Lisa', company: '파르나스호텔' },
+  { id: 'play-06', name: '신명준', nickname: 'M', company: '반월열병합발전' },
+  { id: 'play-07', name: '곽동욱', nickname: 'Levi', company: 'GS EPS' },
+  { id: 'play-08', name: '장윤수', nickname: 'Paul', company: 'GS건설' },
+  { id: 'play-09', name: '이형민', nickname: 'Lee Leo', company: 'GS건설' },
+  { id: 'play-10', name: '문정길', nickname: 'Jade', company: 'GS글로벌' },
+  { id: 'play-11', name: '박재학', nickname: 'Jack', company: 'GS 엔텍' },
+  { id: 'play-12', name: '고영남', nickname: 'Kevin', company: 'GS 엔텍' },
+  { id: 'play-13', name: '천지인', nickname: 'Jinny', company: 'GS글로벌' },
+  { id: 'play-14', name: '권태홍', nickname: 'HONG', company: 'GS리테일' },
   { id: 'play-15', name: '김정화', nickname: 'Kevin', company: 'GS리테일' },
-  { id: 'play-16', name: '김유진', nickname: 'Jia', company: 'GS리테일', slackUserId: 'U0A70RJ2NJF' },
-  { id: 'play-17', name: '배지수', nickname: 'Suzanne', company: 'GS문화재단', slackUserId: 'U0A70RJ1E75' },
-  { id: 'play-18', name: '김용일', nickname: 'Henry', company: 'GS스포츠', slackUserId: 'U0A6ZU03GEP' },
-  { id: 'play-19', name: '하지희', nickname: 'Lia', company: 'GS스포츠', slackUserId: 'U0AHW7U9A57' },
-  { id: 'play-20', name: '지동한', nickname: 'David', company: 'GS칼텍스', slackUserId: 'U0A7K7KQPFT' },
-  { id: 'play-21', name: '홍지영', nickname: 'JY', company: 'GS칼텍스', slackUserId: 'U0A7567FXAA' },
-  { id: 'play-22', name: '노엘', nickname: 'Eddy', company: 'GS칼텍스', slackUserId: 'U0A7772PMSN' },
-  { id: 'play-23', name: '유용희', nickname: 'Willie', company: 'GS파워', slackUserId: 'U0A813SJBPS' },
-  { id: 'play-24', name: '윤동환', nickname: 'Chris', company: '자이에스엔디', slackUserId: 'U0BFEMJ94EQ' },
-  { id: 'play-25', name: '권용환', nickname: 'Quan', company: 'GS파워', slackUserId: 'U0A6RPR1SH5' },
-  { id: 'play-26', name: '이승재', nickname: 'Jerry', company: '광동제약', slackUserId: 'U0A7KTALW77' },
-  { id: 'play-27', name: '채지혜', nickname: 'Day', company: '광동제약', slackUserId: 'U0A73PZJP0V' },
-  { id: 'play-28', name: '이진주', nickname: 'Judy', company: '광동제약', slackUserId: 'U0A7567EQFQ' },
-  { id: 'play-29', name: '서기호', nickname: 'Kyo', company: '광동제약', slackUserId: 'U0A7566LBK8' },
-  { id: 'play-30', name: '장지원', nickname: 'Anna', company: '광동제약', slackUserId: 'U0A7H51TY8K' },
-  { id: 'play-31', name: '이성덕', nickname: 'Lee', company: '삼양인터내셔날', slackUserId: 'U0A7SRUE0P6' },
-  { id: 'play-32', name: '장수연', nickname: 'Jen', company: '삼양인터내셔날', slackUserId: 'U0A6RPQSR8X' },
-  { id: 'play-33', name: '김민수', nickname: 'Liam', company: '삼양통상', slackUserId: 'U0A7M79J606' },
-  { id: 'play-34', name: '황세현', nickname: 'Sean', company: '삼양통상', slackUserId: 'U0A73Q33S85' },
+  { id: 'play-16', name: '김유진', nickname: 'Jia', company: 'GS리테일' },
+  { id: 'play-17', name: '배지수', nickname: 'Suzanne', company: 'GS문화재단' },
+  { id: 'play-18', name: '김용일', nickname: 'Henry', company: 'GS스포츠' },
+  { id: 'play-19', name: '하지희', nickname: 'Lia', company: 'GS스포츠' },
+  { id: 'play-20', name: '지동한', nickname: 'David', company: 'GS칼텍스' },
+  { id: 'play-21', name: '홍지영', nickname: 'JY', company: 'GS칼텍스' },
+  { id: 'play-22', name: '노엘', nickname: 'Eddy', company: 'GS칼텍스' },
+  { id: 'play-23', name: '유용희', nickname: 'Willie', company: 'GS파워' },
+  { id: 'play-24', name: '윤동환', nickname: 'Chris', company: '자이에스엔디' },
+  { id: 'play-25', name: '권용환', nickname: 'Quan', company: 'GS파워' },
+  { id: 'play-26', name: '이승재', nickname: 'Jerry', company: '광동제약' },
+  { id: 'play-27', name: '채지혜', nickname: 'Day', company: '광동제약' },
+  { id: 'play-28', name: '이진주', nickname: 'Judy', company: '광동제약' },
+  { id: 'play-29', name: '서기호', nickname: 'Kyo', company: '광동제약' },
+  { id: 'play-30', name: '장지원', nickname: 'Anna', company: '광동제약' },
+  { id: 'play-31', name: '이성덕', nickname: 'Lee', company: '삼양인터내셔날' },
+  { id: 'play-32', name: '장수연', nickname: 'Jen', company: '삼양인터내셔날' },
+  { id: 'play-33', name: '김민수', nickname: 'Liam', company: '삼양통상' },
+  { id: 'play-34', name: '황세현', nickname: 'Sean', company: '삼양통상' },
   { id: 'play-35', name: '이제승', nickname: 'Jason', company: '일동제약' },
-  { id: 'play-36', name: '유동환', nickname: 'Brody', company: '일동제약', slackUserId: 'U0A7776R3D0' },
-  { id: 'play-37', name: '권순형', nickname: 'Mike', company: '일동제약', slackUserId: 'U0A73Q552PP' },
+  { id: 'play-36', name: '유동환', nickname: 'Brody', company: '일동제약' },
+  { id: 'play-37', name: '권순형', nickname: 'Mike', company: '일동제약' },
 ]
 
 // 3-3. 식음 운영 — 주문·배부 현황을 맡습니다.
-//    (지금은 명단만 보관합니다 — 권한을 따로 주지는 않았습니다)
+//    호출 알림을 받지 않으므로 슬랙 ID를 두지 않습니다. 주문 재촉은 채널
+//    전체에 한 번 나가는 방식이라 개인 멘션이 필요하지 않습니다.
+//    주문 현황 화면과 미주문 팀 재촉 권한이 이분에게 있습니다(아래 orderManager).
 export const FOOD_CREW = [
   //  orderManager: 주문 현황을 맡은 사람. 미주문 팀을 확인하고 주문하라고
   //  재촉할 수 있습니다. 호출·등록 쪽 권한은 총관리자에게만 있습니다.
-  { id: 'food-01', name: '한성우', nickname: 'Austin', company: '(주)GS', slackUserId: 'U0A7BKYBVTK', orderManager: true },
+  { id: 'food-01', name: '한성우', nickname: 'Austin', company: '(주)GS', orderManager: true },
 ]
 
 // 3-4. 크루 조회
