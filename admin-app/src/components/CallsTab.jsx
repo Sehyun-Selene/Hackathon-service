@@ -8,6 +8,7 @@ import {
   crewFor,
   assignedCoachLabel,
   teamLabel,
+  leagueAllowsCall,
 } from '../config.js'
 import { fmtTimeOnly } from '../lib/time.js'
 import { useMediaQuery } from '../lib/useMediaQuery.js'
@@ -74,7 +75,11 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
   const showAllTeams = !!myAssignment?.callManager
   // 팀 번호는 'E-45' 같은 문자열입니다. 리그가 다르면 같은 숫자라도 다른 팀이라
   // 격자도 리그별로 나눠 그립니다.
-  const countGroups = groupByLeague(showAllTeams ? ALL_TEAM_IDS : myTeams)
+  // 호출을 쓰지 않는 리그(개발자리그)는 격자에서 뺍니다 — 늘 0인 칸 30개가
+  // 자기 팀을 찾는 데 방해만 됩니다
+  const countGroups = groupByLeague(
+    (showAllTeams ? ALL_TEAM_IDS : myTeams).filter(leagueAllowsCall),
+  )
   // 식음 운영처럼 담당 구간이 아예 없는 역할에는 이 패널이 늘 비어 있습니다.
   // 배정을 기다리는 메이트에게는 안내가 필요하지만, 그분에게는 군더더기입니다.
   const showCounts = showAllTeams || myTeams.length > 0 || !myAssignment?.orderManager

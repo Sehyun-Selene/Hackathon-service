@@ -81,9 +81,12 @@ export const CALL_LIMIT_PER_TEAM = 5
 // 개발자리그는 번호가 G-31까지 가지만 G-05는 빈자리여서 30팀이고,
 // 필드리그는 외부사 자리가 E-200번대라 번호만 206까지 갑니다(실제 112팀).
 // 실제 팀 목록은 아래 TEAMS에서 뽑습니다.
+// calls = 마스터 메이트 호출을 쓰는 리그인지. 개발자리그는 쓰지 않아,
+// 그 팀으로 등록하면 참가자 화면에 호출 탭이 아예 나오지 않고
+// 관리자 호출 횟수 격자에도 들어가지 않습니다.
 export const LEAGUES = [
-  { id: 'field', prefix: 'E', label: '필드리그', count: 206 },
-  { id: 'dev', prefix: 'G', label: '개발자리그', count: 31 },
+  { id: 'field', prefix: 'E', label: '필드리그', count: 206, calls: true },
+  { id: 'dev', prefix: 'G', label: '개발자리그', count: 31, calls: false },
 ]
 
 export const TEAMS = {
@@ -252,6 +255,13 @@ export const ALL_TEAM_IDS = LEAGUES.flatMap((l) => TEAM_IDS_BY_LEAGUE[l.id])
 export function leagueOf(teamId) {
   return LEAGUE_BY_PREFIX[String(teamId || '').charAt(0)] || null
 }
+// 이 팀이 마스터 메이트를 호출할 수 있는지 (개발자리그는 호출을 쓰지 않습니다)
+export function leagueAllowsCall(teamId) {
+  return leagueOf(teamId)?.calls !== false
+}
+// 호출을 쓰는 리그의 팀 번호만 — 관리자 호출 횟수 격자에 씁니다
+export const CALLABLE_TEAM_IDS = ALL_TEAM_IDS.filter(leagueAllowsCall)
+
 // 그 팀의 인원 (모르면 null — 시트에 없는 번호)
 export function teamSize(teamId) {
   return TEAMS[teamId]?.size ?? null

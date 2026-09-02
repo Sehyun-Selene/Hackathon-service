@@ -72,6 +72,8 @@ export default function MenuBoard({
   allergies,
   onRefresh,
   onSave,
+  // 개발자리그는 호출을 쓰지 않아, 호출 안내를 넣지 않습니다
+  canCall = true,
 }) {
   // draft: { mealId: { menuId: qty } }
   const [draft, setDraft] = useState({})
@@ -143,7 +145,10 @@ export default function MenuBoard({
               <p className="closed-sub">이후 식사·간식은 주문 없이 제공됩니다</p>
             </>
           )}
-          <p className="closed-hint">마스터 메이트 호출은 언제든 가능합니다</p>
+          {/* 호출을 쓰지 않는 리그(개발자리그)에는 없는 기능을 안내할 수 없습니다 */}
+          {canCall && (
+            <p className="closed-hint">마스터 메이트 호출은 언제든 가능합니다</p>
+          )}
         </div>
       </section>
     )

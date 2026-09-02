@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { PARTICIPANT_POLL_MS, DARK_MODE_HOURS, getAssignedCoachForTeam, assignedCoachLabel } from './config.js'
+import { PARTICIPANT_POLL_MS, DARK_MODE_HOURS, getAssignedCoachForTeam, assignedCoachLabel, leagueAllowsCall } from './config.js'
 import {
   storageGet,
   storageGetMany,
@@ -301,6 +301,8 @@ export default function App() {
   const openMeals = getOpenMeals(t)
   const nextMeals = getNextMeals(t)
   const hasActiveCall = (callData?.calls || []).some((c) => c.status !== 'done')
+  // 개발자리그는 마스터 메이트 호출을 쓰지 않습니다 (config의 리그별 calls)
+  const canCall = leagueAllowsCall(team.teamId)
 
   // ── 관리자 재촉 배너 (판단만 — 훅은 아래 조기 반환보다 위에 있습니다) ──
   // 주문 탭 안이 아니라 탭 밖에서 그립니다. 호출 탭을 보고 있는 참가자도
@@ -333,15 +335,19 @@ export default function App() {
 
       <div className="folder">
         <div className="folder-tabs" role="tablist">
-          <button
-            role="tab"
-            aria-selected={tab === 'call'}
-            className={`folder-tab${tab === 'call' ? ' active' : ''}`}
-            onClick={() => setTab('call')}
-          >
-            🙋 마스터 메이트 호출
-            {hasActiveCall && <span className="p-tab-dot" />}
-          </button>
+          {/* 개발자리그는 마스터 메이트 호출을 쓰지 않습니다. 눌러도 할 수 없는
+              탭을 남겨두면 무엇이 되는 기능인지 헷갈립니다 */}
+          {canCall && (
+            <button
+              role="tab"
+              aria-selected={tab === 'call'}
+              className={`folder-tab${tab === 'call' ? ' active' : ''}`}
+              onClick={() => setTab('call')}
+            >
+              🙋 마스터 메이트 호출
+              {hasActiveCall && <span className="p-tab-dot" />}
+            </button>
+          )}
           <button
             role="tab"
             aria-selected={tab === 'order'}
@@ -381,7 +387,7 @@ export default function App() {
               </span>
             </button>
           )}
-          {tab === 'order' ? (
+          {tab === 'order' || !canCall ? (
             <MenuBoard
               openMeals={openMeals}
               nextMeals={nextMeals}
@@ -391,6 +397,7 @@ export default function App() {
               allergies={team.allergies}
               onRefresh={refresh}
               onSave={saveOrders}
+              canCall={canCall}
             />
           ) : (
             <CallSection

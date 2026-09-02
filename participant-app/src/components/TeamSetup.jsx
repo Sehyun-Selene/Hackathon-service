@@ -239,7 +239,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
         <img className="header-logo" src={logo52g} alt="52g" />
       </header>
 
-      <GuideSection defaultOpen />
+      <GuideSection defaultOpen showCall={leagueDef.calls !== false} />
 
       <section className="card">
         {/* 여러 팀원이 각자 주문을 담으면 나중에 저장한 사람 것만 남습니다.
