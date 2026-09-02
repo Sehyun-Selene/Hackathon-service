@@ -317,6 +317,21 @@ export default function App() {
     ? new Date(openMeals[0].orderEnd).getTime() - now().getTime()
     : 0
 
+  // 팀 프로필 버튼 — 탭이 있으면 탭 줄 오른쪽에, 탭이 없으면 주문 화면
+  // 제목 옆에 놓습니다. 같은 버튼이라 한 곳에서 만들어 옮겨 씁니다.
+  const teamButton = (
+    <button
+      className="team-profile-btn"
+      onClick={() => setShowTeamInfo(true)}
+      aria-haspopup="dialog"
+      aria-label={`팀 ${team.teamId} 정보 보기`}
+    >
+      <span className="team-profile-avatar" aria-hidden="true">👥</span>
+      <span className="team-profile-label">팀 {team.teamId}</span>
+      <span className="team-profile-chevron" aria-hidden="true">›</span>
+    </button>
+  )
+
   return (
     <div className={`app${tab === 'order' && openMeals.length ? ' has-sticky-bar' : ''}`}>
       {syncError && (
@@ -334,10 +349,11 @@ export default function App() {
       )}
 
       <div className="folder">
-        <div className="folder-tabs" role="tablist">
-          {/* 개발자리그는 마스터 메이트 호출을 쓰지 않습니다. 눌러도 할 수 없는
-              탭을 남겨두면 무엇이 되는 기능인지 헷갈립니다 */}
-          {canCall && (
+        {/* 개발자리그는 호출을 쓰지 않아 화면이 주문 하나뿐입니다. 탭은 둘
+            이상일 때 의미가 있으므로 줄 자체를 그리지 않고, 팀 버튼은
+            주문 화면 제목 옆으로 내려보냅니다. */}
+        {canCall && (
+          <div className="folder-tabs" role="tablist">
             <button
               role="tab"
               aria-selected={tab === 'call'}
@@ -347,28 +363,17 @@ export default function App() {
               🙋 마스터 메이트 호출
               {hasActiveCall && <span className="p-tab-dot" />}
             </button>
-          )}
-          <button
-            role="tab"
-            aria-selected={tab === 'order'}
-            className={`folder-tab${tab === 'order' ? ' active' : ''}`}
-            onClick={() => setTab('order')}
-          >
-            🍽️ 음식 주문
-          </button>
-          <div className="folder-team">
             <button
-              className="team-profile-btn"
-              onClick={() => setShowTeamInfo(true)}
-              aria-haspopup="dialog"
-              aria-label={`팀 ${team.teamId} 정보 보기`}
+              role="tab"
+              aria-selected={tab === 'order'}
+              className={`folder-tab${tab === 'order' ? ' active' : ''}`}
+              onClick={() => setTab('order')}
             >
-              <span className="team-profile-avatar" aria-hidden="true">👥</span>
-              <span className="team-profile-label">팀 {team.teamId}</span>
-              <span className="team-profile-chevron" aria-hidden="true">›</span>
+              🍽️ 음식 주문
             </button>
+            <div className="folder-team">{teamButton}</div>
           </div>
-        </div>
+        )}
         <div className="folder-body">
           {/* 눌러서 바로 주문 탭으로 — 알림을 보고 어디로 가야 할지 찾게 두지
               않습니다 */}
@@ -398,6 +403,7 @@ export default function App() {
               onRefresh={refresh}
               onSave={saveOrders}
               canCall={canCall}
+              teamButton={canCall ? null : teamButton}
             />
           ) : (
             <CallSection

@@ -74,6 +74,8 @@ export default function MenuBoard({
   onSave,
   // 개발자리그는 호출을 쓰지 않아, 호출 안내를 넣지 않습니다
   canCall = true,
+  // 탭 줄이 없는 화면에서는 팀 프로필 버튼을 이 제목 옆에 답니다
+  teamButton = null,
 }) {
   // draft: { mealId: { menuId: qty } }
   const [draft, setDraft] = useState({})
@@ -126,7 +128,10 @@ export default function MenuBoard({
   if (openMeals.length === 0) {
     return (
       <section className="menu-board">
-        <h3 className="card-title">🍽️ 음식 주문</h3>
+        <div className="board-title-row">
+          <h3 className="card-title">🍽️ 음식 주문</h3>
+          {teamButton}
+        </div>
         <OrderNotice />
         <div className="closed-box">
           <div className="closed-emoji">⏰</div>
@@ -284,7 +289,7 @@ export default function MenuBoard({
   return (
     <section className="menu-board">
       {/* 티오더식 헤더: 아이콘 + 타이틀 + 마감 카운트다운 */}
-      <div className="board-header">
+      <div className={`board-header${teamButton ? ' has-team-btn' : ''}`}>
         <div className="board-header-icon">🍽️</div>
         <div className="board-header-text">
           <div className="board-header-title">
@@ -299,6 +304,7 @@ export default function MenuBoard({
           </div>
         </div>
         <div className="board-header-actions">
+          {teamButton}
           <div className={`board-countdown${pulseDeadline ? ' urgent' : ''}`}>
             <span className="board-countdown-label">마감까지</span>
             <b>{fmtCountdown(remain)}</b>
