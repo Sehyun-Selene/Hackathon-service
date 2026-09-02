@@ -215,15 +215,17 @@ html.dark .folder-tab { background: #2c2721; }
   font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   font-size: 24px; font-weight: 800;
 }
+/* 하단 고정 바의 마감 시간 — 담긴 수량과 화살표 사이 */
+.cart-bar-deadline {
+  margin-left: auto; margin-right: 10px; font-size: 13px; font-weight: 700;
+  color: rgba(255, 255, 255, 0.72); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.cart-bar-deadline.urgent { color: #ffb4b4; }
 .board-header-sub {
   margin-top: 2px; color: var(--sub); font-size: 12px;
   letter-spacing: -0.15px; white-space: nowrap;
 }
 .board-header-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
-.board-countdown {
-  min-width: 82px; text-align: right; font-size: 10px; color: var(--sub); white-space: nowrap;
-}
-.board-countdown b { display: block; font-size: 12px; color: var(--red); }
 .board-refresh-btn {
   width: 34px; height: 34px; flex: 0 0 auto; display: flex; align-items: center;
   justify-content: center; border: 1px solid var(--line); border-radius: 11px;
@@ -648,9 +650,6 @@ html.dark .setup-solo-note { background: #3a2c14; border-color: #5c451c; color: 
 .guide-eat { display: block; color: var(--sub); margin-top: 2px; }
 
 @media (max-width: 520px) {
-  /* 팀 버튼까지 들어온 헤더만 — 제목이 눌리지 않게 오른쪽 묶음을 아랫줄로.
-     탭이 있는 화면(필드리그)은 팀 버튼이 탭 줄에 있어 그대로 둡니다 */
-  .board-header.has-team-btn .board-header-actions { width: 100%; justify-content: flex-end; }
   .food-card.picked .food-card-body {
     flex-direction: column; align-items: stretch; gap: 8px;
   }
@@ -713,21 +712,12 @@ html.dark .diet-cap-hint { background: #3a2c14; border-color: #5c451c; }
 html.dark .diet-cap-hint b:first-child { color: #fbbf24; }
 
 /* 마감 10분 전부터 카운트다운을 강조 — 조용히 지나가지 않도록 */
-.board-countdown.urgent {
-  background: #fee2e2; border-color: #fca5a5; color: #991b1b;
-  animation: countdown-pulse 1.4s ease-in-out infinite;
-}
-.board-countdown.urgent .board-countdown-label { color: #b91c1c; }
-html.dark .board-countdown.urgent { background: #4a1d1d; border-color: #7f2d2d; color: #fecaca; }
-html.dark .board-countdown.urgent .board-countdown-label { color: #fca5a5; }
 @keyframes countdown-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
 }
 /* 움직임을 불편해하는 사용자에게는 깜빡임 없이 색만 */
-@media (prefers-reduced-motion: reduce) {
-  .board-countdown.urgent { animation: none; }
-}
+
 
 /* 관리자가 누른 '주문해주세요' 재촉 배너 — 화면에서 가장 먼저 눈에 들어와야
    하므로 강조색을 씁니다 (마감 경고보다 위) */

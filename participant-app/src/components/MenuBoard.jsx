@@ -289,7 +289,7 @@ export default function MenuBoard({
   return (
     <section className="menu-board">
       {/* 티오더식 헤더: 아이콘 + 타이틀 + 마감 카운트다운 */}
-      <div className={`board-header${teamButton ? ' has-team-btn' : ''}`}>
+      <div className="board-header">
         <div className="board-header-icon">🍽️</div>
         <div className="board-header-text">
           <div className="board-header-title">
@@ -299,16 +299,12 @@ export default function MenuBoard({
               : activeMeal.shortLabel || activeMeal.label}{' '}
             주문
           </div>
-          <div className="board-header-sub">
-            {multiMeal ? '한 번에 담아 주문할 수 있어요' : '먹고 싶은 메뉴를 담아주세요'}
-          </div>
+          {/* 부제는 바로 아래 공지사항이 같은 말을 하고 있어 뺐습니다 */}
         </div>
+        {/* 마감 시간은 하단 고정 바로 내렸습니다 — 주문 버튼 옆이 제자리이고,
+            폰 헤더(321px)에 제목·팀·마감·새로고침을 다 넣을 수 없습니다 */}
         <div className="board-header-actions">
           {teamButton}
-          <div className={`board-countdown${pulseDeadline ? ' urgent' : ''}`}>
-            <span className="board-countdown-label">마감까지</span>
-            <b>{fmtCountdown(remain)}</b>
-          </div>
           <button
             className={`board-refresh-btn${refreshing ? ' refreshing' : ''}`}
             onClick={refreshBoard}
@@ -488,6 +484,10 @@ export default function MenuBoard({
           <span className="cart-bar-icon">🛒</span>
           담은 메뉴 보기
           <span className="cart-bar-count">{totalQty}</span>
+        </span>
+        {/* 마감이 다가오면 붉게 — 주문을 누르는 자리에서 시간을 보게 합니다 */}
+        <span className={`cart-bar-deadline${pulseDeadline ? ' urgent' : ''}`}>
+          마감 {fmtCountdown(remain)}
         </span>
         <span className="cart-bar-more" aria-hidden="true">›</span>
       </button>
