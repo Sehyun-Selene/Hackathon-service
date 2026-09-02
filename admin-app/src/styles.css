@@ -531,6 +531,12 @@ body {
 .call-reason.empty { color: var(--sub); font-style: italic; border-left-color: var(--line); }
 .call-card.done .call-reason { background: transparent; }
 /* 접수 시각 — 흐르는 숫자가 아니라 고정된 값이라 담담하게, 사유 앞에 둡니다 */
+/* 팀명 — 있으면 좋지만 없어도 되는 정보라, 자리가 모자라면 가장 먼저
+   줄어듭니다. 팀 번호·담당·현황·버튼은 그대로 둡니다. */
+.call-team-name {
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; font-weight: 600; color: var(--sub);
+}
 .call-at {
   font-size: 12.5px; color: var(--sub); font-weight: 700;
   font-variant-numeric: tabular-nums; margin-right: 7px;

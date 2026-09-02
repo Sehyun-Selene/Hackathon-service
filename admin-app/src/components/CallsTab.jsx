@@ -7,6 +7,7 @@ import {
   getAssignedCoachForTeam,
   crewFor,
   assignedCoachLabel,
+  teamLabel,
 } from '../config.js'
 import { fmtTimeOnly } from '../lib/time.js'
 import { useMediaQuery } from '../lib/useMediaQuery.js'
@@ -21,6 +22,12 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
   // 굳이 아래로 내릴 이유가 없고, 두 버튼이 붙어 있는 편이 찾기 쉽습니다.
   // 폰에서는 한 줄에 들어가지 않아 사유 아래 전폭 버튼으로 내립니다.
   const wideEnough = useMediaQuery('(min-width: 561px)')
+  // 팀명은 있으면 좋지만 없어도 되는 정보라, 확실히 자리가 남을 때만 넣습니다.
+  // 가장 긴 팀명(19자·206px)이 처리중 카드(버튼 둘)와 한 줄에 들어가려면
+  // 머리줄에 630px이 필요합니다. 좌측 메뉴와 여백을 빼면 창이 약 990px —
+  // 글꼴이 조금 커져도 버티도록 1100px부터 보여줍니다.
+  // 그 아래에서는 넣지 않습니다. 억지로 넣으면 줄이 갈라지거나 담당 이름이 잘립니다.
+  const roomForTeamName = useMediaQuery('(min-width: 1100px)')
   // 총관리자는 담당 구간이 없어 '내 담당 팀만'이 쓸모가 없습니다. 대신 아무도
   // 갈 사람이 없는 호출만 추려 봅니다 — 실제로 개입해야 하는 건 그것뿐입니다.
   const [onlyUnassigned, setOnlyUnassigned] = useState(false)
@@ -124,6 +131,11 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
                       한 줄에 넣으면 버튼이 카드 밖으로 밀려납니다. */}
                   <div className="call-head">
                     <span className="call-table">팀 {c.team}</span>
+                    {/* 팀명은 자리가 있을 때만 넣습니다. 폰에서는 번호·담당·현황·버튼만으로
+                        이미 꽉 차서, 넣으면 줄이 갈라집니다 */}
+                    {roomForTeamName && teamLabel(c.team) && (
+                      <span className="call-team-name">{teamLabel(c.team)}</span>
+                    )}
                     <span className={`call-company${mine ? ' mine' : ''}`}>{c.assignedLabel}</span>
                     {c.status === 'waiting' ? (
                       <>
@@ -198,6 +210,11 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
             <div key={c.id} className="call-card done">
               <div className="call-head">
                 <span className="call-table">팀 {c.team}</span>
+                {/* 팀명은 자리가 있을 때만 넣습니다. 폰에서는 번호·담당·현황·버튼만으로
+                    이미 꽉 차서, 넣으면 줄이 갈라집니다 */}
+                {roomForTeamName && teamLabel(c.team) && (
+                  <span className="call-team-name">{teamLabel(c.team)}</span>
+                )}
                 <span className="call-company">{c.assignedLabel}</span>
                 <span className="status-pill done-pill">
                   {fmtTimeOnly(new Date(c.createdAt))} →{' '}
