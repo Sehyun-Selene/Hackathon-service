@@ -30,7 +30,7 @@ PRD에서 "추후 확정(TBD)"으로 표시된 값은 전부 아래 파일에 �
 | 코치 개인별 담당 팀 번호 | `COACH_ASSIGNMENTS` | 자리 4개, `name`·`teamNumbers` 전부 비어있음(TBD) |
 | 알레르기 선택지 | `ALLERGY_OPTIONS` | 계란·우유·땅콩·견과류 등 (+ 직접 입력) |
 | 메뉴(음식/음료, 뱃지·**사진·알레르기 설명** 포함) | `MENUS` | 샘플 메뉴 (`image`·`allergyNote`는 TBD, 빈 값) |
-| 팀 수, 인원 상한, 폴링 주기 | `TOTAL_TEAMS` 등 | 125팀 / 10명 / 3~5초 |
+| 팀 번호 범위, 인원 상한, 폴링 주기 | `TEAM_LEAGUES` 등 | E-01~206 · G-01~31 / 10명 / 3~5초 |
 | 공유 API 서버 주소 | `API_BASE_URL` | 비어 있음(로컬 폴백) — 배포 후 채워야 함 |
 | 참가자 다크모드 시간대 | `DARK_MODE_HOURS` | 20시 ~ 익일 7시 |
 
@@ -105,12 +105,18 @@ PRD에서 "추후 확정(TBD)"으로 표시된 값은 전부 아래 파일에 �
    | `UPSTASH_REDIS_REST_TOKEN` | Upstash에서 복사한 REST 토큰 | ✅ |
    | `ADMIN_TOKEN` | 초기화용 비밀 문자열(직접 지정) | 선택 |
    | `CALL_LIMIT_PER_TEAM` | 팀당 호출 제한. 기본 5 | 선택 |
-   | `TOTAL_TEAMS` | 허용할 마지막 팀 번호. 기본 125 | 선택 |
+   | `TEAM_LEAGUES` | 리그별 마지막 테이블 번호. 기본 `E:206,G:31` | 선택 |
+   | `MENU_STOCK` | 메뉴별 준비 수량. 기본 `md-a:300,md-b:300,bf-a:200,bf-b:200` | 선택 |
    | `COACH_ACTIVE_TTL_MS` | 메이트 접속 현황 유지 시간. 기본 120000(2분) | 선택 |
 
    > ⚠️ `CALL_LIMIT_PER_TEAM` 은 앱 `config.js` 의 `CALL_LIMIT_PER_TEAM` 과 **같은 값**이어야
    > 합니다. 화면에서만 막으면 두 기기로 열어두면 넘길 수 있어 서버가 최종 판단하기 때문입니다.
    > 제한을 바꿀 때는 config와 이 환경변수를 함께 고치세요.
+   >
+   > 같은 이유로 `TEAM_LEAGUES` 는 config의 `LEAGUES`, `MENU_STOCK` 은 config의
+   > `MENUS[].stock` 과 맞춰야 합니다. 세 값 모두 **서버 기본값이 현재 config와 같게**
+   > 박혀 있으니, config만 바꿀 때는 환경변수를 아예 등록하지 않는 편이 안전합니다
+   > (등록해둔 옛 값이 코드보다 우선하기 때문입니다).
 
 4. 재배포 후 `/health` 가 `"persist":{"mode":"redis", ...}` 로 보이면 정상.
    `"mode":"memory"` 면 환경변수가 안 먹은 것이고, `lastError` 에 값이 있으면 연결 실패입니다.
@@ -133,7 +139,34 @@ PRD에서 "추후 확정(TBD)"으로 표시된 값은 전부 아래 파일에 �
 curl -X POST https://<서버주소>/api/reset -H "Content-Type: application/json" -d "{\"token\":\"<ADMIN_TOKEN>\"}"
 ```
 
-### 1-2) 슬랙 호출 알림 설정 (선택 — 없어도 나머지 기능은 동작)
+### 1-2) shared-api 재배포 — 코드를 고쳤을 때
+
+**보통은 아무것도 하지 않아도 됩니다.** Render 서비스가 이 저장소에 연결돼 있어
+`main` 에 푸시하면 자동으로 다시 배포됩니다 (1~3분).
+
+반영됐는지 확인하는 방법 — 새로 만든 엔드포인트를 직접 찔러봅니다:
+
+```bash
+curl -X POST https://hackathon-api-hi55.onrender.com/api/stock -d "{}"
+```
+
+준비 수량이 담긴 JSON이 오면 새 코드가 올라간 것이고, `404` 면 아직 옛 코드입니다.
+서버 상태 전반은 `/health` 로 봅니다.
+
+**손으로 배포해야 하는 경우는 하나뿐입니다 — 환경변수를 바꿨을 때.**
+Render의 Environment 화면에서 값을 고치고 *Save only* 만 누르면 이미 돌고 있는
+프로세스에는 적용되지 않습니다. 아래까지 해야 실제로 바뀝니다.
+
+1. Render → 해당 서비스(`hackathon-api-hi55`) → **Manual Deploy** → *Deploy latest commit*
+   - 코드는 그대로 두고 프로세스만 새로 띄우려면 **Restart** 로도 됩니다.
+2. 배포 로그에 `[persist] 복원 완료 — N개 키` 가 뜨고 **N이 0이 아닌지** 확인
+   (0이면 Redis 환경변수가 안 먹은 것이라 데이터가 날아갑니다)
+3. `/health` 로 마무리 확인 — `"persist":{"mode":"redis"}` 이어야 정상
+
+> 행사 당일 슬랙 알림을 켤 때가 정확히 이 경우입니다. `SLACK_WEBHOOK_URL` 을
+> 등록한 뒤 **반드시 Manual Deploy 나 Restart** 까지 하고, `/health` 의
+> `slack.enabled` 가 `true` 로 바뀌었는지 눈으로 확인하세요.
+### 1-3) 슬랙 호출 알림 설정 (선택 — 없어도 나머지 기능은 동작)
 
 관리자 페이지를 켜두지 않아도 담당 마스터 메이트 폰으로 호출 알림이 가게 합니다.
 
