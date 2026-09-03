@@ -378,7 +378,8 @@ export default function App() {
               className={`folder-tab${tab === 'call' ? ' active' : ''}`}
               onClick={() => setTab('call')}
             >
-              🙋 마스터 메이트 호출
+              <img className="folder-tab-logo" src="./logo-call.png" alt="" />
+              마스터 메이트 호출
               {hasActiveCall && <span className="p-tab-dot" />}
             </button>
             <button
@@ -387,7 +388,8 @@ export default function App() {
               className={`folder-tab${tab === 'order' ? ' active' : ''}`}
               onClick={() => setTab('order')}
             >
-              🍽️ 음식 주문
+              <img className="folder-tab-logo" src="./logo-order.png" alt="" />
+              음식 주문
             </button>
             <div className="folder-team">{teamButton}</div>
           </div>

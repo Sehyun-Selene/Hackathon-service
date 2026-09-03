@@ -143,7 +143,10 @@ export default function MenuBoard({
     return (
       <section className="menu-board">
         <div className="board-title-row">
-          <h3 className="card-title">🍽️ 음식 주문</h3>
+          <h3 className="card-title">
+            <img className="title-logo" src="./logo-order.png" alt="" />
+            음식 주문
+          </h3>
           {teamButton}
         </div>
         <OrderNotice />
@@ -331,9 +334,11 @@ export default function MenuBoard({
     <section className="menu-board">
       {/* 티오더식 헤더: 아이콘 + 타이틀 + 마감 카운트다운 */}
       <div className="board-header">
-        <div className="board-header-icon">🍽️</div>
         <div className="board-header-text">
           <div className="board-header-title">
+            {/* 로고는 호출 제목과 같은 크기로 — 배지로 크게 두면 두 탭의
+                제목 줄이 서로 다른 크기로 보입니다 */}
+            <img className="title-logo" src="./logo-order.png" alt="" />
             {/* 제목은 짧은 이름(야식·아침)으로 — 식사 탭에서는 label(DAY 1 야식) 사용 */}
             {multiMeal
               ? openMeals.map((m) => m.shortLabel || m.label).join('·')
@@ -605,7 +610,7 @@ export default function MenuBoard({
               <p className={`cart-edit-hint${dirty ? " ready" : ""}`}>
                 {dirty
                   ? '다시 주문하면 이전 주문은 지금 담은 내용으로 바뀝니다.'
-                  : '이미 주문이 접수됐습니다. 수량을 바꾸면 아래 버튼이 켜지고, 마지막에 넣은 주문으로 수정됩니다.'}
+                  : '이미 주문이 접수됐습니다. 메뉴와 수량을 변경하시면 마지막에 넣은 주문으로 수정됩니다.'}
               </p>
             )}
             <div className="sheet-foot">
