@@ -360,7 +360,6 @@ export const COACH_ASSIGNMENTS = [
   { id: 'mate-24', name: '안효진', nickname: 'Mario', company: 'GS리테일', teamNumbers: [], slackUserId: 'U0A7AQS8F0U' },
   { id: 'mate-25', name: '이재현', nickname: 'L', company: 'GS스포츠', teamNumbers: [], slackUserId: 'U0A6RPQTWUF' },
   { id: 'mate-26', name: '박형남', nickname: 'Jason', company: 'GSC 예울마루', teamNumbers: [], slackUserId: 'U0A7GSR77MZ' },
-  { id: 'mate-27', name: '신명화', nickname: 'Cindy', company: 'GS엠비즈', teamNumbers: [], slackUserId: 'U0AM72XLQLD' },
   { id: 'mate-28', name: '진영주', nickname: 'Pablo', company: 'GS칼텍스', teamNumbers: [], slackUserId: 'U0A7776JMS6' },
   { id: 'mate-29', name: '홍승표', nickname: 'Pio', company: 'GS칼텍스', teamNumbers: [], slackUserId: 'U0A7AQS77RS' },
   { id: 'mate-30', name: '김민엽', nickname: 'Tyler', company: 'GS파워', teamNumbers: [], slackUserId: 'U0A7777H726' },
@@ -377,6 +376,7 @@ export const COACH_ASSIGNMENTS = [
   { id: 'mate-41', name: '이영미', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
   { id: 'mate-42', name: '이소연', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
   { id: 'mate-43', name: '임현주', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-44', name: '이상욱', nickname: 'Lodi', company: 'GS차지비', teamNumbers: [], slackUserId: 'U0A82DA597S' },
 ]
 
 // 3-2. 플레이 메이트 — 팀 곁에서 아이디어를 함께 보는 사람들.
@@ -385,7 +385,6 @@ export const COACH_ASSIGNMENTS = [
 //    (지금은 명단만 보관합니다 — 코드에서 읽는 곳이 아직 없습니다)
 export const PLAY_MATES = [
   { id: 'play-01', name: '김현민', nickname: 'Charlie', company: 'GS에너지' },
-  { id: 'play-02', name: '이상욱', nickname: 'Lodi', company: 'GS차지비' },
   { id: 'play-03', name: '정원재', nickname: 'Jeff', company: '파르나스호텔' },
   { id: 'play-04', name: '허재연', nickname: 'Jenna', company: '파르나스호텔' },
   { id: 'play-05', name: '곽서림', nickname: 'Lisa', company: '파르나스호텔' },
@@ -605,7 +604,7 @@ export const SERVED_MEALS = [
     id: 'day1-dinner',
     label: '[DAY 1] 저녁',
     cuisine: '한식',
-    servedAt: '',
+    servedAt: '18:00',
     items: [
       '당근 케이크',
       '제철 과일',
@@ -626,7 +625,7 @@ export const SERVED_MEALS = [
     id: 'day2-lunch',
     label: '[DAY 2] 점심',
     cuisine: '양식',
-    servedAt: '',
+    servedAt: '12:00',
     items: [
       '얼그레이 치즈 케이크',
       '제철 과일',
