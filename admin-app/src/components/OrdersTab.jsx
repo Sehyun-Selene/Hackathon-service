@@ -403,6 +403,10 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
               .map(([menuId, total]) => {
                 const remain = totals.remaining[menuId]
                 const allDone = anyDelivered && remain === 0
+                // 준비 수량(케이터링 상한) 대비 남은 개수 — 0이 되면 참가자
+                // 화면에서 그 메뉴가 자동으로 닫힙니다
+                const 준비 = scan.stock?.stock?.[menuId]
+                const 재고남음 = scan.stock?.remaining?.[menuId]
                 return (
                   <div key={menuId} className={`total-item${allDone ? ' done' : ''}`}>
                     {/* '(1인)'은 여기서 군더더기라 뺍니다. 좁은 화면에서는 두 메뉴를
@@ -414,6 +418,11 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
                       <span className="total-name-short">
                         {MENU_BY_ID[menuId]?.shortLabel || MENU_BY_ID[menuId]?.baseName || menuId}
                       </span>
+                      {Number.isFinite(준비) && (
+                        <span className={`total-stock${재고남음 === 0 ? ' out' : ''}`}>
+                          {재고남음 === 0 ? `준비 ${준비} · 마감` : `준비 ${준비} · 잔여 ${재고남음}`}
+                        </span>
+                      )}
                     </span>
                     <b>
                       {remain}개

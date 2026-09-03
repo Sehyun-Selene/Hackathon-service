@@ -383,6 +383,13 @@ body {
 .total-of { font-size: 12px; color: var(--sub); font-weight: 500; }
 .total-name { min-width: 0; }
 .total-name-short { display: none; }
+/* 준비 수량 대비 잔여 — 0이 되면 참가자 화면에서 그 메뉴가 자동으로 닫힙니다.
+   그 사실을 운영진도 알아야 케이터링과 이야기할 수 있습니다. */
+.total-stock {
+  display: block; margin-top: 2px; font-size: 11.5px; font-weight: 600;
+  color: var(--sub); font-variant-numeric: tabular-nums;
+}
+.total-stock.out { color: var(--red); }
 .total-item.done { opacity: 0.5; }
 .total-item.done b { color: var(--green); }
 .total-item.limit-hit { border-color: #f0b6b8; background: #fef5f5; }

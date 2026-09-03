@@ -71,6 +71,23 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || ''
 // 접두어가 없으면 두 리그의 같은 숫자가 한 팀으로 섞입니다.
 // 앱 config.LEAGUES와 같은 값이어야 하며, 바꿀 때는 환경변수로 함께 조정하세요.
 //   예) TEAM_LEAGUES="E:206,G:31"  (외부사 자리가 E-200번대라 상한이 206)
+// 메뉴별 준비 수량. 전 팀 주문 합계가 이 수에 닿으면 그 메뉴는 닫힙니다.
+// 앱 config의 MENUS[].stock과 같은 값이어야 합니다 — 앱은 화면을 닫는 쪽,
+// 서버는 실제로 초과 저장을 막는 쪽입니다. 두 폰이 같은 순간에 마지막 한
+// 판을 담아도 서버에서 하나만 통과합니다(단일 스레드).
+//   예) MENU_STOCK="md-a:300,md-b:300,bf-a:200,bf-b:200"
+const MENU_STOCK = Object.fromEntries(
+  (process.env.MENU_STOCK || 'md-a:300,md-b:300,bf-a:200,bf-b:200')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const [id, n] = part.split(':')
+      return [String(id).trim(), Number(n)]
+    })
+    .filter(([id, n]) => id && Number.isFinite(n) && n > 0),
+)
+
 const TEAM_LEAGUES = (process.env.TEAM_LEAGUES || 'E:206,G:31')
   .split(',')
   .map((part) => {
@@ -221,6 +238,43 @@ function sendWriteResult(res, body, persisted) {
   }
   sendJson(res, 200, { ...body, persisted: true })
   return true
+}
+
+// 끼니 하나의 항목 배열을 꺼냅니다.
+// 저장된 주문은 { items: [...] }, 클라이언트가 보내는 값은 [ ... ] 형태라
+// 둘 다 받습니다. 한쪽만 보면 항목을 못 읽고 빈 주문으로 덮어씁니다.
+function itemsOf(mealValue) {
+  if (Array.isArray(mealValue)) return mealValue
+  return Array.isArray(mealValue?.items) ? mealValue.items : []
+}
+
+// 지금까지 주문된 메뉴별 수량. 저장된 주문에서 그때그때 세므로 별도
+// 카운터를 두지 않습니다 — 카운터는 주문이 수정·취소될 때 어긋납니다.
+// (팀 142 × 메뉴 4개라 매 요청 계산해도 부담이 없습니다)
+function soldByMenu(skipTeamId) {
+  const sold = {}
+  for (const [key, value] of store) {
+    if (!key.startsWith('order:')) continue
+    if (skipTeamId && key === 'order:' + skipTeamId) continue
+    const meals = value?.meals || {}
+    for (const mealId of Object.keys(meals)) {
+      for (const item of itemsOf(meals[mealId])) {
+        const qty = Number(item?.qty) || 0
+        if (qty > 0 && item?.menuId) sold[item.menuId] = (sold[item.menuId] || 0) + qty
+      }
+    }
+  }
+  return sold
+}
+
+// 메뉴별 남은 수량 (상한이 없는 메뉴는 빼고 돌려줍니다)
+function stockState(skipTeamId) {
+  const sold = soldByMenu(skipTeamId)
+  const remaining = {}
+  for (const [menuId, cap] of Object.entries(MENU_STOCK)) {
+    remaining[menuId] = Math.max(0, cap - (sold[menuId] || 0))
+  }
+  return { stock: MENU_STOCK, sold, remaining }
 }
 
 function validTeamId(teamId) {
@@ -462,11 +516,62 @@ const server = http.createServer(async (req, res) => {
     const coachRoster = store.get('coach-roster') || { coaches: [] }
     const timestamp = Date.now()
     result.soldout = store.get('soldout') || {}
+    // 메뉴별 남은 수량 — 관리자 주문 현황에서 함께 보여줍니다
+    result.stock = stockState()
     result.coaches = (Array.isArray(coachRoster.coaches) ? coachRoster.coaches : []).filter(
       (coach) => !coach?.lastSeen || timestamp - coach.lastSeen <= COACH_ACTIVE_TTL_MS,
     )
     result.at = timestamp
     sendJson(res, 200, result)
+    return
+  }
+
+  // 메뉴별 남은 수량 — 참가자 화면이 이 값으로 메뉴를 닫습니다
+  if (req.method === 'POST' && url.pathname === '/api/stock') {
+    sendJson(res, 200, { ...stockState(), at: Date.now() })
+    return
+  }
+
+  // 주문 저장 — 준비 수량을 넘기면 거절합니다.
+  // 화면에서도 닫아두지만, 두 팀이 같은 순간에 마지막 한 판을 담으면
+  // 화면만으로는 둘 다 통과합니다. 최종 판단은 여기서 합니다.
+  if (req.method === 'POST' && url.pathname === '/api/order-save') {
+    try {
+      const { teamId, meals } = await readBody(req)
+      if (!validTeamId(teamId) || !meals || typeof meals !== "object") {
+        sendJson(res, 400, { error: 'teamId and meals required' })
+        return
+      }
+      // 이 팀이 앞서 담아둔 몫은 빼고 셉니다 — 수정할 때 자기 수량이 두 번
+      // 더해져 멀쩡한 주문이 초과로 거절되는 것을 막습니다.
+      const { remaining } = stockState(teamId)
+      const 요청 = {}
+      for (const mealId of Object.keys(meals)) {
+        for (const item of itemsOf(meals[mealId])) {
+          const qty = Number(item?.qty) || 0
+          if (qty > 0 && item?.menuId) 요청[item.menuId] = (요청[item.menuId] || 0) + qty
+        }
+      }
+      for (const [menuId, qty] of Object.entries(요청)) {
+        const left = remaining[menuId]
+        if (left !== undefined && qty > left) {
+          sendJson(res, 409, { error: 'stock', menuId, remaining: left, requested: qty })
+          return
+        }
+      }
+      const key = 'order:' + teamId
+      const current = store.get(key) || { team: teamId, meals: {} }
+      const at = Date.now()
+      const next = { ...current, team: teamId, meals: { ...(current.meals || {}) } }
+      for (const mealId of Object.keys(meals)) {
+        next.meals[mealId] = { items: itemsOf(meals[mealId]), updatedAt: at }
+      }
+      store.set(key, next)
+      const persisted = await persistKey(key, next)
+      sendWriteResult(res, { ok: true, order: next, ...stockState() }, persisted)
+    } catch {
+      sendJson(res, 400, { error: 'invalid request' })
+    }
     return
   }
 

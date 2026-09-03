@@ -12,6 +12,8 @@ import {
   callCountKey,
   SOLDOUT_KEY,
   NUDGE_KEY,
+  fetchStock,
+  orderSave,
 } from './lib/storage.js'
 import { now, fmtAgo, fmtClock, fmtCountdown, getOpenMeals, getNextMeals } from './lib/time.js'
 import TeamSetup from './components/TeamSetup.jsx'
@@ -54,6 +56,8 @@ export default function App() {
   const savedOrderRef = useRef(null)
   const [callData, setCallData] = useState(null)
   const [callCount, setCallCount] = useState(0)
+  // 메뉴별 남은 수량 (서버가 전 팀 주문을 합쳐 계산). 0이면 그 메뉴는 닫힙니다.
+  const [remaining, setRemaining] = useState({})
   const [soldout, setSoldout] = useState({})
   // 관리자가 누른 '주문해주세요' 재촉 표시 { at, mealId }
   const [nudge, setNudge] = useState(null)
@@ -111,12 +115,16 @@ export default function App() {
     if (refreshRunning.current) return
     refreshRunning.current = true
     try {
-      const [order, call, count, sold, nudgeVal] = await storageGetMany([
-        orderKey(teamId),
-        callKey(teamId),
-        callCountKey(teamId),
-        SOLDOUT_KEY,
-        NUDGE_KEY,
+      const [[order, call, count, sold, nudgeVal], stock] = await Promise.all([
+        storageGetMany([
+          orderKey(teamId),
+          callKey(teamId),
+          callCountKey(teamId),
+          SOLDOUT_KEY,
+          NUDGE_KEY,
+        ]),
+        // 남은 수량은 저장된 키가 아니라 서버가 계산해 주는 값이라 따로 읽습니다
+        fetchStock().catch(() => null),
       ])
       setSavedOrder(order)
       savedOrderRef.current = order
@@ -124,6 +132,9 @@ export default function App() {
       setCallCount(typeof count === 'number' ? count : 0)
       setSoldout(sold || {})
       setNudge(nudgeVal || null)
+      // 통신이 한 번 실패해도 이전 값을 지우지 않습니다 — 남은 수량이 갑자기
+      // 비면 다 닫혀 있던 메뉴가 열린 것처럼 보입니다
+      if (stock?.remaining) setRemaining(stock.remaining)
       setLastSync(now())
       setSyncError(false)
     } catch {
@@ -214,7 +225,14 @@ export default function App() {
       Object.entries(mealsMap).forEach(([mealId, items]) => {
         current.meals[mealId] = { items, updatedAt: at }
       })
-      await storageSet(orderKey(teamId), current)
+      // 준비 수량을 넘기면 서버가 거절합니다 (err.code === 'stock').
+      // 예전 서버(엔드포인트 없음)에서는 종전처럼 그대로 저장합니다.
+      try {
+        await orderSave(teamId, mealsMap)
+      } catch (err) {
+        if (err?.code !== 'endpoint-missing') throw err
+        await storageSet(orderKey(teamId), current)
+      }
       await refresh().catch(() => {})
     },
     [teamId, refresh],
@@ -402,6 +420,7 @@ export default function App() {
               allergies={team.allergies}
               onRefresh={refresh}
               onSave={saveOrders}
+              remaining={remaining}
               canCall={canCall}
               teamButton={canCall ? null : teamButton}
             />

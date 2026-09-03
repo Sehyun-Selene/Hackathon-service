@@ -12,8 +12,13 @@ const fmtHM = (iso) => {
   const m = d.getMinutes()
   return m ? `${h}시 ${m}분` : `${h}시`
 }
-// label '[DAY 1] 야식' → '[DAY 1]' (없으면 빈 문자열)
-const dayOf = (label) => (label || '').match(/^\[?\s*DAY\s*\d+\s*\]?/)?.[0] || ''
+// '2026-09-21T13:30:00' → '9/21'
+// 공지에는 [DAY 1]보다 실제 날짜가 헷갈리지 않습니다. 라벨을 파싱하지
+// 않고 그 식사의 시각에서 직접 뽑아, 날짜가 바뀌어도 어긋나지 않습니다.
+const fmtMD = (iso) => {
+  const d = new Date(iso)
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
 
 // 주문 시간 공지 — 호출 탭의 가이드 박스(.call-guide)와 같은 형태로 노출.
 // 주문 가능 시간대일 때와 마감/대기 상태일 때 모두 보여줍니다.
@@ -31,22 +36,28 @@ function OrderNotice() {
         {shared ? (
           <li>
             {MEALS.map((m) => m.shortLabel || m.label).join('과 ')} 모두{' '}
-            {dayOf(shared.label)} {fmtHM(shared.orderStart)}부터 {fmtHM(shared.orderEnd)}까지
+            {fmtMD(shared.orderStart)} {fmtHM(shared.orderStart)}부터 {fmtHM(shared.orderEnd)}까지
             신청합니다.
           </li>
         ) : (
           MEALS.map((m) => (
             <li key={m.id}>
-              {m.label}은 {dayOf(m.label)} {fmtHM(m.orderStart)}부터 {fmtHM(m.orderEnd)}까지
+              {m.label}은 {fmtMD(m.orderStart)} {fmtHM(m.orderStart)}부터 {fmtHM(m.orderEnd)}까지
               신청합니다.
             </li>
           ))
         )}
         <li>
-          {MEALS.map((m) => `${m.shortLabel || m.label}은 ${dayOf(m.label)} ${fmtHM(m.eatAt)}에`)
+          {MEALS.map((m) => `${m.shortLabel || m.label}은 ${fmtMD(m.eatAt)} ${fmtHM(m.eatAt)}에`)
             .join(', ')}{' '}
           제공합니다.
         </li>
+        {/* 팀원이 각자 담으면 서로의 주문을 덮어써서 수량이 어긋납니다 */}
+        <li>
+          <b>팀에서 한 명만 대표로 주문해주세요.</b>
+        </li>
+        {/* 한 판을 나눠 먹는 크기로 오해하면 팀 인원보다 적게 담습니다 */}
+        <li>야식 피자는 한 판이 1인용입니다.</li>
       </ul>
     </div>
   )
@@ -68,6 +79,8 @@ export default function MenuBoard({
   openMeals,
   nextMeals,
   soldout,
+  // 메뉴별 남은 수량 (서버 계산). 0이면 준비된 수량을 다 써서 닫힙니다.
+  remaining = {},
   savedOrder,
   memberCount,
   allergies,
@@ -170,10 +183,21 @@ export default function MenuBoard({
   const DEADLINE_PULSE_MS = 10 * 60 * 1000
   const nearDeadline = remain > 0 && remain <= DEADLINE_WARN_MS
   const pulseDeadline = remain > 0 && remain <= DEADLINE_PULSE_MS
+  // 메뉴가 닫히는 이유는 둘입니다:
+  //   ① 운영진이 품절 관리에서 직접 닫음(soldout)
+  //   ② 준비 수량을 다 씀(remaining 0) — 자동
+  // 우리 팀이 이미 담아둔 몫은 남은 수량에서 이미 빠져 있지 않으므로,
+  // 더 담을 수 있는 여유는 remaining 그대로 봅니다(서버가 우리 팀 몫을
+  // 제외하고 계산해 주지는 않기 때문에 저장 시 서버가 다시 판정합니다).
+  const leftOf = (menuId) => {
+    const n = remaining[menuId]
+    return Number.isFinite(n) ? n : null
+  }
+  const closedOf = (menuId) => !!soldout[menuId] || leftOf(menuId) === 0
   // 이미 주문한 메뉴가 뒤늦게 품절된 경우 — 참가자에게 알려줍니다
   const soldoutOrdered = MEALS.flatMap((meal) =>
     (savedOrder?.meals?.[meal.id]?.items || [])
-      .filter((it) => soldout[it.menuId])
+      .filter((it) => closedOf(it.menuId))
       .map((it) => MENU_BY_ID[it.menuId]?.baseName || it.menuId),
   )
   const menus = MENUS[activeMeal.id] || []
@@ -230,6 +254,21 @@ export default function MenuBoard({
     try {
       await onSave(mealsMap)
     } catch (err) {
+      // 준비 수량이 방금 찬 경우 — 마지막 한 판을 두 팀이 동시에 담으면
+      // 화면에서는 둘 다 담을 수 있게 보이고, 서버가 하나만 받습니다.
+      if (err?.code === 'stock') {
+        const 이름 = MENU_BY_ID[err.data?.menuId]?.baseName || '해당 메뉴'
+        const 남음 = Number(err.data?.remaining) || 0
+        setSaving(false)
+        alert(
+          남음 > 0
+            ? `${이름}이(가) ${남음}개만 남았습니다.\n수량을 줄여 다시 주문해주세요.`
+            : `${이름}이(가) 방금 마감되었습니다.\n다른 메뉴로 담아주세요.`,
+        )
+        // 남은 수량을 다시 읽어 화면에서도 닫히게 합니다
+        await refreshBoard()
+        return
+      }
       // 같은 팀의 다른 기기가 그 사이에 주문을 저장한 경우 — 조용히 덮어쓰면
       // 그 사람이 담은 것이 사라지므로 어느 쪽을 남길지 물어봅니다
       if (err?.code === 'order-conflict') {
@@ -401,10 +440,16 @@ export default function MenuBoard({
       {/* 사진 카드 2열 그리드 */}
       <div className="food-grid">
         {menus.map((m) => {
-          const isSoldout = !!soldout[m.id]
+          const isSoldout = closedOf(m.id)
           const qty = draft[activeMeal.id]?.[m.id] || 0
+          const left = leftOf(m.id)
           const plusDisabled =
-            isSoldout || mealLimitReached(activeMeal.id) || menuLimitReached(activeMeal.id, m.id)
+            isSoldout ||
+            mealLimitReached(activeMeal.id) ||
+            menuLimitReached(activeMeal.id, m.id) ||
+            // 남은 수량보다 더 담지 못하게 — 저장할 때 거절당하는 것보다
+            // 담기 전에 막는 편이 낫습니다
+            (left !== null && qty >= left)
           return (
             <div key={m.id} className={`food-card${isSoldout ? ' soldout' : ''}${qty > 0 ? ' picked' : ''}`}>
               <div className="food-card-photo">

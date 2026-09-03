@@ -499,6 +499,66 @@ html.dark .card-stepper { background: #2c2721; }
 }
 .btn-call:active { background: var(--primary-dark); }
 .btn-call:disabled { background: #d6d3d1; }
+/* 우리 팀 지난 호출 내역 — 접어둔 상태가 기본입니다 */
+.call-log {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+.call-log-summary {
+  cursor: pointer;
+  padding: 11px 13px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--sub);
+  list-style: none;
+}
+.call-log-summary::-webkit-details-marker { display: none; }
+.call-log-summary::after { content: " ▾"; }
+.call-log[open] .call-log-summary::after { content: " ▴"; }
+.call-log-list {
+  margin: 0;
+  padding: 0 13px 11px;
+  list-style: none;
+}
+.call-log-item {
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+.call-log-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--sub);
+}
+.call-log-time { font-weight: 700; font-variant-numeric: tabular-nums; }
+.call-log-status {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #eef1f5;
+  color: var(--sub);
+}
+.call-log-status.st-done { background: #e6f5ec; color: #1d7a45; }
+.call-log-status.st-in_progress { background: #fff2e0; color: #a45b00; }
+/* 시간대별 다크모드에서도 읽히도록 칩 색을 따로 둡니다 */
+html.dark .call-log-status { background: #2c2721; color: var(--sub); }
+html.dark .call-log-status.st-done { background: #1b3324; color: #7ddba4; }
+html.dark .call-log-status.st-in_progress { background: #3a2c14; color: #fbbf24; }
+.call-log-who { font-weight: 600; }
+.call-log-done { font-variant-numeric: tabular-nums; }
+.call-log-reason {
+  margin: 5px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  word-break: break-word;
+}
+
 .call-limit-box { text-align: center; padding: 8px 0; }
 .call-limit-box p:first-child { color: var(--red); margin-bottom: 6px; }
 .call-limit-box .btn-primary { margin-top: 10px; }

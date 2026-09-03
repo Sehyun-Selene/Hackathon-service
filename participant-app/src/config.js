@@ -20,10 +20,10 @@ export const API_BASE_URL =
   import.meta.env?.VITE_API_BASE_URL ?? 'https://hackathon-api-hi55.onrender.com'
 
 // ---------------------------------------------------------------
-// 1. 주문 타임라인  (주문 시간 확정: DAY 1 13:30~14:30)
+// 1. 주문 타임라인  (주문 시간 확정: DAY 1 13:30~16:00)
 //
 //    주문은 첫날 딱 한 번만 받습니다:
-//      ① 13:30~14:30 → 야식·아침 한 번에 주문 (각 2가지 메뉴 중 선택)
+//      ① 13:30~16:00 → 야식·아침 한 번에 주문 (각 2가지 메뉴 중 선택)
 //    이후/이외에는 주문 기능이 없습니다:
 //      - 간식·저녁: 주문 없이 인원수 기준 일괄 제공
 //      - 둘째 날 점심·이후 아이스크림: 인원수 기준 일괄 제공
@@ -44,7 +44,7 @@ export const MEALS = [
     label: '[DAY 1] 야식',
     shortLabel: '야식',
     orderStart: '2026-09-21T13:30:00',
-    orderEnd: '2026-09-21T14:30:00',
+    orderEnd: '2026-09-21T16:00:00',
     eatAt: '2026-09-21T21:00:00',
   },
   {
@@ -52,7 +52,7 @@ export const MEALS = [
     label: '[DAY 2] 아침',
     shortLabel: '아침',
     orderStart: '2026-09-21T13:30:00',
-    orderEnd: '2026-09-21T14:30:00',
+    orderEnd: '2026-09-21T16:00:00',
     eatAt: '2026-09-22T09:30:00',
   },
 ]
@@ -542,10 +542,17 @@ export const DARK_MODE_HOURS = { start: 20, end: 7 }
 //                 (예: allergens: ['밀', '계란'])
 //                 팀 등록 알레르기와 겹치는 인원을 관리자 화면에서 자동 집계합니다.
 // ---------------------------------------------------------------
+// stock = 그 메뉴로 준비된 총 수량(전 팀 합계 상한). 합계가 여기에 닿으면
+//   참가자 화면에서 자동으로 닫힙니다 — 운영진이 손으로 품절을 누를 필요가
+//   없습니다. 남은 수량은 서버가 실제 주문 합계로 계산합니다.
+//   ⚠️ 서버(shared-api)도 같은 상한을 알아야 초과 저장을 막을 수 있습니다.
+//     서버는 MENU_STOCK 환경변수(없으면 코드 기본값)를 씁니다. 여기 값을
+//     바꾸면 서버 기본값도 함께 고치세요.
 export const MENUS = {
   midnight: [
     {
       id: 'md-a',
+      stock: 300,
       name: '페퍼로니 딜라이트 (1인)',
       shortLabel: '페퍼로니',
       badges: [],
@@ -555,6 +562,7 @@ export const MENUS = {
     },
     {
       id: 'md-b',
+      stock: 300,
       name: '수퍼잭슨 (1인)',
       shortLabel: '수퍼잭슨',
       badges: [],
@@ -568,6 +576,7 @@ export const MENUS = {
   breakfast: [
     {
       id: 'bf-a',
+      stock: 200,
       name: '잠봉뵈르 샌드위치',
       shortLabel: '잠봉뵈르',
       badges: [],
@@ -577,6 +586,7 @@ export const MENUS = {
     },
     {
       id: 'bf-b',
+      stock: 200,
       name: '햄&치즈 샌드위치',
       shortLabel: '햄&치즈',
       badges: [],
@@ -660,6 +670,11 @@ ALL_MENUS.forEach((m) => {
   m.baseName = m.name.split('(')[0].trim() || m.name
 })
 export const MENU_BY_ID = Object.fromEntries(ALL_MENUS.map((m) => [m.id, m]))
+// 그 메뉴의 준비 수량 (없으면 null — 상한을 두지 않는 메뉴)
+export function menuStock(menuId) {
+  const n = MENU_BY_ID[menuId]?.stock
+  return Number.isFinite(n) && n > 0 ? n : null
+}
 export const MEAL_BY_ID = Object.fromEntries(MEALS.map((m) => [m.id, m]))
 
 // 팀 번호로 담당 마스터 메이트를 찾음 (teamNumbers가 비어있으면 null → 미배정)

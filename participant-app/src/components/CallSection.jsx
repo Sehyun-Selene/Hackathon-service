@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CALL_LIMIT_PER_TEAM } from '../config.js'
-import { now, fmtAgo } from '../lib/time.js'
+import { now, fmtAgo, fmtClock, fmtTimeOnly } from '../lib/time.js'
 
 const STATUS_LABEL = { waiting: '대기중', in_progress: '처리중', done: '완료' }
 const STATUS_STEPS = ['waiting', 'in_progress', 'done']
@@ -23,6 +23,9 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
   const calls = callData?.calls || []
   const active = [...calls].reverse().find((c) => c.status !== 'done') || null
   const lastDone = !active ? [...calls].reverse().find((c) => c.status === 'done') : null
+  // 지난 호출 내역 — 진행 중인 호출은 위 상태 박스에 이미 자세히 나오므로 뺍니다.
+  // 팀원이 번갈아 보더라도 무엇을 이미 물어봤는지 알 수 있어야 합니다.
+  const past = [...calls].reverse().filter((c) => c !== active)
   const remaining = Math.max(0, CALL_LIMIT_PER_TEAM - callCount)
   const limitReached = remaining <= 0
 
@@ -73,7 +76,7 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
         <b className="call-guide-title">📌 호출 전에 꼭 읽어보세요!</b>
         <ul className="call-guide-list">
           <li>간단한 문제는 우리 팀의 플레이 메이트의 도움을 먼저 받아보세요!</li>
-          <li>메이트가 머무는 시간은 팀당 15분입니다!</li>
+          <li>마스터 메이트가 머무는 시간은 팀당 15분입니다!</li>
           <li>
             시간 내 효과적인 멘토링을 위해 아래 문장을 작성하시고, 불러주세요!
             <span className="call-guide-quote">
@@ -81,6 +84,11 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
             </span>
           </li>
           <li>다른 팀 멘토링을 하고 있는 경우, 대기시간이 발생할 수 있습니다.</li>
+          {/* 횟수는 서버가 최종 판단합니다 — 다 쓰면 버튼 자체가 눌리지 않습니다 */}
+          <li>
+            호출은 팀당 <b>{CALL_LIMIT_PER_TEAM}회</b>까지 가능하며, 모두 사용하면 호출
+            버튼이 비활성화됩니다.
+          </li>
         </ul>
       </div>
 
@@ -163,6 +171,32 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
             🙋 마스터 메이트 호출하기
           </button>
         </div>
+      )}
+
+      {/* 우리 팀 지난 호출 내역 — 길어질 수 있어 접어둡니다 */}
+      {past.length > 0 && (
+        <details className="call-log">
+          <summary className="call-log-summary">
+            🗂 우리 팀 지난 호출 내역 ({past.length}건)
+          </summary>
+          <ul className="call-log-list">
+            {past.map((c, i) => (
+              <li className="call-log-item" key={c.id || i}>
+                <div className="call-log-head">
+                  <span className="call-log-time">{fmtClock(c.createdAt)} 호출</span>
+                  <span className={`call-log-status st-${c.status}`}>
+                    {STATUS_LABEL[c.status] || c.status}
+                  </span>
+                  {c.handledBy && <span className="call-log-who">{c.handledBy}</span>}
+                  {c.doneAt && (
+                    <span className="call-log-done">{fmtTimeOnly(c.doneAt)} 완료</span>
+                  )}
+                </div>
+                {c.reason && <p className="call-log-reason">“{c.reason}”</p>}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </section>
   )

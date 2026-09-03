@@ -128,6 +128,26 @@ async function apiPost(path, body) {
   return data
 }
 
+// 메뉴별 남은 수량. 서버가 모든 팀의 주문을 합쳐 계산합니다 —
+// 이 기기가 남의 주문을 볼 수 없으니 직접 셀 수 없습니다.
+// 공유 서버가 없는 로컬 모드에서는 상한을 적용하지 않습니다(빈 값).
+export async function fetchStock() {
+  if (!API_BASE_URL) return { remaining: {}, sold: {}, stock: {} }
+  try {
+    return await apiPost('/api/stock', {})
+  } catch (err) {
+    if (err.code === 'endpoint-missing') return { remaining: {}, sold: {}, stock: {} }
+    throw err
+  }
+}
+
+// 주문 저장 — 준비 수량을 넘기면 서버가 거절합니다(err.code === 'stock').
+// 화면에서도 닫아두지만, 마지막 한 판을 두 팀이 동시에 담는 순간은
+// 서버만 가릴 수 있습니다.
+export async function orderSave(teamId, meals) {
+  return apiPost('/api/order-save', { teamId, meals })
+}
+
 // 팀 등록 — 팀 목록에 내 번호를 원자적으로 추가
 export async function rosterAddTeam(teamId) {
   if (!API_BASE_URL) {

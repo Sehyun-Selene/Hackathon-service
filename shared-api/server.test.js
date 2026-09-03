@@ -40,6 +40,8 @@ before(async () => {
       UPSTASH_REDIS_REST_URL: '',
       UPSTASH_REDIS_REST_TOKEN: '',
       SLACK_WEBHOOK_URL: '',
+      // 상한 경계를 빠르게 시험하려고 작은 값으로 띄웁니다
+      MENU_STOCK: 'md-a:5,md-b:5',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
@@ -209,4 +211,62 @@ test('Redis 쓰기 배치가 동시 팀 등록의 최신 104팀 목록을 보존
     service.kill()
     await new Promise((resolve) => fakeRedis.close(resolve))
   }
+})
+
+test('준비 수량을 넘는 주문은 거절하고, 동시에 들어와도 상한을 넘기지 않는다', async () => {
+  const 담기 = (teamId, qty) =>
+    post('/api/order-save', {
+      teamId,
+      meals: { midnight: { items: [{ menuId: 'md-a', qty }] } },
+    })
+
+  // 상한(5) 안에서는 그대로 저장됩니다
+  const 첫팀 = await 담기('G-01', 3)
+  assert.equal(첫팀.status, 200)
+  assert.equal(첫팀.body.remaining['md-a'], 2)
+
+  // 같은 팀이 수량을 고칠 때 자기 몫이 두 번 세어지면 안 됩니다
+  const 수정 = await 담기('G-01', 5)
+  assert.equal(수정.status, 200)
+  assert.equal(수정.body.remaining['md-a'], 0)
+
+  // 다 찼으면 다른 팀은 거절
+  const 초과 = await 담기('G-02', 1)
+  assert.equal(초과.status, 409)
+  assert.equal(초과.body.error, 'stock')
+  assert.equal(초과.body.remaining, 0)
+
+  // 자리를 비우고, 남은 2판을 여러 팀이 동시에 노리는 상황
+  await 담기('G-01', 3)
+  const 동시 = await Promise.all([
+    담기('G-02', 2),
+    담기('G-03', 2),
+    담기('G-04', 2),
+  ])
+  assert.equal(동시.filter((r) => r.status === 200).length, 1)
+  assert.equal(동시.filter((r) => r.status === 409).length, 2)
+
+  const 최종 = await post('/api/stock', {})
+  assert.equal(최종.body.sold['md-a'], 5)
+  assert.equal(최종.body.remaining['md-a'], 0)
+})
+
+test('참가자 앱이 보내는 모양(끼니 → 항목 배열)을 그대로 저장한다', async () => {
+  // 앱은 { midnight: [ {menuId, qty} ] } 로 보냅니다. 서버가 { items: [...] }만
+  // 읽던 시절에는 항목을 못 읽고 빈 주문으로 덮어썼습니다.
+  const r = await post('/api/order-save', {
+    teamId: 'G-10',
+    meals: { midnight: [{ menuId: 'md-b', qty: 2 }] },
+  })
+  assert.equal(r.status, 200)
+  assert.deepEqual(r.body.order.meals.midnight.items, [{ menuId: 'md-b', qty: 2 }])
+  assert.equal(r.body.sold['md-b'], 2)
+
+  // 저장된 모양({ items })으로 다시 보내도 같은 결과
+  const r2 = await post('/api/order-save', {
+    teamId: 'G-11',
+    meals: { midnight: { items: [{ menuId: 'md-b', qty: 1 }] } },
+  })
+  assert.equal(r2.status, 200)
+  assert.equal(r2.body.sold['md-b'], 3)
 })
