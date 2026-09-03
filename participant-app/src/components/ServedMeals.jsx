@@ -17,11 +17,8 @@ export default function ServedMeals() {
               🍚 {meal.label}
               {meal.cuisine ? ` · ${meal.cuisine}` : ''}
             </span>
-            {/* 시각이 정해지면 config의 servedAt에 넣으면 여기에 붙습니다 */}
-            <span className="served-meal-meta">
-              {meal.servedAt ? `${meal.servedAt} · ` : ''}
-              {meal.items.length}가지
-            </span>
+            {/* 제공 시각만. 가짓수는 펼치면 바로 보이는 정보라 뺐습니다 */}
+            {meal.servedAt && <span className="served-meal-meta">{meal.servedAt}</span>}
           </summary>
           <ul className="served-meal-list">
             {meal.items.map((item) => (
