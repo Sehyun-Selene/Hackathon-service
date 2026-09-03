@@ -145,6 +145,24 @@ html.dark .folder-tab { background: #2c2721; }
   margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 .card-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+
+/* 주문 없이 제공되는 식사 — 한 끼에 12~13가지라 접어둡니다.
+   주문 대상이 아니라는 게 드러나도록 공지사항과 같은 담담한 톤. */
+.served-meals { display: grid; gap: 8px; margin-bottom: 12px; }
+.served-meal { border: 1px solid var(--line); border-radius: 12px; background: var(--card); overflow: hidden; }
+.served-meal-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px 14px; cursor: pointer; list-style: none;
+  font-size: 14px; font-weight: 700; min-height: 44px;
+}
+.served-meal-summary::-webkit-details-marker { display: none; }
+/* 접힘/펼침을 알 수 있게 화살표를 직접 붙입니다 */
+.served-meal-summary::after { content: '▾'; margin-left: 2px; color: var(--sub); font-size: 12px; transition: transform 120ms; }
+.served-meal[open] .served-meal-summary::after { transform: rotate(180deg); }
+.served-meal-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.served-meal-meta { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--sub); white-space: nowrap; }
+.served-meal-list { margin: 0; padding: 0 14px 4px 30px; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.5; }
+.served-meal-note { padding: 6px 14px 12px; font-size: 12px; color: var(--sub); }
 /* 탭 줄이 없는 화면(개발자리그)에서 제목 오른쪽에 팀 버튼을 답니다 */
 .board-title-row {
   display: flex; align-items: center; justify-content: space-between;

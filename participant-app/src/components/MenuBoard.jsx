@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MEALS, MENUS, MENU_BY_ID, MEAL_BY_ID, teamDiet } from '../config.js'
 import { now, fmtClock, fmtCountdown, mealTimes } from '../lib/time.js'
+import ServedMeals from './ServedMeals.jsx'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 
@@ -133,6 +134,7 @@ export default function MenuBoard({
           {teamButton}
         </div>
         <OrderNotice />
+        <ServedMeals />
         <div className="closed-box">
           <div className="closed-emoji">⏰</div>
           {nextMeals.length > 0 ? (
@@ -317,6 +319,7 @@ export default function MenuBoard({
       </div>
 
       <OrderNotice />
+      <ServedMeals />
 
       {/* 담아두기만 하면 저장되지 않으므로, 마감 임박에는 눈에 띄게 알립니다 */}
       {/* 두 경우를 모두 잡습니다.
