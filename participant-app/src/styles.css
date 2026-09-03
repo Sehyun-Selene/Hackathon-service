@@ -243,7 +243,7 @@ html.dark .folder-tab { background: #2c2721; }
 .board-header-text { flex: 1; min-width: 0; }
 .board-header-title, .call-title {
   font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  font-size: 24px; font-weight: 800;
+  font-size: 27px; font-weight: 800;
 }
 /* 하단 고정 바의 마감 시간 — 담긴 수량과 화살표 사이 */
 .cart-bar-deadline {
@@ -774,7 +774,7 @@ html.dark .setup-solo-note { background: #3a2c14; border-color: #5c451c; color: 
   .team-profile-chevron { font-size: 15px; }
   .folder-body { padding: 14px; }
   .board-header { gap: 7px; }
-  .board-header-title, .call-title { font-size: 21px; }
+  .board-header-title, .call-title { font-size: 24px; }
   .board-header-sub { font-size: 11.5px; }
   .board-header-actions { gap: 4px; }
   .board-refresh-btn { width: 32px; height: 32px; }
