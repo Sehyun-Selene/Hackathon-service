@@ -467,6 +467,18 @@ html.dark .card-stepper { background: #2c2721; }
 }
 .cart-item:last-child { border-bottom: none; }
 .cart-item-name { font-size: 15px; font-weight: 600; }
+/* 장바구니 — 이미 주문한 팀에게 주는 수정 안내 */
+.cart-edit-hint {
+  margin: 10px 0 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--sub);
+}
+.cart-edit-hint.ready { color: var(--primary); font-weight: 600; }
+
 .sheet-foot { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); margin-top: 4px; }
 .cart-clear-dark {
   background: transparent; border: 1px solid var(--line); color: var(--sub);

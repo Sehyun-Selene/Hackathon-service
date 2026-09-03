@@ -12,12 +12,12 @@ const fmtHM = (iso) => {
   const m = d.getMinutes()
   return m ? `${h}시 ${m}분` : `${h}시`
 }
-// '2026-09-21T13:30:00' → '9/21'
+// '2026-09-21T13:30:00' → '[9/21]'
 // 공지에는 [DAY 1]보다 실제 날짜가 헷갈리지 않습니다. 라벨을 파싱하지
 // 않고 그 식사의 시각에서 직접 뽑아, 날짜가 바뀌어도 어긋나지 않습니다.
 const fmtMD = (iso) => {
   const d = new Date(iso)
-  return `${d.getMonth() + 1}/${d.getDate()}`
+  return `[${d.getMonth() + 1}/${d.getDate()}]`
 }
 
 // 주문 시간 공지 — 호출 탭의 가이드 박스(.call-guide)와 같은 형태로 노출.
@@ -52,12 +52,12 @@ function OrderNotice() {
             .join(', ')}{' '}
           제공합니다.
         </li>
+        {/* 한 판을 나눠 먹는 크기로 오해하면 팀 인원보다 적게 담습니다 */}
+        <li>야식 피자는 한 판이 1인용입니다.</li>
         {/* 팀원이 각자 담으면 서로의 주문을 덮어써서 수량이 어긋납니다 */}
         <li>
           <b>팀에서 한 명만 대표로 주문해주세요.</b>
         </li>
-        {/* 한 판을 나눠 먹는 크기로 오해하면 팀 인원보다 적게 담습니다 */}
-        <li>야식 피자는 한 판이 1인용입니다.</li>
       </ul>
     </div>
   )
@@ -598,6 +598,16 @@ export default function MenuBoard({
                 ))
               )}
             </div>
+            {/* 이미 주문한 팀에게 — 버튼이 잠겨 있으면 수정이 아예 안 되는
+                줄로 읽힙니다. 수량을 바꾸면 켜진다는 것과, 다시 넣은 주문이
+                이전 주문을 대신한다는 것을 여기서 알려줍니다. */}
+            {hasSaved && (
+              <p className={`cart-edit-hint${dirty ? " ready" : ""}`}>
+                {dirty
+                  ? '다시 주문하면 이전 주문은 지금 담은 내용으로 바뀝니다.'
+                  : '이미 주문이 접수됐습니다. 수량을 바꾸면 아래 버튼이 켜지고, 마지막에 넣은 주문으로 수정됩니다.'}
+              </p>
+            )}
             <div className="sheet-foot">
               {canCancel && (
                 <button className="cart-clear-dark" onClick={cancelAll} disabled={saving}>
