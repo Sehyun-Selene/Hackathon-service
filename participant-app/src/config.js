@@ -379,9 +379,11 @@ export const COACH_ASSIGNMENTS = [
   { id: 'mate-38', name: '황시아', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: 'U0A20QMDWNT' },
   { id: 'mate-39', name: '권두순', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: 'U0BSTM908LC' },
   { id: 'mate-40', name: '김현중', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
-  { id: 'mate-41', name: '이영미', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
   { id: 'mate-42', name: '이소연', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
-  { id: 'mate-43', name: '임현주', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  // 아직 누구인지 정해지지 않은 1인. 자리만 잡아둡니다 — 관리자 입장
+  // 명단(ADMIN_CREW)에서는 placeholder를 걸러내, 캐롯을 검색한 사람이
+  // 실수로 이 항목으로 들어가지 않게 합니다.
+  { id: 'mate-41', name: '미정', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '', placeholder: true },
   { id: 'mate-44', name: '이상욱', nickname: 'Lodi', company: 'GS차지비', teamNumbers: [], slackUserId: 'U0A82DA597S' },
 ]
 
@@ -474,7 +476,7 @@ export function crewNameIsUnique(name) {
 // 누구인지 못 알아보는 경우가 있습니다.
 // (겹치는 이름을 가리는 것도 이 표기가 겸합니다: 이상윤 (Yunie) / 이상윤 (Yun))
 //
-// 닉네임이 없는 분은 소속을 대신 씁니다. 지금은 캐롯글로벌 12분이 그렇습니다
+// 닉네임이 없는 분은 소속을 대신 씁니다. 지금은 캐롯글로벌 11분이 그렇습니다
 // — 시트의 닉네임 칸이 회사 이메일이라 비워 뒀습니다. 이름만 적히면 누구인지
 // 짚을 단서가 없습니다.
 const COMPANY_SHORT = { 캐롯글로벌: '캐롯' }

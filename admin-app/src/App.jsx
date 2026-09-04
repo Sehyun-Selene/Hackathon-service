@@ -370,15 +370,19 @@ export default function App() {
     // 45명을 전부 깔면 화면이 잠기므로 입력한 글자로 좁혀갑니다. 이름뿐 아니라
     // 닉네임·회사로도 찾게 두었습니다 — 본인을 찾는 방법이 하나뿐이면
     // 한글 이름이 기억나지 않는 순간에 막힙니다.
+    // 아직 누구인지 정해지지 않은 자리(placeholder)는 고를 수 없게 뺍니다 —
+    // 소속으로 검색한 사람이 '미정'을 자기 자리로 착각하면, 담당 팀도 없고
+    // 슬랙 멘션도 없는 상태로 운영에 들어가게 됩니다.
+    const selectable = ADMIN_CREW.filter((c) => !c.placeholder)
     const matches = query
-      ? ADMIN_CREW.filter(
+      ? selectable.filter(
           (c) =>
             squash(c.name).includes(squash(query)) ||
             squash(c.nickname).includes(squash(query)) ||
             squash(c.company).includes(squash(query)),
         )
       : []
-    const rosterReady = ADMIN_CREW.length > 0
+    const rosterReady = selectable.length > 0
 
     return (
       <div className="gate">
