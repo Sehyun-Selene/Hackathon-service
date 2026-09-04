@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { CALL_LIMIT_PER_TEAM } from '../config.js'
-import { now, fmtAgo, fmtClock, fmtTimeOnly } from '../lib/time.js'
+import { CALL_LIMIT_PER_TEAM, IDEA_BOARD } from '../config.js'
+import { now, fmtAgo, fmtClock, fmtHM, fmtTimeOnly } from '../lib/time.js'
+import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 const STATUS_LABEL = { waiting: '대기중', in_progress: '처리중', done: '완료' }
 const STATUS_STEPS = ['waiting', 'in_progress', 'done']
@@ -14,11 +15,49 @@ const REASON_MAX = 300
 // (config.COACH_ASSIGNMENTS — 아직 팀 번호가 배정되지 않았으면 assignedCoachName은 null)
 // 호출 횟수 제한 예외 여부는 참가자가 정하지 않고, 처리하는 관리자가
 // 호출 하나하나에 대해 직접 판단해 설정함 (관리자 CallsTab 참고)
+// 첫 호출 전 확인 팝업. 시각은 config.IDEA_BOARD에서 뽑습니다.
+function BoardCheck({ onYes, onNo }) {
+  const dialogRef = useDialogFocus(true, onNo)
+  return (
+    <div className="ask-overlay" onClick={onNo}>
+      <div
+        ref={dialogRef}
+        className="ask-box"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="board-ask-title"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="ask-emoji" aria-hidden="true">📝</div>
+        <h3 className="ask-title" id="board-ask-title">
+          아이디어 보드 작성을 완료했나요?
+        </h3>
+        <p className="ask-body">
+          {fmtHM(IDEA_BOARD.start)}부터 {fmtHM(IDEA_BOARD.end)}까지 아이디어 보드를 작성합니다.
+          <br />
+          작성을 마쳐야 마스터 메이트를 호출할 수 있어요.
+        </p>
+        <div className="ask-actions">
+          <button className="btn-ghost" onClick={onNo}>
+            아직이요
+          </button>
+          <button className="btn-call" onClick={onYes}>
+            네, 작성했어요
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CallSection({ callData, callCount, assignedCoachName, onCall }) {
   const [confirming, setConfirming] = useState(false)
   const [sending, setSending] = useState(false)
   const [reason, setReason] = useState('')
   const [reasonError, setReasonError] = useState(false)
+  // 아이디어 보드 확인 팝업: null=안 띄움 / true=묻는 중 / false=아직이라고 답함
+  const [boardAsk, setBoardAsk] = useState(null)
 
   const calls = callData?.calls || []
   const active = [...calls].reverse().find((c) => c.status !== 'done') || null
@@ -28,6 +67,13 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
   const past = [...calls].reverse().filter((c) => c !== active)
   const remaining = Math.max(0, CALL_LIMIT_PER_TEAM - callCount)
   const limitReached = remaining <= 0
+
+  // 보드를 완성해야 호출할 수 있는 규칙이라, 팀의 첫 호출에서 한 번 묻습니다.
+  // callCount는 서버 값이라 팀원이 다른 기기로 들어와도 팀당 한 번입니다.
+  const startCall = () => {
+    if (callCount === 0) setBoardAsk(true)
+    else setConfirming(true)
+  }
 
   const send = async () => {
     const text = reason.trim()
@@ -170,10 +216,22 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
               지난 호출이 완료되었습니다. 필요하면 다시 호출할 수 있어요.
             </p>
           )}
-          <button className="btn-call" disabled={sending} onClick={() => setConfirming(true)}>
+          {/* 팝업에서 "아직이요"를 고른 뒤 — 왜 호출로 넘어가지 않았는지 */}
+          {boardAsk === false && (
+            <p className="call-hint board-todo">
+              아이디어 보드를 먼저 작성해주세요. 작성을 마친 뒤 다시 눌러주세요.
+            </p>
+          )}
+          <button className="btn-call" disabled={sending} onClick={startCall}>
             🙋 마스터 메이트 호출하기
           </button>
         </div>
+      )}
+
+      {/* 첫 호출 전 확인 — 보드를 쓰지 않으면 호출 자체가 안 되는 규칙이라,
+          호출 사유를 다 적고 나서 되돌리는 것보다 먼저 묻는 편이 낫습니다 */}
+      {boardAsk === true && (
+        <BoardCheck onYes={() => { setBoardAsk(null); setConfirming(true) }} onNo={() => setBoardAsk(false)} />
       )}
 
       {/* 우리 팀 지난 호출 내역 — 길어질 수 있어 접어둡니다 */}

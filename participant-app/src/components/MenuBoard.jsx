@@ -1,17 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MEALS, MENUS, MENU_BY_ID, MEAL_BY_ID, teamDiet } from '../config.js'
-import { now, fmtClock, fmtCountdown, mealTimes } from '../lib/time.js'
+import { now, fmtClock, fmtCountdown, fmtHM, mealTimes } from '../lib/time.js'
 import ServedMeals from './ServedMeals.jsx'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 
-// '2026-09-21T13:30:00' → '13시 30분' (정시는 '21시')
-const fmtHM = (iso) => {
-  const d = new Date(iso)
-  const h = d.getHours()
-  const m = d.getMinutes()
-  return m ? `${h}시 ${m}분` : `${h}시`
-}
+
 // '2026-09-21T13:30:00' → '[9/21]'
 // 공지에는 [DAY 1]보다 실제 날짜가 헷갈리지 않습니다. 라벨을 파싱하지
 // 않고 그 식사의 시각에서 직접 뽑아, 날짜가 바뀌어도 어긋나지 않습니다.

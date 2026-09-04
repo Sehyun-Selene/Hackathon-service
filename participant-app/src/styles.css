@@ -440,6 +440,28 @@ html.dark .card-stepper { background: #2c2721; }
 }
 .cart-bar-more { font-size: 23px; line-height: 1; opacity: 0.85; }
 
+/* ---- 가운데 확인 팝업 (첫 호출 전 아이디어 보드 확인) ---- */
+.ask-overlay {
+  position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.ask-box {
+  width: 100%; max-width: 340px; background: var(--card);
+  border-radius: 20px; padding: 24px 20px 18px; text-align: center;
+  animation: ask-in 0.16s ease;
+}
+@keyframes ask-in { from { transform: scale(0.94); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ask-box { animation: none; } }
+.ask-emoji { font-size: 34px; line-height: 1; margin-bottom: 10px; }
+.ask-title { font-size: 18px; font-weight: 800; line-height: 1.4; }
+.ask-body {
+  margin-top: 9px; font-size: 13.5px; line-height: 1.6; color: var(--sub);
+}
+.ask-actions { display: flex; gap: 8px; margin-top: 18px; }
+.ask-actions > button { flex: 1 1 0; margin: 0; }
+/* "아직이요"를 고른 뒤 호출 버튼 위에 남는 안내 */
+.call-hint.board-todo { color: var(--primary); font-weight: 600; }
+
 /* ---- 장바구니 하단 시트 ---- */
 .sheet-overlay {
   position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.4);

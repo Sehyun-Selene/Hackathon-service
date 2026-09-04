@@ -31,6 +31,14 @@ export function fmtClock(d) {
   ).padStart(2, '0')}`
 }
 
+// '2026-09-21T14:00:00' → '14시' / '13시 30분' (정시는 분을 뺍니다)
+export function fmtHM(iso) {
+  const d = iso instanceof Date ? iso : new Date(iso)
+  const h = d.getHours()
+  const m = d.getMinutes()
+  return m ? `${h}시 ${m}분` : `${h}시`
+}
+
 export function fmtTimeOnly(d) {
   const dt = d instanceof Date ? d : new Date(d)
   return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
