@@ -96,9 +96,15 @@ async function post(text) {
 // ---- 문구 만들기 ----------------------------------------------------
 // 참가자 앱이 호출을 만들 때 담당자 정보를 함께 넣어줍니다
 // (config.COACH_ASSIGNMENTS 는 앱 쪽에만 있으므로 서버는 값만 받아 씀).
+// 멘션과 이름을 함께 씁니다. 멘션만 두면, 그 ID가 이 채널에서 풀리지 않을 때
+// (외부 연계 채널에 다른 워크스페이스 사람이 들어온 경우 등) 누구 담당인지
+// 읽을 수 없는 알림이 됩니다. 이름을 붙여두면 최악의 경우에도 사람은 알아봅니다.
 function mateLabel(call) {
-  if (call.assignedSlackId) return `<@${call.assignedSlackId}>`
-  if (call.assignedName) return `${escapeMrkdwn(call.assignedName)} 메이트`
+  const name = call.assignedName ? escapeMrkdwn(call.assignedName) : ''
+  if (call.assignedSlackId) {
+    return name ? `<@${call.assignedSlackId}> (${name})` : `<@${call.assignedSlackId}>`
+  }
+  if (name) return `${name} 메이트`
   return null
 }
 
