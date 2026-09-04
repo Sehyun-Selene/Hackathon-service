@@ -91,7 +91,7 @@ export const IDEA_BOARD = { start: '2026-09-21T14:00:00', end: '2026-09-21T16:00
 // 그 팀으로 등록하면 참가자 화면에 호출 탭이 아예 나오지 않고
 // 관리자 호출 횟수 격자에도 들어가지 않습니다.
 export const LEAGUES = [
-  { id: 'field', prefix: 'E', label: '필드리그', count: 206, calls: true },
+  { id: 'field', prefix: 'E', label: '필드리그', count: 208, calls: true },
   { id: 'dev', prefix: 'G', label: '개발자리그', count: 31, calls: false },
 ]
 
@@ -202,6 +202,9 @@ export const TEAMS = {
   'E-104': { name: "A-08", size: 4 },
   // 개발자리그 G-05에 있다가 필드리그로 옮겨온 팀입니다
   'E-105': { name: "써브(Thermal Bridge)", size: 2 },
+  // 배정표에서 뒤늦게 나온 GS건설 팀입니다. 인원은 아직 못 받아 4명으로
+  // 잡아뒀습니다 — 실제보다 적게 잡으면 그만큼 못 담습니다.
+  'E-106': { name: "일단해보자", size: 4 },
 
   // 외부사 — 자리배치표에는 자리가 없고 번호만 시트에 적혀 있습니다.
   // 팀명이 아직 없어 회사명으로 확인시켜 줍니다(company). 정해지면 name을 채우세요.
@@ -212,6 +215,9 @@ export const TEAMS = {
   'E-204': { name: "", company: "한국표준과학연구원", size: 2 },
   'E-205': { name: "", company: "한국경제신문", size: 4 },
   'E-206': { name: "", company: "한국동서발전", size: 4 },
+  // 인원 미확인 — 4명으로 잡아뒀습니다
+  'E-207': { name: "", company: "삼양인터네셔널", size: 4 },
+  'E-208': { name: "", company: "삼양통상", size: 4 },
 
   'G-01': { name: "JDD", size: 3 },
   'G-02': { name: "KNOW:HOW", size: 1 },
@@ -340,51 +346,55 @@ export function teamSortKey(teamId) {
 export const COACH_ASSIGNMENTS = [
   // 호출 총관리자 — 담당 구간 없이 전체를 봅니다
   { id: 'call-manager', name: '김세현', nickname: 'Selene', company: '(주)GS', teamNumbers: [], slackUserId: 'U0BED7LG02D', callManager: true },
-  { id: 'mate-01', name: '고병현', nickname: 'Joseph', company: '(주)GS', teamNumbers: [], slackUserId: 'U095U417XLG' },
-  { id: 'mate-02', name: '한만호', nickname: 'Ryan', company: '(주)GS', teamNumbers: [], slackUserId: 'U088AHTLTNJ' },
-  { id: 'mate-03', name: '이진수', nickname: 'Jin', company: '(주)GS', teamNumbers: [], slackUserId: 'U05R86E8HEZ' },
-  { id: 'mate-04', name: '장희원', nickname: 'Eric', company: '(주)GS', teamNumbers: [], slackUserId: 'U0AQZ6EHNL8' },
-  { id: 'mate-05', name: '김민규', nickname: 'Tomi', company: '(주)GS', teamNumbers: [], slackUserId: 'U0BDVTQBSRM' },
-  { id: 'mate-06', name: '김진호', nickname: 'Hugo', company: '(주)GS', teamNumbers: [], slackUserId: 'U0BED7JHMKK' },
-  { id: 'mate-07', name: '정승현', nickname: 'Josh', company: '보령LNG터미널', teamNumbers: [], slackUserId: 'U0A6RPS2CCX' },
-  { id: 'mate-08', name: '이성규', nickname: 'Connor', company: '위드인천에너지', teamNumbers: [], slackUserId: 'U0A7776PR98' },
-  { id: 'mate-09', name: '정승환', nickname: 'Gon', company: '인천종합에너지', teamNumbers: [], slackUserId: 'U0A7AQSBVMJ' },
-  { id: 'mate-10', name: '김한희', nickname: 'Hani', company: 'GS에너지', teamNumbers: [], slackUserId: 'U0A75666VFG' },
-  { id: 'mate-11', name: '방민규', nickname: 'Mr.Q', company: '파르나스호텔', teamNumbers: [], slackUserId: 'U0A7776NHB4' },
-  { id: 'mate-12', name: '이한호', nickname: 'Lars', company: 'E&R', teamNumbers: [], slackUserId: 'U0A769P1TQA' },
-  { id: 'mate-13', name: '한준이', nickname: 'Aiden', company: '구미열병합발전', teamNumbers: [], slackUserId: 'U0A70RJ4M35' },
-  { id: 'mate-14', name: '황정섭', nickname: 'jay', company: '동해전력', teamNumbers: [], slackUserId: 'U0A73Q40XTP' },
-  { id: 'mate-15', name: '박태준', nickname: 'Tony', company: '포천그린에너지', teamNumbers: [], slackUserId: 'U0A7L52HBQ9' },
-  { id: 'mate-16', name: '정다운', nickname: 'William', company: 'GS EPS', teamNumbers: [], slackUserId: 'U0A79T8DPJQ' },
-  { id: 'mate-17', name: '김태윤', nickname: 'Kai', company: 'GS EPS', teamNumbers: [], slackUserId: 'U0A7776MAPL' },
-  { id: 'mate-18', name: '신창호', nickname: 'Kyle', company: 'GS건설', teamNumbers: [], slackUserId: 'U0A7MFA2H46' },
-  { id: 'mate-19', name: '박일락', nickname: 'Ryan', company: 'GS 엔텍', teamNumbers: [], slackUserId: 'U0A70RJ3H6X' },
-  { id: 'mate-20', name: '이상윤', nickname: 'Yunie', company: 'GS 엔텍', teamNumbers: [], slackUserId: 'U0A73Q3RY8M' },
-  { id: 'mate-21', name: '김경미', nickname: 'May', company: 'GS글로벌', teamNumbers: [], slackUserId: 'U0A7AQNM476' },
-  { id: 'mate-22', name: '김승철', nickname: 'Ciso', company: 'GS리테일', teamNumbers: [], slackUserId: 'U0A7565GHGW' },
-  { id: 'mate-23', name: '박지훈', nickname: 'Ready', company: 'GS리테일', teamNumbers: [], slackUserId: 'U0A7L551CNM' },
-  { id: 'mate-24', name: '안효진', nickname: 'Mario', company: 'GS리테일', teamNumbers: [], slackUserId: 'U0A7AQS8F0U' },
-  { id: 'mate-25', name: '이재현', nickname: 'L', company: 'GS스포츠', teamNumbers: [], slackUserId: 'U0A6RPQTWUF' },
-  { id: 'mate-26', name: '박형남', nickname: 'Jason', company: 'GSC 예울마루', teamNumbers: [], slackUserId: 'U0A7GSR77MZ' },
-  { id: 'mate-28', name: '진영주', nickname: 'Pablo', company: 'GS칼텍스', teamNumbers: [], slackUserId: 'U0A7776JMS6' },
-  { id: 'mate-29', name: '홍승표', nickname: 'Pio', company: 'GS칼텍스', teamNumbers: [], slackUserId: 'U0A7AQS77RS' },
-  { id: 'mate-30', name: '김민엽', nickname: 'Tyler', company: 'GS파워', teamNumbers: [], slackUserId: 'U0A7777H726' },
-  { id: 'mate-31', name: '이상윤', nickname: 'Yun', company: 'GS파워', teamNumbers: [], slackUserId: 'U0A7564NH9U' },
-  { id: 'mate-32', name: '공민우', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: 'U0BQV5RERDL' },
-  { id: 'mate-33', name: '조현아', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: 'U0BSWD9L0ER' },
-  { id: 'mate-34', name: '장지수', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: 'U0BQV5Q8BKQ' },
-  { id: 'mate-35', name: '문관균', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
-  { id: 'mate-36', name: '마재훈', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
-  { id: 'mate-37', name: '이혜준', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
-  { id: 'mate-38', name: '황시아', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: 'U0A20QMDWNT' },
-  { id: 'mate-39', name: '권두순', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: 'U0BSTM908LC' },
-  { id: 'mate-40', name: '김현중', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
-  { id: 'mate-42', name: '이소연', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '' },
+  { id: 'mate-01', name: '고병현', nickname: 'Joseph', company: '(주)GS', teamNumbers: ['E-97', 'E-98', 'E-99'], slackUserId: 'U095U417XLG' },
+  { id: 'mate-02', name: '한만호', nickname: 'Ryan', company: '(주)GS', teamNumbers: ['E-01', 'E-43', 'E-44'], slackUserId: 'U088AHTLTNJ' },
+  { id: 'mate-03', name: '이진수', nickname: 'Jin', company: '(주)GS', teamNumbers: ['E-100', 'E-101', 'E-102'], slackUserId: 'U05R86E8HEZ' },
+  { id: 'mate-04', name: '장희원', nickname: 'Eric', company: '(주)GS', teamNumbers: ['E-200', 'E-201', 'E-202'], slackUserId: 'U0AQZ6EHNL8' },
+  { id: 'mate-05', name: '김민규', nickname: 'Tomi', company: '(주)GS', teamNumbers: ['E-41', 'E-106', 'E-42'], slackUserId: 'U0BDVTQBSRM' },
+  { id: 'mate-06', name: '김진호', nickname: 'Hugo', company: '(주)GS', teamNumbers: ['E-72', 'E-73', 'E-74'], slackUserId: 'U0BED7JHMKK' },
+  { id: 'mate-07', name: '정승현', nickname: 'Josh', company: '보령LNG터미널', teamNumbers: ['E-03'], slackUserId: 'U0A6RPS2CCX' },
+  { id: 'mate-08', name: '이성규', nickname: 'Connor', company: '위드인천에너지', teamNumbers: ['E-04'], slackUserId: 'U0A7776PR98' },
+  { id: 'mate-09', name: '정승환', nickname: 'Gon', company: '인천종합에너지', teamNumbers: ['E-05', 'E-06'], slackUserId: 'U0A7AQSBVMJ' },
+  { id: 'mate-10', name: '김한희', nickname: 'Hani', company: 'GS에너지', teamNumbers: ['E-02'], slackUserId: 'U0A75666VFG' },
+  { id: 'mate-11', name: '방민규', nickname: 'Mr.Q', company: '파르나스호텔', teamNumbers: ['E-77', 'E-78', 'E-79', 'E-80'], slackUserId: 'U0A7776NHB4' },
+  { id: 'mate-12', name: '이한호', nickname: 'Lars', company: 'E&R', teamNumbers: ['E-91', 'E-92', 'E-93'], slackUserId: 'U0A769P1TQA' },
+  { id: 'mate-13', name: '한준이', nickname: 'Aiden', company: '구미열병합발전', teamNumbers: ['E-75'], slackUserId: 'U0A70RJ4M35' },
+  { id: 'mate-14', name: '황정섭', nickname: 'jay', company: '동해전력', teamNumbers: ['E-76'], slackUserId: 'U0A73Q40XTP' },
+  { id: 'mate-15', name: '박태준', nickname: 'Tony', company: '포천그린에너지', teamNumbers: ['E-103', 'E-104', 'E-105'], slackUserId: 'U0A7L52HBQ9' },
+  { id: 'mate-16', name: '정다운', nickname: 'William', company: 'GS EPS', teamNumbers: ['E-09', 'E-10', 'E-11'], slackUserId: 'U0A79T8DPJQ' },
+  { id: 'mate-17', name: '김태윤', nickname: 'Kai', company: 'GS EPS', teamNumbers: ['E-12', 'E-13', 'E-14', 'E-15'], slackUserId: 'U0A7776MAPL' },
+  { id: 'mate-18', name: '신창호', nickname: 'Kyle', company: 'GS건설', teamNumbers: ['E-32', 'E-33', 'E-34'], slackUserId: 'U0A7MFA2H46' },
+  { id: 'mate-19', name: '박일락', nickname: 'Ryan', company: 'GS 엔텍', teamNumbers: ['E-94'], slackUserId: 'U0A70RJ3H6X' },
+  { id: 'mate-20', name: '이상윤', nickname: 'Yunie', company: 'GS 엔텍', teamNumbers: ['E-88', 'E-89', 'E-90'], slackUserId: 'U0A73Q3RY8M' },
+  { id: 'mate-21', name: '김경미', nickname: 'May', company: 'GS글로벌', teamNumbers: ['E-85', 'E-86', 'E-87'], slackUserId: 'U0A7AQNM476' },
+  { id: 'mate-22', name: '김승철', nickname: 'Ciso', company: 'GS리테일', teamNumbers: ['E-45', 'E-46', 'E-47'], slackUserId: 'U0A7565GHGW' },
+  { id: 'mate-23', name: '박지훈', nickname: 'Ready', company: 'GS리테일', teamNumbers: ['E-48', 'E-49', 'E-50'], slackUserId: 'U0A7L551CNM' },
+  { id: 'mate-24', name: '안효진', nickname: 'Mario', company: 'GS리테일', teamNumbers: ['E-51', 'E-52', 'E-53'], slackUserId: 'U0A7AQS8F0U' },
+  { id: 'mate-25', name: '이재현', nickname: 'L', company: 'GS스포츠', teamNumbers: ['E-95', 'E-96'], slackUserId: 'U0A6RPQTWUF' },
+  { id: 'mate-26', name: '박형남', nickname: 'Jason', company: 'GSC 예울마루', teamNumbers: ['E-26', 'E-27'], slackUserId: 'U0A7GSR77MZ' },
+  { id: 'mate-28', name: '진영주', nickname: 'Pablo', company: 'GS칼텍스', teamNumbers: ['E-20', 'E-21', 'E-22'], slackUserId: 'U0A7776JMS6' },
+  { id: 'mate-29', name: '홍승표', nickname: 'Pio', company: 'GS칼텍스', teamNumbers: ['E-23', 'E-24', 'E-25'], slackUserId: 'U0A7AQS77RS' },
+  { id: 'mate-30', name: '김민엽', nickname: 'Tyler', company: 'GS파워', teamNumbers: ['E-16', 'E-17'], slackUserId: 'U0A7777H726' },
+  { id: 'mate-31', name: '이상윤', nickname: 'Yun', company: 'GS파워', teamNumbers: ['E-18', 'E-19'], slackUserId: 'U0A7564NH9U' },
+  { id: 'mate-32', name: '공민우', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-54', 'E-55', 'E-56'], slackUserId: 'U0BQV5RERDL' },
+  { id: 'mate-33', name: '조현아', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-57', 'E-58', 'E-59'], slackUserId: 'U0BSWD9L0ER' },
+  { id: 'mate-34', name: '장지수', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-60', 'E-61', 'E-62'], slackUserId: 'U0BQV5Q8BKQ' },
+  { id: 'mate-35', name: '문관균', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-63', 'E-64', 'E-65'], slackUserId: '' },
+  { id: 'mate-36', name: '마재훈', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-66', 'E-67', 'E-68'], slackUserId: '' },
+  { id: 'mate-37', name: '이혜준', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-69', 'E-70', 'E-71'], slackUserId: '' },
+  { id: 'mate-38', name: '황시아', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-28', 'E-29'], slackUserId: 'U0A20QMDWNT' },
+  { id: 'mate-39', name: '권두순', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-30', 'E-31'], slackUserId: 'U0BSTM908LC' },
+  { id: 'mate-40', name: '김현중', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-35', 'E-36', 'E-37'], slackUserId: '' },
+  { id: 'mate-42', name: '이소연', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-38', 'E-39', 'E-40'], slackUserId: '' },
   // 아직 누구인지 정해지지 않은 1인. 자리만 잡아둡니다 — 관리자 입장
   // 명단(ADMIN_CREW)에서는 placeholder를 걸러내, 캐롯을 검색한 사람이
   // 실수로 이 항목으로 들어가지 않게 합니다.
-  { id: 'mate-41', name: '미정', nickname: '', company: '캐롯글로벌', teamNumbers: [], slackUserId: '', placeholder: true },
-  { id: 'mate-44', name: '이상욱', nickname: 'Lodi', company: 'GS차지비', teamNumbers: [], slackUserId: 'U0A82DA597S' },
+  { id: 'mate-41', name: '미정', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-81', 'E-82', 'E-83', 'E-84'], slackUserId: '', placeholder: true },
+  { id: 'mate-44', name: '이상욱', nickname: 'Lodi', company: 'GS차지비', teamNumbers: ['E-07', 'E-08'], slackUserId: 'U0A82DA597S' },
+  // 배정표에서 뒤늦게 나온 두 분입니다. 소속·슬랙 ID는 아직 못 받았습니다.
+  // (김민수/Liam은 플레이 메이트 명단에도 있어 소속만 가져왔습니다)
+  { id: 'mate-45', name: '심재혁', nickname: 'Simpson', company: '', teamNumbers: ['E-203', 'E-204', 'E-205', 'E-206'], slackUserId: '' },
+  { id: 'mate-46', name: '김민수', nickname: 'Liam', company: '삼양통상', teamNumbers: ['E-207', 'E-208'], slackUserId: '' },
 ]
 
 // 3-2. 플레이 메이트 — 팀 곁에서 아이디어를 함께 보는 사람들.

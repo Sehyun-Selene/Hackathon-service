@@ -105,7 +105,7 @@ PRD에서 "추후 확정(TBD)"으로 표시된 값은 전부 아래 파일에 �
    | `UPSTASH_REDIS_REST_TOKEN` | Upstash에서 복사한 REST 토큰 | ✅ |
    | `ADMIN_TOKEN` | 초기화용 비밀 문자열(직접 지정) | 선택 |
    | `CALL_LIMIT_PER_TEAM` | 팀당 호출 제한. 기본 5 | 선택 |
-   | `TEAM_LEAGUES` | 리그별 마지막 테이블 번호. 기본 `E:206,G:31` | 선택 |
+   | `TEAM_LEAGUES` | 리그별 마지막 테이블 번호. 기본 `E:208,G:31` | 선택 |
    | `MENU_STOCK` | 메뉴별 준비 수량. 기본 `md-a:300,md-b:300,bf-a:200,bf-b:200` | 선택 |
    | `COACH_ACTIVE_TTL_MS` | 메이트 접속 현황 유지 시간. 기본 120000(2분) | 선택 |
 
