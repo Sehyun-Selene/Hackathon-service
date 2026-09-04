@@ -202,9 +202,8 @@ export const TEAMS = {
   'E-104': { name: "A-08", size: 4 },
   // 개발자리그 G-05에 있다가 필드리그로 옮겨온 팀입니다
   'E-105': { name: "써브(Thermal Bridge)", size: 2 },
-  // 배정표에서 뒤늦게 나온 GS건설 팀입니다. 인원은 아직 못 받아 4명으로
-  // 잡아뒀습니다 — 실제보다 적게 잡으면 그만큼 못 담습니다.
-  'E-106': { name: "일단해보자", size: 4 },
+  // 배정표에서 뒤늦게 나온 GS건설 팀입니다
+  'E-106': { name: "일단해보자", size: 3 },
 
   // 외부사 — 자리배치표에는 자리가 없고 번호만 시트에 적혀 있습니다.
   // 팀명이 아직 없어 회사명으로 확인시켜 줍니다(company). 정해지면 name을 채우세요.
@@ -215,9 +214,8 @@ export const TEAMS = {
   'E-204': { name: "", company: "한국표준과학연구원", size: 2 },
   'E-205': { name: "", company: "한국경제신문", size: 4 },
   'E-206': { name: "", company: "한국동서발전", size: 4 },
-  // 인원 미확인 — 4명으로 잡아뒀습니다
   'E-207': { name: "", company: "삼양인터네셔널", size: 4 },
-  'E-208': { name: "", company: "삼양통상", size: 4 },
+  'E-208': { name: "", company: "삼양통상", size: 3 },
 
   'G-01': { name: "JDD", size: 3 },
   'G-02': { name: "KNOW:HOW", size: 1 },
@@ -391,10 +389,10 @@ export const COACH_ASSIGNMENTS = [
   // 실수로 이 항목으로 들어가지 않게 합니다.
   { id: 'mate-41', name: '미정', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-81', 'E-82', 'E-83', 'E-84'], slackUserId: '', placeholder: true },
   { id: 'mate-44', name: '이상욱', nickname: 'Lodi', company: 'GS차지비', teamNumbers: ['E-07', 'E-08'], slackUserId: 'U0A82DA597S' },
-  // 배정표에서 뒤늦게 나온 두 분입니다. 소속·슬랙 ID는 아직 못 받았습니다.
-  // (김민수/Liam은 플레이 메이트 명단에도 있어 소속만 가져왔습니다)
-  { id: 'mate-45', name: '심재혁', nickname: 'Simpson', company: '', teamNumbers: ['E-203', 'E-204', 'E-205', 'E-206'], slackUserId: '' },
-  { id: 'mate-46', name: '김민수', nickname: 'Liam', company: '삼양통상', teamNumbers: ['E-207', 'E-208'], slackUserId: '' },
+  // 배정표에서 뒤늦게 나온 두 분입니다 (김민수/Liam은 플레이 메이트 명단에도
+  // 있습니다 — 이번 배정에서는 마스터 메이트로 팀을 맡았습니다)
+  { id: 'mate-45', name: '심재혁', nickname: 'Simpson', company: '(주)GS', teamNumbers: ['E-203', 'E-204', 'E-205', 'E-206'], slackUserId: 'U08Q1RBGWP7' },
+  { id: 'mate-46', name: '김민수', nickname: 'Liam', company: '삼양통상', teamNumbers: ['E-207', 'E-208'], slackUserId: 'U0A7M79J606' },
 ]
 
 // 3-2. 플레이 메이트 — 팀 곁에서 아이디어를 함께 보는 사람들.
