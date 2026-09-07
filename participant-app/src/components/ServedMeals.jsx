@@ -41,7 +41,13 @@ export default function ServedMeals() {
             <div className={`served-photos${meal.photos.length > 1 ? ' multi' : ''}`}>
               {meal.photos.map((photo) => (
                 <figure className="served-photo" key={photo.src}>
-                  <img src={photo.src} alt={photo.caption} loading="lazy" />
+                  {/* ratio가 있으면 그 비율로 — 없으면 CSS 기본값(4:3) */}
+                  <img
+                    src={photo.src}
+                    alt={photo.caption}
+                    loading="lazy"
+                    style={photo.ratio ? { '--ratio': photo.ratio } : undefined}
+                  />
                   <figcaption>{photo.caption}</figcaption>
                 </figure>
               ))}

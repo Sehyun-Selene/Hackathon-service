@@ -631,7 +631,9 @@ export const SERVED_MEALS = [
     cuisine: '크라이치즈버거',
     servedAt: '15:00',
     photos: [
-      { src: './served/day1-snack-burger.jpg', caption: '크라이치즈버거 & 감자튀김 세트' },
+      // 가로로 긴 사진입니다. 기본 4:3 틀에 넣으면 좌우가 잘려서, 파일의
+      // 실제 비율(720x376)을 그대로 씁니다 — 잘리지 않고 높이도 줄어듭니다.
+      { src: './served/day1-snack-burger.jpg', caption: '크라이치즈버거 & 감자튀김 세트', ratio: '720 / 376' },
     ],
     // 항목 목록 없음 — 사진 캡션이 같은 말을 합니다
   },
