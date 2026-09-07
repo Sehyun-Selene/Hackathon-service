@@ -625,10 +625,22 @@ export const MENUS = {
 // ---------------------------------------------------------------
 export const SERVED_MEALS = [
   {
+    id: 'day1-snack',
+    label: '[DAY 1] 간식',
+    icon: '🍔',
+    cuisine: '크라이치즈버거',
+    servedAt: '15:00',
+    photos: [
+      { src: './served/day1-snack-burger.jpg', caption: '크라이치즈버거 & 감자튀김 세트' },
+    ],
+    items: ['크라이치즈버거', '감자튀김'],
+  },
+  {
     id: 'day1-dinner',
     label: '[DAY 1] 저녁',
     cuisine: '한식',
     servedAt: '18:00',
+    photos: [{ src: './served/day1-dinner.jpg', caption: '파르나스 호텔 도시락 (한식)' }],
     items: [
       '당근 케이크',
       '제철 과일',
@@ -650,6 +662,7 @@ export const SERVED_MEALS = [
     label: '[DAY 2] 점심',
     cuisine: '양식',
     servedAt: '12:00',
+    photos: [{ src: './served/day2-lunch.jpg', caption: '파르나스 호텔 도시락 (양식)' }],
     items: [
       '얼그레이 치즈 케이크',
       '제철 과일',
@@ -663,6 +676,25 @@ export const SERVED_MEALS = [
       '올리브',
       '피클',
       '양송이 수프',
+    ],
+  },
+  {
+    id: 'day2-snack',
+    label: '[DAY 2] 간식',
+    icon: '🍨',
+    cuisine: '아이스크림 & 파이',
+    servedAt: '14:00',
+    // 아이스크림·파이가 각각 두 종류라, 무엇을 고를 수 있는지 사진으로
+    // 보여줍니다. 글자만으로는 어떤 건지 알기 어렵습니다.
+    photos: [
+      { src: './served/day2-snack-icecream-jersey.jpg', caption: '벤슨 저지밀크 아이스크림' },
+      { src: './served/day2-snack-icecream-cookie.jpg', caption: '벤슨 쿠키앤크림 아이스크림' },
+      { src: './served/day2-snack-pie-apple.jpg', caption: '포컬포인트 충주 사과 파이' },
+      { src: './served/day2-snack-pie-lowsugar.jpg', caption: '포컬포인트 저당 충주 사과 파이' },
+    ],
+    items: [
+      '벤슨 아이스크림 — 저지밀크 / 쿠키앤크림 중 선택',
+      '포컬포인트 파이 — 충주 사과 / 저당 충주 사과 중 선택',
     ],
   },
 ]

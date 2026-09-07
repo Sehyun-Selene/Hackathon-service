@@ -161,6 +161,18 @@ html.dark .folder-tab { background: #2c2721; }
 .served-meal[open] .served-meal-summary::after { transform: rotate(180deg); }
 .served-meal-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .served-meal-meta { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--sub); white-space: nowrap; }
+/* 제공 음식 사진 — 여러 장이면 두 칸으로 (선택 가능한 종류를 나란히) */
+.served-photos { display: grid; gap: 9px; padding: 10px 14px 2px; }
+.served-photos.multi { grid-template-columns: repeat(2, 1fr); }
+.served-photo { margin: 0; min-width: 0; }
+.served-photo img {
+  display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: 10px; background: var(--bg);
+}
+.served-photo figcaption {
+  margin-top: 5px; font-size: 11.5px; line-height: 1.4; color: var(--sub);
+}
+
 .served-meal-list { margin: 0; padding: 0 14px 4px 30px; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.5; }
 .served-meal-note { padding: 6px 14px 12px; font-size: 12px; color: var(--sub); }
 /* 탭 줄이 없는 화면(개발자리그)에서 제목 오른쪽에 팀 버튼을 답니다 */
