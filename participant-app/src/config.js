@@ -377,17 +377,15 @@ export const COACH_ASSIGNMENTS = [
   { id: 'mate-32', name: '공민우', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-54', 'E-55', 'E-56'], slackUserId: 'U0BQV5RERDL' },
   { id: 'mate-33', name: '조현아', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-57', 'E-58', 'E-59'], slackUserId: 'U0BSWD9L0ER' },
   { id: 'mate-34', name: '장지수', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-60', 'E-61', 'E-62'], slackUserId: 'U0BQV5Q8BKQ' },
-  { id: 'mate-35', name: '문관균', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-63', 'E-64', 'E-65'], slackUserId: '' },
-  { id: 'mate-36', name: '마재훈', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-66', 'E-67', 'E-68'], slackUserId: '' },
-  { id: 'mate-37', name: '이혜준', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-69', 'E-70', 'E-71'], slackUserId: '' },
+  { id: 'mate-35', name: '문관균', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-63', 'E-64', 'E-65'], slackUserId: 'U02B8NXJT' },
+  { id: 'mate-36', name: '마재훈', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-66', 'E-67', 'E-68'], slackUserId: 'U0BTUMDKMEC' },
+  { id: 'mate-37', name: '이혜준', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-69', 'E-70', 'E-71'], slackUserId: 'U0BSZHLP23X' },
   { id: 'mate-38', name: '황시아', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-28', 'E-29'], slackUserId: 'U0A20QMDWNT' },
   { id: 'mate-39', name: '권두순', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-30', 'E-31'], slackUserId: 'U0BSTM908LC' },
-  { id: 'mate-40', name: '김현중', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-35', 'E-36', 'E-37'], slackUserId: '' },
-  { id: 'mate-42', name: '이소연', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-38', 'E-39', 'E-40'], slackUserId: '' },
-  // 아직 누구인지 정해지지 않은 1인. 자리만 잡아둡니다 — 관리자 입장
-  // 명단(ADMIN_CREW)에서는 placeholder를 걸러내, 캐롯을 검색한 사람이
-  // 실수로 이 항목으로 들어가지 않게 합니다.
-  { id: 'mate-41', name: '미정', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-81', 'E-82', 'E-83', 'E-84'], slackUserId: '', placeholder: true },
+  { id: 'mate-40', name: '김현중', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-35', 'E-36', 'E-37'], slackUserId: 'U0BTL3FBYP4' },
+  { id: 'mate-42', name: '이소연', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-38', 'E-39', 'E-40'], slackUserId: 'U0BTRHDUNHL' },
+  // 배정표의 '캐롯글로벌 1'이 이분입니다
+  { id: 'mate-41', name: '이영미', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-81', 'E-82', 'E-83', 'E-84'], slackUserId: 'U0BUTKF6G2E' },
   { id: 'mate-44', name: '이상욱', nickname: 'Lodi', company: 'GS차지비', teamNumbers: ['E-07', 'E-08'], slackUserId: 'U0A82DA597S' },
   // 배정표에서 뒤늦게 나온 두 분입니다 (김민수/Liam은 플레이 메이트 명단에도
   // 있습니다 — 이번 배정에서는 마스터 메이트로 팀을 맡았습니다)
