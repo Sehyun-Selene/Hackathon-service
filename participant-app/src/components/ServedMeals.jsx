@@ -55,7 +55,10 @@ export default function ServedMeals() {
               ))}
             </ul>
           )}
-          <p className="served-meal-note">주문 없이 인원수대로 제공됩니다.</p>
+          {/* 끼니마다 안내가 다를 수 있습니다 (간식은 종류를 고르는 방식) */}
+          <p className="served-meal-note">
+            {meal.note || '주문 없이 인원수대로 제공됩니다.'}
+          </p>
         </details>
       ))}
     </div>

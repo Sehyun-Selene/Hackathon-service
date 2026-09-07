@@ -692,7 +692,10 @@ export const SERVED_MEALS = [
       { src: './served/day2-snack-pie-apple.jpg', caption: '포컬포인트 충주 사과 파이' },
       { src: './served/day2-snack-pie-lowsugar.jpg', caption: '포컬포인트 저당 충주 사과 파이' },
     ],
-    // 항목 목록 없음 — 사진 캡션이 같은 말을 합니다
+    // 항목 목록 없음 — 사진 캡션이 같은 말을 합니다.
+    // 넷 다 받는 게 아니라 각각 한 종류를 고르는 것이라, 기본 안내 문구
+    // (인원수대로 제공) 대신 이 문구를 씁니다.
+    note: '아이스크림, 파이는 각각 원하는 종류로 제공됩니다.',
   },
 ]
 
