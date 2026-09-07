@@ -377,7 +377,7 @@ export const COACH_ASSIGNMENTS = [
   { id: 'mate-32', name: '공민우', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-54', 'E-55', 'E-56'], slackUserId: 'U0BQV5RERDL' },
   { id: 'mate-33', name: '조현아', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-57', 'E-58', 'E-59'], slackUserId: 'U0BSWD9L0ER' },
   { id: 'mate-34', name: '장지수', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-60', 'E-61', 'E-62'], slackUserId: 'U0BQV5Q8BKQ' },
-  { id: 'mate-35', name: '문관균', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-63', 'E-64', 'E-65'], slackUserId: 'U02B8NXJT' },
+  { id: 'mate-35', name: '김혜린', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-63', 'E-64', 'E-65'], slackUserId: 'U0BFN296B1R' },
   { id: 'mate-36', name: '마재훈', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-66', 'E-67', 'E-68'], slackUserId: 'U0BTUMDKMEC' },
   { id: 'mate-37', name: '이혜준', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-69', 'E-70', 'E-71'], slackUserId: 'U0BSZHLP23X' },
   { id: 'mate-38', name: '황시아', nickname: '', company: '캐롯글로벌', teamNumbers: ['E-28', 'E-29'], slackUserId: 'U0A20QMDWNT' },
