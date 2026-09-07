@@ -53,7 +53,7 @@ export const MEALS = [
     shortLabel: '아침',
     orderStart: '2026-09-21T13:30:00',
     orderEnd: '2026-09-21T16:00:00',
-    eatAt: '2026-09-22T09:30:00',
+    eatAt: '2026-09-22T09:00:00',
   },
 ]
 
@@ -662,6 +662,7 @@ export const SERVED_MEALS = [
   {
     id: 'day2-lunch',
     label: '[DAY 2] 점심',
+    icon: '🥩',
     cuisine: '양식',
     servedAt: '12:00',
     photos: [{ src: './served/day2-lunch.jpg', caption: '파르나스 호텔 도시락 (양식)' }],
