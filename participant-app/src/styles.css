@@ -148,7 +148,9 @@ html.dark .folder-tab { background: #2c2721; }
 
 /* 주문 없이 제공되는 식사 — 한 끼에 12~13가지라 접어둡니다.
    주문 대상이 아니라는 게 드러나도록 공지사항과 같은 담담한 톤. */
-.served-meals { display: grid; gap: 8px; margin-bottom: 12px; }
+/* 접었다 펼칠 때 브라우저가 스크롤을 스스로 보정하면(스크롤 앵커링)
+   여닫은 칸으로 옮기려는 스크롤과 싸워 엉뚱한 위치에 멈춥니다. */
+.served-meals { display: grid; gap: 8px; margin-bottom: 12px; overflow-anchor: none; }
 .served-meal { border: 1px solid var(--line); border-radius: 12px; background: var(--card); overflow: hidden; }
 .served-meal-summary {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;

@@ -8,18 +8,24 @@ import { SERVED_MEALS } from '../config.js'
 // (details/summary — 브라우저 기본 동작이라 따로 상태를 들 필요가 없습니다).
 // 사진은 접힌 동안 받지 않도록 lazy로 둡니다 — 일곱 장을 처음부터 받으면
 // 현장 와이파이에서 주문 화면이 늦게 뜹니다.
-// 폰에서는 토글을 펼쳐도 화면이 그대로여서, 펼친 내용을 보려면 직접
-// 내려야 했습니다. 펼친 칸을 화면 위로 올려줍니다.
-// 닫을 때는 움직이지 않습니다 — 닫는 사람은 이미 그 자리를 보고 있습니다.
-// 사진 자리는 CSS(aspect-ratio)로 미리 잡혀 있어, 사진이 아직 안 받아졌어도
+// 폰에서는 토글을 여닫아도 화면이 그대로여서, 펼친 내용을 보려면 직접
+// 내려야 했고 접은 뒤에는 엉뚱한 위치에 남았습니다. 여닫은 칸을 화면 위로
+// 올려줍니다 — 펼칠 때도 접을 때도 같은 자리에 옵니다.
+//
+// 위치는 프레임을 두 번 기다린 뒤에 잽니다. 접는 순간 문서가 짧아지면서
+// 브라우저가 스크롤을 스스로 끌어당기는데(스크롤 앵커링), 그보다 먼저
+// 계산하면 목표가 어긋나고 내 스크롤이 덮어써집니다. CSS의
+// overflow-anchor: none 과 함께 써야 접을 때도 제자리에 옵니다.
+// 사진 자리는 CSS(aspect-ratio)로 잡혀 있어 사진이 아직 안 받아졌어도
 // 위치가 밀리지 않습니다.
-function scrollOpenedIntoView(event) {
+function scrollToggledIntoView(event) {
   const el = event.currentTarget
-  if (!el.open) return
   const 줄임 = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   requestAnimationFrame(() => {
-    const top = el.getBoundingClientRect().top + window.scrollY - 10
-    window.scrollTo({ top, behavior: 줄임 ? 'auto' : 'smooth' })
+    requestAnimationFrame(() => {
+      const top = el.getBoundingClientRect().top + window.scrollY - 10
+      window.scrollTo({ top, behavior: 줄임 ? 'auto' : 'smooth' })
+    })
   })
 }
 
@@ -28,7 +34,7 @@ export default function ServedMeals() {
   return (
     <div className="served-meals">
       {SERVED_MEALS.map((meal) => (
-        <details key={meal.id} className="served-meal" onToggle={scrollOpenedIntoView}>
+        <details key={meal.id} className="served-meal" onToggle={scrollToggledIntoView}>
           <summary className="served-meal-summary">
             <span className="served-meal-title">
               {meal.icon || '🍚'} {meal.label}
