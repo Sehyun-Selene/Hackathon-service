@@ -633,7 +633,7 @@ export const SERVED_MEALS = [
     photos: [
       { src: './served/day1-snack-burger.jpg', caption: '크라이치즈버거 & 감자튀김 세트' },
     ],
-    items: ['크라이치즈버거', '감자튀김'],
+    // 항목 목록 없음 — 사진 캡션이 같은 말을 합니다
   },
   {
     id: 'day1-dinner',
@@ -692,10 +692,7 @@ export const SERVED_MEALS = [
       { src: './served/day2-snack-pie-apple.jpg', caption: '포컬포인트 충주 사과 파이' },
       { src: './served/day2-snack-pie-lowsugar.jpg', caption: '포컬포인트 저당 충주 사과 파이' },
     ],
-    items: [
-      '벤슨 아이스크림 — 저지밀크 / 쿠키앤크림 중 선택',
-      '포컬포인트 파이 — 충주 사과 / 저당 충주 사과 중 선택',
-    ],
+    // 항목 목록 없음 — 사진 캡션이 같은 말을 합니다
   },
 ]
 
