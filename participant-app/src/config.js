@@ -384,6 +384,10 @@ export function teamSortKey(teamId) {
 //    - callManager: true면 전체 팀의 호출 횟수와 미등록·미주문 재촉 권한을
 //                   가집니다. 담당 구간 없이 전체를 보는 운영 총괄 한 명에게만.
 export const COACH_ASSIGNMENTS = [
+  // 담당 팀(teamNumbers)이 빈 분들은 이번 배정표에 이름이 없는 경우입니다
+  // (박지훈/Ready · 안효진/Mario · 이재현/L 은 플레이 메이트로 역할이 바뀜).
+  // 명단에서 지우지 않고 담당 팀만 비워 둡니다 — 지우면 당일 관리자 화면에
+  // 들어올 수 없게 되고, 담당이 없어도 다른 팀 호출은 대신 처리할 수 있습니다.
   // 호출 총관리자 — 담당 구간 없이 전체를 봅니다
   { id: 'call-manager', name: '김세현', nickname: 'Selene', company: '(주)GS', teamNumbers: [], slackUserId: 'U0BED7LG02D', callManager: true },
   { id: 'mate-01', name: '고병현', nickname: 'Joseph', company: '(주)GS', teamNumbers: ['E-97', 'E-98', 'E-99'], slackUserId: 'U095U417XLG' },
