@@ -77,7 +77,7 @@ export const IMAGE_BOARDS = [
     label: '타임테이블',
     icon: '🗓️',
     title: '해커톤 타임테이블',
-    src: './board/timetable.jpg?v=2',
+    src: './board/timetable.jpg?v=4',
     alt: 'PLAI 타임테이블 — DAY1 9/21, DAY2 9/22 시간별 일정',
     leagues: ['field'],
   },
