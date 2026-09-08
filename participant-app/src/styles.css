@@ -130,6 +130,25 @@ html.dark .folder-tab { background: #2c2721; }
   display: flex; align-items: center; gap: 4px; margin-left: auto;
   padding: 0 2px 5px 8px; white-space: nowrap;
 }
+/* ---- 안내 이미지 탭 (타임테이블 · 음식 여정) ---- */
+.image-board-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.image-board .card-head-row { margin-bottom: 8px; }
+.image-board-icon { font-size: 1.15em; line-height: 1; }
+/* 이미지는 폭에 맞추고 높이는 비율대로 — 잘라내지 않습니다 */
+.image-board-frame {
+  display: block; position: relative; margin-top: 4px;
+  border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  background: var(--bg);
+}
+.image-board-frame img { display: block; width: 100%; height: auto; }
+/* 확대해 볼 수 있다는 것을 알려주는 표시 */
+.image-board-zoom {
+  position: absolute; right: 8px; bottom: 8px;
+  padding: 5px 9px; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.62); color: #fff;
+  font-size: 11.5px; font-weight: 700; letter-spacing: -0.2px;
+}
+
 .folder-body {
   background: var(--card); border: 1px solid var(--line);
   border-radius: 16px; padding: 16px; position: relative; z-index: 2;
@@ -250,6 +269,8 @@ html.dark .folder-tab { background: #2c2721; }
   vertical-align: -0.72em; margin-right: 3px;
 }
 /* 상단 탭의 로고 — 같은 방식으로 탭 글자에 비례 */
+/* 로고 이미지가 없는 탭(타임테이블·음식 여정)의 이모지 — 로고와 같은 자리 */
+.folder-tab-icon { font-size: 1.1em; line-height: 1; margin-right: 3px; }
 .folder-tab-logo {
   width: 1.35em; height: 1.35em; object-fit: contain;
   vertical-align: -0.35em; margin-right: 3px;
@@ -551,6 +572,8 @@ html.dark .card-stepper { background: #2c2721; }
 .history-list li:last-child { border-bottom: none; }
 
 /* ---- 마스터 메이트 호출 ---- */
+/* 호출 횟수 — 제목 줄에 팀 버튼이 들어가면서 아랫줄로 내렸습니다 */
+.call-quota-row { margin: 2px 0 4px; }
 .call-quota { font-size: 13px; color: var(--sub); font-weight: 600; }
 .quota-over { color: var(--red); }
 .btn-call {
@@ -799,9 +822,18 @@ html.dark .setup-solo-note { background: #3a2c14; border-color: #5c451c; color: 
   .food-card.picked .food-card-action, .food-card.picked .card-stepper { width: 100%; }
 }
 
+/* 아주 좁은 화면(320~340px)에서는 탭 네 개가 한 줄을 넘겨 페이지가 좌우로
+   밀렸습니다. 글자와 여백을 한 단계 더 줄여 한 줄에 담습니다. */
+@media (max-width: 360px) {
+  .folder-tab { padding: 10px 6px 11px; font-size: 12.5px; }
+  .folder-tab + .folder-tab { margin-left: -6px; }
+  .folder-tab-logo { width: 1.2em; height: 1.2em; vertical-align: -0.3em; margin-right: 2px; }
+  .folder-tab-icon { font-size: 1em; margin-right: 2px; }
+}
+
 @media (max-width: 400px) {
   .folder-tabs { padding-left: 2px; }
-  .folder-tab { padding: 11px 12px 12px; font-size: 14px; }
+  .folder-tab { padding: 11px 9px 12px; font-size: 13.5px; }
   .folder-tab + .folder-tab { margin-left: -8px; }
   .folder-team { gap: 3px; padding-left: 4px; padding-right: 0; }
   .team-profile-btn { min-height: 36px; gap: 3px; padding: 2px 6px 2px 3px; }

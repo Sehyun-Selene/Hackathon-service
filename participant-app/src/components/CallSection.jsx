@@ -51,7 +51,7 @@ function BoardCheck({ onYes, onNo }) {
   )
 }
 
-export default function CallSection({ callData, callCount, assignedCoachName, onCall }) {
+export default function CallSection({ callData, callCount, assignedCoachName, onCall, teamButton = null }) {
   const [confirming, setConfirming] = useState(false)
   const [sending, setSending] = useState(false)
   const [reason, setReason] = useState('')
@@ -106,6 +106,10 @@ export default function CallSection({ callData, callCount, assignedCoachName, on
           <img className="title-logo" src="./logo-call.png" alt="" />
           마스터 메이트 호출
         </h3>
+        {/* 팀 버튼은 제목 옆에 붙입니다 — 탭 줄에는 자리가 없습니다 */}
+        {teamButton}
+      </div>
+      <div className="call-quota-row">
         <span className={`call-quota${limitReached ? ' quota-over' : ''}`}>
           사용 {callCount}회 / 남은 횟수 {remaining}회
         </span>

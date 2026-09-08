@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { PARTICIPANT_POLL_MS, DARK_MODE_HOURS, getAssignedCoachForTeam, assignedCoachLabel, leagueAllowsCall } from './config.js'
+import {
+  PARTICIPANT_POLL_MS,
+  DARK_MODE_HOURS,
+  getAssignedCoachForTeam,
+  assignedCoachLabel,
+  leagueAllowsCall,
+  imageBoardsFor,
+} from './config.js'
 import {
   storageGet,
   storageGetMany,
@@ -18,6 +25,7 @@ import {
 import { now, fmtAgo, fmtClock, fmtCountdown, getOpenMeals, getNextMeals } from './lib/time.js'
 import TeamSetup from './components/TeamSetup.jsx'
 import MenuBoard from './components/MenuBoard.jsx'
+import ImageBoard from './components/ImageBoard.jsx'
 import CallSection from './components/CallSection.jsx'
 import TeamInfoSheet from './components/TeamInfoSheet.jsx'
 
@@ -335,8 +343,23 @@ export default function App() {
     ? new Date(openMeals[0].orderEnd).getTime() - now().getTime()
     : 0
 
-  // 팀 프로필 버튼 — 탭이 있으면 탭 줄 오른쪽에, 탭이 없으면 주문 화면
-  // 제목 옆에 놓습니다. 같은 버튼이라 한 곳에서 만들어 옮겨 씁니다.
+  // ── 탭 목록 ──────────────────────────────────────────────────
+  // 리그에 따라 개수가 다릅니다: 필드리그 4개(호출·주문·타임테이블·음식
+  // 여정), 개발자리그 2개(주문·음식 여정 — 호출을 쓰지 않으므로).
+  // 탭 글자는 짧게 씁니다. 폰에서 네 개가 한 줄에 들어가야 하고, 펼친
+  // 화면에는 전체 제목이 다시 나오기 때문입니다.
+  const boards = imageBoardsFor(team.teamId)
+  const tabs = [
+    ...(canCall ? [{ id: 'call', label: '호출', logo: './logo-call.png' }] : []),
+    { id: 'order', label: '주문', logo: './logo-order.png' },
+    ...boards.map((b) => ({ id: b.id, label: b.label, icon: b.icon })),
+  ]
+  // 고른 탭이 이미지 탭이면 그 정의를 넘겨줍니다
+  const board = boards.find((b) => b.id === tab) || null
+
+  // 팀 프로필 버튼 — 어느 탭에 있든 그 화면 제목 옆에 놓습니다.
+  // 탭 줄에 함께 두던 때는 탭이 네 개가 되면서 버튼이 잘렸습니다.
+  // 같은 버튼이라 한 곳에서 만들어 각 화면에 넘겨줍니다.
   const teamButton = (
     <button
       className="team-profile-btn"
@@ -367,31 +390,32 @@ export default function App() {
       )}
 
       <div className="folder">
-        {/* 개발자리그는 호출을 쓰지 않아 화면이 주문 하나뿐입니다. 탭은 둘
-            이상일 때 의미가 있으므로 줄 자체를 그리지 않고, 팀 버튼은
-            주문 화면 제목 옆으로 내려보냅니다. */}
-        {canCall && (
+        {/* 탭은 둘 이상일 때만 그립니다. 개발자리그는 호출이 없어
+            주문 + 음식 여정 두 개이고, 필드리그는 네 개입니다.
+            탭이 하나뿐이면 줄을 없애고 팀 버튼을 제목 옆으로 내려보냅니다.
+            폰에서 네 개가 한 줄에 들어가도록 글자를 짧게 씁니다 — 펼친
+            화면에는 전체 제목이 다시 나옵니다. */}
+        {tabs.length > 1 && (
           <div className="folder-tabs" role="tablist">
-            <button
-              role="tab"
-              aria-selected={tab === 'call'}
-              className={`folder-tab${tab === 'call' ? ' active' : ''}`}
-              onClick={() => setTab('call')}
-            >
-              <img className="folder-tab-logo" src="./logo-call.png" alt="" />
-              마스터 메이트 호출
-              {hasActiveCall && <span className="p-tab-dot" />}
-            </button>
-            <button
-              role="tab"
-              aria-selected={tab === 'order'}
-              className={`folder-tab${tab === 'order' ? ' active' : ''}`}
-              onClick={() => setTab('order')}
-            >
-              <img className="folder-tab-logo" src="./logo-order.png" alt="" />
-              음식 주문
-            </button>
-            <div className="folder-team">{teamButton}</div>
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={tab === t.id}
+                className={`folder-tab${tab === t.id ? ' active' : ''}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.logo ? (
+                  <img className="folder-tab-logo" src={t.logo} alt="" />
+                ) : (
+                  <span className="folder-tab-icon" aria-hidden="true">
+                    {t.icon}
+                  </span>
+                )}
+                {t.label}
+                {t.id === 'call' && hasActiveCall && <span className="p-tab-dot" />}
+              </button>
+            ))}
           </div>
         )}
         <div className="folder-body">
@@ -412,7 +436,17 @@ export default function App() {
               </span>
             </button>
           )}
-          {tab === 'order' || !canCall ? (
+          {board ? (
+            <ImageBoard board={board} teamButton={teamButton} />
+          ) : tab === 'call' && canCall ? (
+            <CallSection
+              callData={callData}
+              callCount={callCount}
+              assignedCoachName={assignedCoachLabel(team.teamId) || null}
+              onCall={sendCall}
+              teamButton={teamButton}
+            />
+          ) : (
             <MenuBoard
               openMeals={openMeals}
               nextMeals={nextMeals}
@@ -424,14 +458,7 @@ export default function App() {
               onSave={saveOrders}
               remaining={remaining}
               canCall={canCall}
-              teamButton={canCall ? null : teamButton}
-            />
-          ) : (
-            <CallSection
-              callData={callData}
-              callCount={callCount}
-              assignedCoachName={assignedCoachLabel(team.teamId) || null}
-              onCall={sendCall}
+              teamButton={teamButton}
             />
           )}
         </div>
