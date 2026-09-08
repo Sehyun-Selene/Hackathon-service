@@ -66,6 +66,10 @@ export const MEALS = [
 //
 //   - leagues : 이 탭을 보여줄 리그. 타임테이블은 필드리그 일정이라
 //               개발자리그에는 보여주지 않습니다.
+//   - src     : 뒤의 ?v= 는 캐시 무효화용입니다. public/ 안의 파일은 이름에
+//               해시가 붙지 않아, 같은 이름으로 내용만 바꾸면 이미 한 번
+//               열어본 폰이 옛 이미지를 계속 보여줄 수 있습니다.
+//               이미지를 교체할 때마다 이 숫자를 올리세요.
 // ---------------------------------------------------------------
 export const IMAGE_BOARDS = [
   {
@@ -73,7 +77,7 @@ export const IMAGE_BOARDS = [
     label: '타임테이블',
     icon: '🗓️',
     title: '해커톤 타임테이블',
-    src: './board/timetable.jpg',
+    src: './board/timetable.jpg?v=2',
     alt: 'PLAI 타임테이블 — DAY1 9/21, DAY2 9/22 시간별 일정',
     leagues: ['field'],
   },
