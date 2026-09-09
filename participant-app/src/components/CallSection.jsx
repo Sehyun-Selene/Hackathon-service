@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { CALL_LIMIT_PER_TEAM, IDEA_BOARD } from '../config.js'
-import { now, fmtAgo, fmtClock, fmtHM, fmtTimeOnly } from '../lib/time.js'
+import { now, fmtAgo, fmtHM } from '../lib/time.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 import LanternIcon from './LanternIcon.jsx'
+import CallLogSheet from './CallLogSheet.jsx'
 
 const STATUS_LABEL = { waiting: '대기중', in_progress: '처리중', done: '완료' }
 const STATUS_STEPS = ['waiting', 'in_progress', 'done']
@@ -59,6 +60,8 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
   const [reasonError, setReasonError] = useState(false)
   // 아이디어 보드 확인 팝업: null=안 띄움 / true=묻는 중 / false=아직이라고 답함
   const [boardAsk, setBoardAsk] = useState(null)
+  // 지난 호출 내역 시트 — 남은 호출 알약을 누르면 열립니다
+  const [showLog, setShowLog] = useState(false)
 
   const calls = callData?.calls || []
   const active = [...calls].reverse().find((c) => c.status !== 'done') || null
@@ -134,7 +137,24 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
                 ? '더 이상 마스터 메이트를 호출할 수 없습니다.'
                 : '도움이 필요하면 마스터 메이트를 호출하세요.'}
         </p>
-        <div className="call-remaining">남은 호출 <strong>{remaining}</strong> / {CALL_LIMIT_PER_TEAM}</div>
+        {/* 내역이 있으면 눌러서 볼 수 있게 — 없을 때는 누를 것이 없어
+            버튼으로 두지 않습니다 */}
+        {past.length > 0 ? (
+          <button
+            type="button"
+            className="call-remaining call-remaining-btn"
+            onClick={() => setShowLog(true)}
+            aria-haspopup="dialog"
+          >
+            남은 호출 <strong>{remaining}</strong> / {CALL_LIMIT_PER_TEAM}
+            <span className="call-remaining-log">지난 내역 {past.length}건</span>
+            <span className="call-remaining-chevron" aria-hidden="true">›</span>
+          </button>
+        ) : (
+          <div className="call-remaining">
+            남은 호출 <strong>{remaining}</strong> / {CALL_LIMIT_PER_TEAM}
+          </div>
+        )}
       </div>
 
       {active ? (
@@ -250,30 +270,10 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
         <BoardCheck onYes={() => { setBoardAsk(null); setConfirming(true) }} onNo={() => setBoardAsk(false)} />
       )}
 
-      {/* 우리 팀 지난 호출 내역 — 길어질 수 있어 접어둡니다 */}
-      {past.length > 0 && (
-        <details className="call-log">
-          <summary className="call-log-summary">
-            🗂 우리 팀 지난 호출 내역 ({past.length}건)
-          </summary>
-          <ul className="call-log-list">
-            {past.map((c, i) => (
-              <li className="call-log-item" key={c.id || i}>
-                <div className="call-log-head">
-                  <span className="call-log-time">{fmtClock(c.createdAt)} 호출</span>
-                  <span className={`call-log-status st-${c.status}`}>
-                    {STATUS_LABEL[c.status] || c.status}
-                  </span>
-                  {c.handledBy && <span className="call-log-who">{c.handledBy}</span>}
-                  {c.doneAt && (
-                    <span className="call-log-done">{fmtTimeOnly(c.doneAt)} 완료</span>
-                  )}
-                </div>
-                {c.reason && <p className="call-log-reason">“{c.reason}”</p>}
-              </li>
-            ))}
-          </ul>
-        </details>
+      {/* 지난 호출 내역 — 남은 호출 알약을 눌러서 엽니다.
+          호출 전 안내를 다 지나 스크롤해야 보이던 자리에서 옮겨왔습니다. */}
+      {showLog && past.length > 0 && (
+        <CallLogSheet calls={past} onClose={() => setShowLog(false)} />
       )}
     </section>
   )

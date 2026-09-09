@@ -191,11 +191,9 @@ body {
 .guide-block,
 .allergy-person-block,
 .served-meal,
-.call-log,
 .call-status-box,
 .call-limit-box,
 .reason-box,
-.picked-summary,
 .food-card,
 .history-meal,
 .image-board-frame {
@@ -683,8 +681,12 @@ body {
 
 .menu-board { display: flex; flex-direction: column; }
 .board-header-text { min-width: 0; }
+/* 네 탭의 화면 제목은 같은 크기·굵기입니다 — 주문 · 호출 · 타임테이블 ·
+   음식 여정. 안내 이미지 탭만 .card-title(20px/600)을 물려받아 얇게
+   보였습니다. */
 .board-header-title,
-.call-title {
+.call-title,
+.image-board-title {
   display: flex; align-items: center; gap: 6px; min-width: 0;
   font-size: var(--po-title-size); line-height: var(--po-title-line);
   font-weight: var(--po-title-weight); letter-spacing: -0.03em;
@@ -699,7 +701,7 @@ body {
 /* 폰 폭에서 제목 · 팀 프로필을 한 줄에 담기 위한 축소 단계.
    새로고침 버튼을 없앤 자리만큼 여유가 생겨 제목 옆 캐릭터는 늘 보입니다. */
 @media (max-width: 430px) {
-  .board-header-title, .call-title { font-size: 21px; line-height: 28px; }
+  .board-header-title, .call-title, .image-board-title { font-size: 21px; line-height: 28px; }
   .board-header-actions { gap: 6px; }
   .team-profile-btn { gap: 6px; min-height: 40px; padding: 3px 9px 3px 3px; }
   .team-profile-avatar { width: 28px; height: 28px; font-size: 13px; }
@@ -708,7 +710,7 @@ body {
   .team-profile-chevron { font-size: 16px; margin-left: 0; }
 }
 @media (max-width: 359px) {
-  .board-header-title, .call-title { font-size: 18.5px; line-height: 25px; }
+  .board-header-title, .call-title, .image-board-title { font-size: 18.5px; line-height: 25px; }
   .team-profile-label { font-size: 13px; }
 }
 
@@ -1027,11 +1029,29 @@ body {
   color: var(--po-text-secondary); text-wrap: pretty;
 }
 .call-remaining {
+  display: inline-flex; align-items: center; gap: 8px;
   margin-top: 12px; padding: 7px 15px; border-radius: var(--po-radius-pill);
   border: 1px solid var(--po-border); background: var(--po-bg-surface);
+  color: var(--po-text-primary);
   font-size: var(--po-label-size); font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .call-remaining strong { color: var(--po-accent-ink); font-weight: 800; }
+/* 지난 내역이 있으면 이 알약이 그 내역을 여는 버튼이 됩니다.
+   남은 횟수를 보려고 눈이 이미 여기 와 있으니, 무엇에 썼는지도 같은
+   자리에서 이어 보게 합니다. */
+.call-remaining-btn {
+  min-height: 40px; padding-right: 10px; cursor: pointer;
+  border-color: var(--po-border-strong);
+  transition: border-color 120ms, transform 110ms;
+}
+.call-remaining-btn:active { transform: translateY(1px); border-color: var(--po-accent); }
+.call-remaining-log {
+  padding-left: 8px; border-left: 1px solid var(--po-border);
+  font-size: 12.5px; font-weight: 500; color: var(--po-text-secondary);
+}
+.call-remaining-chevron {
+  margin-left: -2px; font-size: 17px; line-height: 1; color: var(--po-text-muted);
+}
 
 /* 진행 중인 호출 */
 .call-status-box { padding: 16px; margin-bottom: 14px; }
@@ -1061,7 +1081,7 @@ body {
   background: var(--tint-done); color: var(--po-state-done); box-shadow: none;
 }
 .call-hint {
-  margin: 10px 0; font-size: var(--po-caption-size); line-height: 1.55;
+  margin: 6px 0 8px; font-size: var(--po-caption-size); line-height: 1.5;
   color: var(--po-text-secondary);
 }
 .call-hint.board-todo { color: var(--po-accent-ink); font-weight: 600; }
@@ -1105,18 +1125,15 @@ body {
 /* 크기·간격은 위 안내 패널 공통 규칙을 그대로 씁니다 — 여기서는 위치만 */
 .call-guide-detail { margin: 10px 0 0; }
 
-/* 지난 호출 내역 */
-.call-log { margin-top: 14px; overflow: hidden; }
-.call-log-summary {
-  display: flex; align-items: center; min-height: 48px; padding: 13px 16px;
-  cursor: pointer; list-style: none;
-  font-size: var(--po-label-size); font-weight: 650; color: var(--po-text-secondary);
+/* 지난 호출 내역 — 남은 호출 알약을 눌러 여는 시트 */
+.call-log-sheet-sub {
+  margin: -6px 0 12px;
+  font-size: var(--po-body-size); color: var(--po-text-secondary);
+  font-variant-numeric: tabular-nums;
 }
-.call-log-summary::-webkit-details-marker { display: none; }
-.call-log-summary::after { content: '⌄'; margin-left: auto; font-size: 15px; line-height: 1; }
-.call-log[open] .call-log-summary::after { transform: rotate(180deg); }
-.call-log-list { margin: 0; padding: 0 16px 12px; list-style: none; }
-.call-log-item { padding: 11px 0; border-top: 1px solid var(--po-border); }
+.call-log-list { margin: 0 0 4px; padding: 0; list-style: none; }
+.call-log-item { padding: 12px 0; border-top: 1px solid var(--po-border); }
+.call-log-item:first-child { border-top: 0; padding-top: 0; }
 .call-log-head {
   display: flex; flex-wrap: wrap; align-items: center; gap: 7px;
   font-size: 12.5px; color: var(--po-text-secondary);
@@ -1141,7 +1158,8 @@ body {
    ============================================================ */
 
 .image-board { display: flex; flex-direction: column; }
-.image-board-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+/* 크기·굵기는 위 화면 제목 공통 규칙을 씁니다 — 여기서는 이모지 간격만 */
+.image-board-title { gap: 8px; }
 .image-board-icon { font-size: 1.1em; line-height: 1; }
 .image-board-frame {
   display: block; position: relative; overflow: hidden; background: var(--po-bg-sunken);
