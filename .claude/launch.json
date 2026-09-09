@@ -6,6 +6,30 @@
       "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
       "runtimeArgs": ["preview-server.js"],
       "port": 4173
+    },
+    {
+      "name": "participant-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "participant-app", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "participant-lan",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "participant-app",
+        "run",
+        "dev",
+        "--",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
+      "port": 5174,
+      "autoPort": false
     }
   ]
 }
