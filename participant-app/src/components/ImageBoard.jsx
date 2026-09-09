@@ -31,7 +31,10 @@ export default function ImageBoard({ board, teamButton = null }) {
       </a>
       {board.id === 'journey' && (
         <div className="image-board-meals">
-          <h4 className="image-board-subtitle">🍚 주문 없이 제공되는 끼니</h4>
+          {/* '주문 없이 제공되는 끼니'는 설명이라 제목으로 길었습니다.
+              무엇을 여는지만 짧게 — 주문 대상이 아니라는 안내는 각 끼니
+              안의 '주문 없이 인원수대로 제공됩니다'가 이미 합니다. */}
+          <h4 className="image-board-subtitle">🍚 음식 사진</h4>
           <ServedMeals />
         </div>
       )}

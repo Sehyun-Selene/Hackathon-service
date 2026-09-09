@@ -492,16 +492,31 @@ body {
   border-radius: var(--po-radius-card);
   background: var(--po-accent); color: var(--po-text-on-accent);
   box-shadow: var(--po-lit-shadow);
-  animation: nudge-in 260ms var(--po-ease-screen);
 }
 .nudge-banner-icon { font-size: 22px; line-height: 1; }
 .nudge-banner-text { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
 .nudge-banner b { font-size: var(--po-body-l-size); font-weight: 700; }
 .nudge-banner-text span { font-size: var(--po-caption-size); line-height: 19px; opacity: 0.92; }
 .nudge-banner-go { font-size: 20px; opacity: 0.9; }
-@keyframes nudge-in {
-  from { transform: translateY(-6px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+
+/* 목록 위에 끼어드는 띠들 — 재촉 · 마감 임박 · 품절.
+   자리를 벌리며 들어옵니다. 그냥 끼우면 배너 높이(89px)에 여백까지
+   더해 아래 내용이 103px 순간 이동하는데, 수량 버튼을 누르는 중이면
+   엉뚱한 것을 누르게 됩니다. */
+.nudge-banner,
+.deadline-warn,
+.soldout-warn {
+  overflow: hidden;
+  animation: banner-open var(--po-dur-sheet) var(--po-ease-sheet);
+}
+@keyframes banner-open {
+  from {
+    max-height: 0; opacity: 0;
+    padding-top: 0; padding-bottom: 0; margin-bottom: 0;
+    transform: translateY(-6px);
+  }
+  /* 실제 높이보다 넉넉히 — 끝나면 max-height 제한이 풀려 자연 높이가 됩니다 */
+  to { max-height: 220px; opacity: 1; }
 }
 
 /* ============================================================
@@ -1361,6 +1376,8 @@ body {
   .call-hero.active .lantern-icon,
   .cart-bar-deadline.urgent,
   .nudge-banner,
+  .deadline-warn,
+  .soldout-warn,
   .ask-box,
   .team-sheet,
   .sheet,
