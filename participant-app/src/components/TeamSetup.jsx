@@ -13,7 +13,8 @@ import {
   leagueNumberHint,
 } from '../config.js'
 import { normalizeTeam } from '../lib/storage.js'
-import GuideSection from './GuideSection.jsx'
+import OnboardingGuide from './OnboardingGuide.jsx'
+import LanternIcon from './LanternIcon.jsx'
 
 // 알레르기 인원 블록의 React key 겸 식별자 생성 (사람별로 별개 목록을 구분하기 위함)
 let blockSeq = 0
@@ -28,32 +29,30 @@ const toAllergyBlocks = (allergies) =>
 // 한 사람의 알레르기 선택 결과를 사람이 읽을 수 있는 안내로 바꿔 보여줌.
 // 판정 자체는 config.personDiet 한 곳에서만 하므로 화면끼리 어긋나지 않습니다.
 function DietSummary({ allergies }) {
-  const { byMeal, needsAlt } = personDiet(allergies)
-  const allAlt = needsAlt.length === MEALS.length
+  const { byMeal } = personDiet(allergies)
+  // 먹을 수 있는 메뉴가 있는 끼니만 보여줍니다. 하나도 없는 끼니는 줄을
+  // 그리지 않습니다 — 대체 메뉴 준비는 운영진 쪽 일이라 등록 화면에서
+  // 참가자에게 알릴 내용이 아닙니다.
+  const rows = MEALS.map((meal) => ({
+    meal,
+    eatable: byMeal[meal.id],
+    total: (MENUS[meal.id] || []).length,
+  })).filter((r) => r.eatable.length > 0)
+  if (rows.length === 0) return null
   return (
-    <div className={`diet-summary${allAlt ? ' diet-alt' : ''}`}>
-      {allAlt ? (
-        <b>⚠️ 모든 메뉴에 해당 성분이 들어 있어 대체 메뉴가 필요합니다. 운영진이 따로 준비합니다.</b>
-      ) : (
-        MEALS.map((meal) => {
-          const eatable = byMeal[meal.id]
-          const total = (MENUS[meal.id] || []).length
-          return (
-            <p key={meal.id}>
-              <span className="diet-meal">{meal.label}</span>
-              {eatable.length === 0 ? (
-                <b className="diet-none">먹을 수 있는 메뉴 없음 · 대체 메뉴 준비</b>
-              ) : eatable.length === total ? (
-                <span className="diet-ok">전체 메뉴 가능</span>
-              ) : (
-                <span className="diet-partial">
-                  {eatable.map((m) => m.name.replace('\n', ' ')).join(', ')} 만 가능
-                </span>
-              )}
-            </p>
-          )
-        })
-      )}
+    <div className="diet-summary">
+      {rows.map(({ meal, eatable, total }) => (
+        <p key={meal.id}>
+          <span className="diet-meal">{meal.label}</span>
+          {eatable.length === total ? (
+            <span className="diet-ok">전체 메뉴 가능</span>
+          ) : (
+            <span className="diet-partial">
+              {eatable.map((m) => m.name.replace('\n', ' ')).join(', ')} 만 가능
+            </span>
+          )}
+        </p>
+      ))}
     </div>
   )
 }
@@ -64,6 +63,9 @@ function DietSummary({ allergies }) {
 // ※ 계열사는 더 이상 참가자가 선택하지 않음 — 마스터 메이트 담당은 팀 번호 기준
 //   개인별 배정(config.COACH_ASSIGNMENTS)으로 대체됨
 export default function TeamSetup({ initial, existingLookup, onComplete, onSaving }) {
+  // 이용 안내(S2) → 팀 등록(S1) 순서로 봅니다. 이미 등록해 본 기기(수정 중이거나
+  // 저장된 팀이 있는 경우)는 안내를 다시 읽을 필요가 없어 바로 폼으로 갑니다.
+  const [step, setStep] = useState(initial?.teamId ? 'form' : 'guide')
   // 테이블 번호는 리그 접두어까지가 한 팀입니다(E-45 / G-12).
   // 리그를 먼저 고르면 입력칸 앞에 접두어가 붙고 숫자만 입력하면 됩니다.
   const [league, setLeague] = useState(
@@ -230,24 +232,35 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     }
   }
 
+  // 이용 안내를 먼저 읽고 등록으로 넘어갑니다
+  if (step === 'guide') {
+    return (
+      <OnboardingGuide
+        onNext={() => {
+          setStep('form')
+          window.requestAnimationFrame(() => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+          })
+        }}
+      />
+    )
+  }
+
   return (
-    <div className="app">
-      <header className="header setup-header">
+    <div className="app screen setup-app">
+      <header className="screen-head setup-header">
         <div>
           <div className="header-brand">PLAI ORDER</div>
-          <div className="header-table">팀 등록</div>
+          <h1 className="screen-title header-table">팀 등록</h1>
+          <p className="screen-sub">우리 팀 정보를 알려주세요</p>
         </div>
         <img className="header-logo" src={logo52g} alt="52g" />
       </header>
 
-      <GuideSection defaultOpen showCall={leagueDef.calls !== false} />
+      {/* 가장 먼저 읽어야 하는 안내라 참고 디자인의 상단 배너 위치에 둡니다. */}
+      <p className="setup-solo-note">👤 한 팀당 한 명씩만 팀 등록을 해주세요.</p>
 
-      <section className="card">
-        {/* 여러 팀원이 각자 주문을 담으면 나중에 저장한 사람 것만 남습니다.
-            (덮어쓰기 전에 확인 창이 뜨긴 하지만, 애초에 한 명이 담는 게 안전)
-            먼저 읽어야 하는 안내라 소개 문구보다 위에 둡니다 */}
-        <p className="setup-solo-note">👤 한 팀당 한 명씩만 팀 등록을 해주세요.</p>
-
+      <section className="card setup-form">
         <div className="setup-field">
           <label className="setup-label">리그</label>
           {/* 필드리그 E-45, 개발자리그 G-12 — 접두어가 다르면 다른 팀입니다 */}
@@ -262,7 +275,12 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
                   setExistingInfo(null)
                 }}
               >
-                {l.label}
+                <LanternIcon
+                  className="league-tab-lantern"
+                  state={league === l.id ? 'active' : 'idle'}
+                  size={26}
+                />
+                <span className="league-tab-name">{l.label}</span>
                 <span className="league-tab-code">{l.prefix}-</span>
               </button>
             ))}
@@ -356,7 +374,9 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
         </div>
 
         {error && <p className="setup-error">{error}</p>}
+      </section>
 
+      <div className="screen-foot">
         <button
           className="btn-primary setup-submit"
           onClick={submit}
@@ -364,7 +384,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
         >
           {saving ? '저장 중…' : checking ? '확인 중…' : '이 정보로 시작하기'}
         </button>
-      </section>
+      </div>
     </div>
   )
 }

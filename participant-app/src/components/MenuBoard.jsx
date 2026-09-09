@@ -1,61 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MEALS, MENUS, MENU_BY_ID, MEAL_BY_ID, teamDiet } from '../config.js'
 import { now, fmtClock, fmtCountdown, fmtHM, mealTimes } from '../lib/time.js'
-import ServedMeals from './ServedMeals.jsx'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
-
-
-// '2026-09-21T13:30:00' → '[9/21]'
-// 공지에는 [DAY 1]보다 실제 날짜가 헷갈리지 않습니다. 라벨을 파싱하지
-// 않고 그 식사의 시각에서 직접 뽑아, 날짜가 바뀌어도 어긋나지 않습니다.
-const fmtMD = (iso) => {
-  const d = new Date(iso)
-  return `[${d.getMonth() + 1}/${d.getDate()}]`
-}
-
-// 주문 시간 공지 — 호출 탭의 가이드 박스(.call-guide)와 같은 형태로 노출.
-// 주문 가능 시간대일 때와 마감/대기 상태일 때 모두 보여줍니다.
-//
-// 문구의 시각은 전부 config.MEALS에서 뽑습니다. 예전에는 "14시부터 15시까지"가
-// 글자로 박혀 있어, 시간이 바뀌면 화면에만 옛 시간이 남는 문제가 있었습니다.
-function OrderNotice() {
-  // 모든 식사가 같은 주문 구간을 공유하면 한 문장으로 묶어 안내
-  const windows = [...new Set(MEALS.map((m) => `${m.orderStart}~${m.orderEnd}`))]
-  const shared = windows.length === 1 ? MEALS[0] : null
-  return (
-    <div className="call-guide order-notice">
-      <b className="call-guide-title">📢 공지사항</b>
-      <ul className="call-guide-list">
-        {shared ? (
-          <li>
-            {MEALS.map((m) => m.shortLabel || m.label).join('과 ')} 모두{' '}
-            {fmtMD(shared.orderStart)} {fmtHM(shared.orderStart)}부터 {fmtHM(shared.orderEnd)}까지
-            신청합니다.
-          </li>
-        ) : (
-          MEALS.map((m) => (
-            <li key={m.id}>
-              {m.label}은 {fmtMD(m.orderStart)} {fmtHM(m.orderStart)}부터 {fmtHM(m.orderEnd)}까지
-              신청합니다.
-            </li>
-          ))
-        )}
-        <li>
-          {MEALS.map((m) => `${m.shortLabel || m.label}은 ${fmtMD(m.eatAt)} ${fmtHM(m.eatAt)}에`)
-            .join(', ')}{' '}
-          제공합니다.
-        </li>
-        {/* 한 판을 나눠 먹는 크기로 오해하면 팀 인원보다 적게 담습니다 */}
-        <li>야식 피자는 한 판이 1인용입니다.</li>
-        {/* 팀원이 각자 담으면 서로의 주문을 덮어써서 수량이 어긋납니다 */}
-        <li>
-          <b>팀에서 한 명만 대표로 주문해주세요.</b>
-        </li>
-      </ul>
-    </div>
-  )
-}
+import LanternIcon from './LanternIcon.jsx'
+import OrderNotice from './OrderNotice.jsx'
 
 // 현재 시각이 주문 가능 시간대면 메뉴판, 아니면 "다음 주문 가능 시간" 안내.
 // 여러 식사가 같은 주문 구간을 공유하면(저녁·야식·아침) 식사 탭으로 전환하며
@@ -84,10 +33,15 @@ export default function MenuBoard({
   canCall = true,
   // 탭 줄이 없는 화면에서는 팀 프로필 버튼을 이 제목 옆에 답니다
   teamButton = null,
-}) {
+  teamId = '',
+  // 담은 메뉴(초안)는 App이 들고 있습니다 — 이 화면은 탭을 옮기면 내려가서,
+  // 여기에 두면 타임테이블을 잠깐 보고 온 사이에 담아둔 게 사라집니다.
   // draft: { mealId: { menuId: qty } }
-  const [draft, setDraft] = useState({})
-  const [dirty, setDirty] = useState(false)
+  draft = {},
+  setDraft,
+  dirty = false,
+  setDirty,
+}) {
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
   const [activeMealId, setActiveMealId] = useState(openMeals[0]?.id || null)
@@ -114,9 +68,10 @@ export default function MenuBoard({
     if (!dirty) setDraft(savedByMeal)
   }, [savedByMeal, dirty])
 
+  // 주문 창이 바뀌면 보고 있던 끼니 탭만 다시 맞춥니다.
+  // 초안 비우기는 App이 합니다 — 여기서 하면 탭을 옮겨 다시 들어올 때마다
+  // (이 효과가 새로 붙으면서) 담아둔 게 지워집니다.
   useEffect(() => {
-    setDraft({})
-    setDirty(false)
     setActiveMealId((cur) =>
       openMeals.some((m) => m.id === cur) ? cur : openMeals[0]?.id || null,
     )
@@ -143,8 +98,6 @@ export default function MenuBoard({
           </h3>
           {teamButton}
         </div>
-        <OrderNotice />
-        <ServedMeals />
         <div className="closed-box">
           <div className="closed-emoji">⏰</div>
           {nextMeals.length > 0 ? (
@@ -167,6 +120,8 @@ export default function MenuBoard({
             <p className="closed-hint">마스터 메이트 호출은 언제든 가능합니다</p>
           )}
         </div>
+        {/* 상태를 먼저 알리고, 규칙은 그 아래에서 읽게 합니다 */}
+        <OrderNotice />
       </section>
     )
   }
@@ -229,6 +184,9 @@ export default function MenuBoard({
   }
 
   const totalQty = openMeals.reduce((s, m) => s + mealQty(m.id), 0)
+  // 하단 바에 '담은 수 / 담을 수 있는 수'로 보여줍니다 — 화면 가운데 있던
+  // 담은 메뉴 상자를 대신합니다(장바구니를 열지 않아도 남은 몫이 보이게).
+  const totalCap = openMeals.reduce((s, m) => s + mealCap(m.id), 0)
   // 장바구니: 식사별 그룹
   const cartGroups = openMeals
     .map((m) => ({
@@ -295,7 +253,9 @@ export default function MenuBoard({
     setSaving(false)
     setSavedFlash(true)
     setShowCart(false)
-    setTimeout(() => setSavedFlash(false), 2000)
+    // 주문 완료 화면은 3초 — 랜턴이 켜지는 연출(0.56초)과 주문 내역을
+    // 눈으로 확인할 시간까지 두려면 2초로는 짧습니다.
+    setTimeout(() => setSavedFlash(false), 3000)
   }
 
   const hasSaved = openMeals.some((m) => Object.keys(savedByMeal[m.id] || {}).length > 0)
@@ -341,23 +301,12 @@ export default function MenuBoard({
           </div>
           {/* 부제는 바로 아래 공지사항이 같은 말을 하고 있어 뺐습니다 */}
         </div>
-        {/* 마감 시간은 하단 고정 바로 내렸습니다 — 주문 버튼 옆이 제자리이고,
-            폰 헤더(321px)에 제목·팀·마감·새로고침을 다 넣을 수 없습니다 */}
-        <div className="board-header-actions">
-          {teamButton}
-          <button
-            className={`board-refresh-btn${refreshing ? ' refreshing' : ''}`}
-            onClick={refreshBoard}
-            disabled={refreshing}
-            aria-label="주문 정보 새로고침"
-          >
-            <span aria-hidden="true">⟳</span>
-          </button>
-        </div>
+        {/* 마감 시간은 하단 고정 바로 내렸습니다 — 주문 버튼 옆이 제자리입니다.
+            새로고침 버튼은 두지 않습니다: 화면이 5초마다 스스로 갱신하고,
+            품절·수량 충돌 때는 코드가 알아서 다시 읽습니다. 버튼 자리를
+            비워 제목 옆 캐릭터를 늘 보여줄 수 있습니다. */}
+        <div className="board-header-actions">{teamButton}</div>
       </div>
-
-      <OrderNotice />
-      <ServedMeals />
 
       {/* 담아두기만 하면 저장되지 않으므로, 마감 임박에는 눈에 띄게 알립니다 */}
       {/* 두 경우를 모두 잡습니다.
@@ -386,6 +335,15 @@ export default function MenuBoard({
           대체 메뉴로 안내드립니다.
         </div>
       )}
+
+      {/* 이 한 줄만 목록 위로 올립니다 — 담기 전에 읽어야 효과가 있는
+          규칙이라서요. 팀원이 각자 담으면 서로의 주문을 덮어써 수량이
+          어긋납니다. 아래 공지사항에서는 이 줄을 빼서 같은 화면에 두 번
+          나오지 않게 합니다(soloRule={false}). */}
+      <p className="order-solo-note">
+        <span aria-hidden="true">👤</span>
+        팀에서 한 명만 대표로 주문해주세요.
+      </p>
 
       {/* 식사 탭 (저녁/야식/아침처럼 여러 식사를 함께 주문할 때) */}
       {multiMeal && (
@@ -521,6 +479,11 @@ export default function MenuBoard({
         </p>
       )}
 
+      {/* 공지사항은 메뉴 목록 아래에 둡니다 — 호출 화면의 '호출 전에 꼭
+          읽어보세요'와 같은 자리·같은 결입니다. 위에 카드로 두면 메뉴가
+          한 화면 아래로 밀려, 주문하러 온 사람이 매번 지나쳐야 합니다. */}
+      <OrderNotice soloRule={false} />
+
       {/* 하단 고정 바 — 누르면 장바구니 시트 열림 (티오더식) */}
       <button
         className="cart-bar"
@@ -530,7 +493,9 @@ export default function MenuBoard({
         <span className="cart-bar-left">
           <span className="cart-bar-icon">🛒</span>
           담은 메뉴 보기
-          <span className="cart-bar-count">{totalQty}</span>
+          <span className="cart-bar-count po-num">
+            {totalQty} <i>/</i> {totalCap}
+          </span>
         </span>
         {/* 마감이 다가오면 붉게 — 주문을 누르는 자리에서 시간을 보게 합니다 */}
         <span className={`cart-bar-deadline${pulseDeadline ? ' urgent' : ''}`}>
@@ -538,6 +503,42 @@ export default function MenuBoard({
         </span>
         <span className="cart-bar-more" aria-hidden="true">›</span>
       </button>
+
+      {/* S4 주문 완료 — 담기만 하고 끝난 것이 아니라 주방으로 넘어갔다는 것을
+          한 화면으로 확인시켜 줍니다. 표시 시간(2초)은 그대로입니다. */}
+      {savedFlash && (
+        <div className="order-success" role="status" aria-live="polite">
+          <div className="order-success-inner">
+            <LanternIcon state="active" size={112} />
+            <h2>주문이 전달됐어요</h2>
+            <div className="order-success-table">
+              <span>테이블</span>
+              <strong>{teamId}</strong>
+            </div>
+            {cartGroups.length > 0 && (
+              <div className="order-success-summary">
+                {cartGroups.map(({ meal, items }) => (
+                  <div key={meal.id} className="order-success-meal">
+                    <div className="order-success-meal-label">
+                      {MEAL_BY_ID[meal.id]?.label || meal.id}
+                    </div>
+                    {items.map(({ menuId, qty }) => (
+                      <div key={menuId} className="order-success-row">
+                        <span>{(MENU_BY_ID[menuId]?.name || menuId).replace('\n', ' ')}</span>
+                        <b className="po-num">{qty}</b>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                <div className="order-success-total">
+                  <span>합계</span>
+                  <b className="po-num">{totalQty} / {memberCount}명</b>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 장바구니 하단 시트 */}
       {showCart && (

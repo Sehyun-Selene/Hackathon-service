@@ -3,7 +3,6 @@ import {
   PARTICIPANT_POLL_MS,
   DARK_MODE_HOURS,
   getAssignedCoachForTeam,
-  assignedCoachLabel,
   leagueAllowsCall,
   imageBoardsFor,
 } from './config.js'
@@ -28,6 +27,7 @@ import MenuBoard from './components/MenuBoard.jsx'
 import ImageBoard from './components/ImageBoard.jsx'
 import CallSection from './components/CallSection.jsx'
 import TeamInfoSheet from './components/TeamInfoSheet.jsx'
+import GuideSheet from './components/GuideSheet.jsx'
 
 // 이 기기가 어느 팀인지 기억합니다. 행사 중 창을 닫거나 새로고침해도 다시
 // 등록하지 않도록 — 팀 등록은 행사 시작 때 한 번만 하면 됩니다.
@@ -39,6 +39,8 @@ export default function App() {
   const [team, setTeam] = useState(null)
   const [editingTeam, setEditingTeam] = useState(false)
   const [showTeamInfo, setShowTeamInfo] = useState(false)
+  // 이용 안내 다시 보기 시트 (첫 화면의 안내를 행사 중에 꺼내 봅니다)
+  const [showGuide, setShowGuide] = useState(false)
   // 저장된 팀을 확인하는 중 — 등록 화면이 잠깐 스쳤다 사라지는 것을 막습니다
   const [restoring, setRestoring] = useState(true)
   // 서버에 기록이 없을 때(초기화 등) 등록 화면에 채워줄 값
@@ -50,12 +52,41 @@ export default function App() {
     getOpenMeals(now().getTime()).length > 0 ? 'order' : 'call',
   )
 
+  // 탭을 옮기면 늘 화면 맨 위에서 시작합니다.
+  // 스크롤 위치는 문서 하나에 하나뿐이라, 내려서 보던 상태로 탭을 옮기면
+  // 새 화면도 그만큼 내려간 자리에서 열려 제목이 안 보입니다.
+  // 프레임을 한 번 기다립니다 — 새 화면이 더 짧으면 브라우저가 스크롤을
+  // 스스로 끌어당기는데, 그보다 먼저 옮기면 그 보정에 덮어써집니다.
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [tab])
+
   // 1초 틱: 카운트다운/시간대 전환용
   const [, setTick] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000)
     return () => clearInterval(id)
   }, [])
+
+  // ---- 담은 메뉴(초안) ----
+  // 주문 화면이 아니라 App이 들고 있습니다. 탭을 옮기면 주문 화면이
+  // 내려가는데, 그 안에 두면 타임테이블을 잠깐 보고 온 사이에 담아둔
+  // 메뉴가 사라집니다. draft: { mealId: { menuId: qty } }
+  const [draft, setDraft] = useState({})
+  // 아직 '주문하기'를 누르지 않은 변경이 있는지
+  const [draftDirty, setDraftDirty] = useState(false)
+  // 주문 가능한 끼니가 바뀌면(창이 열리거나 닫히면) 초안은 버립니다 —
+  // 닫힌 끼니의 수량을 들고 있으면 다음 창에서 엉뚱하게 되살아납니다.
+  const openMealsKey = getOpenMeals(now().getTime())
+    .map((m) => m.id)
+    .join(',')
+  useEffect(() => {
+    setDraft({})
+    setDraftDirty(false)
+  }, [openMealsKey])
 
   // 공유 저장소에서 읽어온 상태
   const [savedOrder, setSavedOrder] = useState(null)
@@ -197,6 +228,13 @@ export default function App() {
   }, [])
 
   const closeTeamInfo = useCallback(() => setShowTeamInfo(false), [])
+  const closeGuide = useCallback(() => setShowGuide(false), [])
+  // 팀 정보 시트를 닫고 안내 시트를 엽니다 — 시트를 두 장 겹쳐 띄우면
+  // 뒤 시트가 스크롤을 잡아 닫기 버튼을 누르기 어려워집니다.
+  const openGuide = useCallback(() => {
+    setShowTeamInfo(false)
+    setShowGuide(true)
+  }, [])
   const editTeamInfo = useCallback(() => {
     setShowTeamInfo(false)
     setEditingTeam(true)
@@ -376,8 +414,21 @@ export default function App() {
     </button>
   )
 
+  // 담아둔 채 다른 탭으로 옮겼을 때 띄우는 플로팅 장바구니.
+  // 이미 주문이 들어간 수량은 알림거리가 아니므로, 저장되지 않은 변경이
+  // 남아 있을 때(draftDirty)만 띄웁니다.
+  const draftTotal = openMeals.reduce(
+    (sum, m) => sum + Object.values(draft[m.id] || {}).reduce((s, q) => s + q, 0),
+    0,
+  )
+  const showDraftChip = tab !== 'order' && openMeals.length > 0 && draftDirty && draftTotal > 0
+
   return (
-    <div className={`app${tab === 'order' && openMeals.length ? ' has-sticky-bar' : ''}`}>
+    <div
+      className={`app app-main${
+        tab === 'order' && openMeals.length ? ' has-sticky-bar' : ''
+      }${showDraftChip ? ' has-draft-chip' : ''}`}
+    >
       {syncError && (
         <div className="sync-error" role="status">
           <span>
@@ -445,7 +496,6 @@ export default function App() {
             <CallSection
               callData={callData}
               callCount={callCount}
-              assignedCoachName={assignedCoachLabel(team.teamId) || null}
               onCall={sendCall}
               teamButton={teamButton}
             />
@@ -462,6 +512,11 @@ export default function App() {
               remaining={remaining}
               canCall={canCall}
               teamButton={teamButton}
+              teamId={team.teamId}
+              draft={draft}
+              setDraft={setDraft}
+              dirty={draftDirty}
+              setDirty={setDraftDirty}
             />
           )}
         </div>
@@ -472,8 +527,53 @@ export default function App() {
       )}
 
       {showTeamInfo && (
-        <TeamInfoSheet team={team} onClose={closeTeamInfo} onEdit={editTeamInfo} />
+        <TeamInfoSheet
+          team={team}
+          onClose={closeTeamInfo}
+          onEdit={editTeamInfo}
+          onGuide={openGuide}
+        />
       )}
+
+      {showGuide && (
+        <GuideSheet showCall={canCall} onClose={closeGuide} />
+      )}
+
+      {/* 다른 탭에 있는 동안 담아둔 메뉴를 잊지 않도록 — 담기만 하고
+          '주문하기'를 누르지 않으면 마감과 함께 그대로 사라집니다.
+          눌러서 주문 화면으로 바로 돌아갑니다. */}
+      {showDraftChip && (
+        <button className="draft-chip" onClick={() => setTab('order')}>
+          <span className="draft-chip-icon" aria-hidden="true">🛒</span>
+          <span className="draft-chip-text">
+            <b>
+              담은 메뉴 <span className="po-num">{draftTotal}</span>개
+            </b>
+            <small>아직 주문 전이에요</small>
+          </span>
+          <span className="draft-chip-go" aria-hidden="true">›</span>
+        </button>
+      )}
+
+      <nav className="app-nav" aria-label="주요 메뉴">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`app-nav-item${tab === t.id ? ' active' : ''}`}
+            aria-current={tab === t.id ? 'page' : undefined}
+            onClick={() => setTab(t.id)}
+          >
+            {t.logo ? (
+              <img src={t.logo} alt="" />
+            ) : (
+              <span className="app-nav-emoji" aria-hidden="true">{t.icon}</span>
+            )}
+            <span>{t.label}</span>
+            {t.id === 'call' && hasActiveCall && <i className="app-nav-dot" />}
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }

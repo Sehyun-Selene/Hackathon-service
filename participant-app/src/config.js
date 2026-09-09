@@ -636,9 +636,9 @@ export const MENUS = {
       shortLabel: '수퍼잭슨',
       badges: [],
       image: './menu/super-jackson.png',
-      // 성분이 5개라 카드 폭에서 줄이 어색하게 끊겨, 줄바꿈 위치를 직접 지정.
-      // ⚠️ 자동 생성을 쓰지 않으므로 allergens를 고치면 이 문구도 함께 고칠 것.
-      allergyNote: '⚠️ 우유·밀·돼지고기·쇠고기\n토마토 포함',
+      // 카드가 가로형으로 바뀌어 성분 다섯 개가 한 줄에 들어갑니다.
+      // 손으로 넣었던 줄바꿈을 빼고 allergens 에서 자동 생성하게 둡니다.
+      allergyNote: '',
       allergens: ['우유', '밀', '돼지고기', '쇠고기', '토마토'],
     },
   ],

@@ -1,12 +1,26 @@
+/* ============================================================
+   PLAI ORDER (플라오더) — 참가자 앱 스타일
+   제5회 GS그룹 해커톤 · PLAI CAMP 하위 서비스
+
+   색·타이포·간격은 전부 plai-order-tokens.css(--po-*)에서 옵니다.
+   이 파일은 그 토큰으로 화면을 세우는 일만 합니다.
+
+   화면 구성(디자인 문서 기준)
+     S2 이용 안내  → S1 팀 등록 → S3 주문 / S5 마스터 메이트 호출
+     S4 주문 완료(전달 확인)는 주문 위에 덮이는 한 화면
+   ============================================================ */
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
 /* iOS 사파리는 색을 지정하지 않은 button 글자를 시스템 파랑으로 그립니다.
-   같은 화면이 폰에서만 파랗게 보이던 원인이라, 기본값을 본문 색으로 되돌립니다.
-   (색을 직접 지정한 버튼은 클래스 규칙이 이깁니다) */
-button { color: inherit; }
+   같은 화면이 폰에서만 파랗게 보이던 원인이라, 기본값을 본문 색으로 되돌립니다. */
+button { color: inherit; font-family: inherit; }
+
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
-summary:focus-visible {
+summary:focus-visible,
+a:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--po-accent) 45%, transparent);
   outline-offset: 2px;
 }
@@ -20,8 +34,8 @@ summary:focus-visible {
 }
 
 /* PLAI ORDER 토큰 위에 앱의 기존 이름을 얹습니다.
-   styles.css 전체가 --primary/--bg/--text 같은 이름을 쓰고 있어서, 이름을
-   바꾸면 화면이 아니라 코드가 흔들립니다. 값만 갈아끼웁니다. */
+   화면 코드가 --primary/--bg/--text 같은 이름을 쓰고 있어서, 이름을 바꾸면
+   화면이 아니라 코드가 흔들립니다. 값만 갈아끼웁니다. */
 :root {
   --primary: var(--po-accent);
   --primary-dark: var(--po-accent-pressed);
@@ -34,8 +48,7 @@ summary:focus-visible {
   --amber: var(--po-state-active);
   --red: var(--po-state-error);
 
-  /* 살짝 깔리는 배경들. 상태색에서 섞어 만들면 낮/밤이 저절로 따라옵니다 —
-     예전에는 밤 화면용 배경을 규칙마다 따로 적어야 했습니다. */
+  /* 살짝 깔리는 배경들. 상태색에서 섞어 만들면 낮/밤이 저절로 따라옵니다. */
   --tint-accent: var(--po-accent-subtle);
   --tint-done:   var(--po-secondary-subtle);
   --tint-error:  color-mix(in srgb, var(--po-state-error) 14%, var(--po-bg-surface));
@@ -44,939 +57,1319 @@ summary:focus-visible {
   --edge-error:  color-mix(in srgb, var(--po-state-error) 40%, transparent);
   --on-accent:   var(--po-text-on-accent);
   --ink-accent:  var(--po-accent-ink);
+
+  /* 하단 고정 요소 높이 — 본문 아래 여백 계산에 씁니다 */
+  --nav-h: 74px;
+  --cart-bar-h: 58px;
+  --draft-chip-h: 52px;
 }
 
 /* 낮/밤은 App 이 html.dark 와 data-po-theme 를 함께 토글합니다.
-   색은 토큰 파일이 data-po-theme 로 이미 뒤집으므로 여기서는 다시 적지
-   않습니다. html.dark 는 이미지 밝기 같은 비색상 조정에만 씁니다. */
-html.dark .menu-photo img,
+   색은 토큰 파일이 뒤집으므로 여기서는 비색상 조정에만 씁니다. */
 html.dark .served-photo img,
+html.dark .food-card-photo img,
 html.dark .image-board-frame img { filter: brightness(0.92); }
 
+html { background: var(--po-bg-base); }
+
 body {
-  font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  font-family: var(--po-font-sans);
+  background: var(--po-bg-base);
+  color: var(--po-text-primary);
+  min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
   /* 폰에서 화면이 좌우로 밀리며 흰 여백이 보이는 것을 막습니다.
      clip은 hidden과 달리 스크롤 컨테이너를 만들지 않아 sticky를 깨지 않음 */
   overflow-x: clip;
   overscroll-behavior-x: none;
-  /* 두 번 탭했을 때 확대되는 동작만 끕니다(스크롤·의도적 확대는 그대로) */
   touch-action: manipulation;
 }
 
-/* 공유 서버 연결 오류 배너 */
+/* ============================================================
+   1. 화면 골격
+   ============================================================ */
+
+.app {
+  position: relative;
+  width: 100%; max-width: 520px; min-height: 100dvh; margin: 0 auto;
+  padding: 18px 20px calc(28px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column;
+}
+/* 하단 내비게이션이 있는 화면 */
+.app-main { padding-bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); }
+/* 그 위에 장바구니 바까지 뜨는 화면 */
+.app-main.has-sticky-bar {
+  padding-bottom: calc(var(--nav-h) + var(--cart-bar-h) + 24px + env(safe-area-inset-bottom));
+}
+/* 담아둔 메뉴 플로팅이 떠 있는 동안은 그만큼 아래를 비웁니다 —
+   안 비우면 본문 마지막 줄이 플로팅에 가립니다 */
+.app-main.has-draft-chip {
+  padding-bottom: calc(var(--nav-h) + var(--draft-chip-h) + 12px + env(safe-area-inset-bottom));
+}
+
+/* 저장된 팀을 확인하는 사이의 빈 화면 — 깜빡임만 막는 용도 */
+.boot-wait { min-height: 100dvh; }
+
+/* 화면 제목 묶음: 워드마크 → 큰 제목 → 부제 */
+.screen-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; padding-bottom: 20px;
+}
+.header-brand {
+  font-size: 11px; line-height: 16px; font-weight: 800; letter-spacing: 0.14em;
+  color: var(--po-accent-ink);
+}
+.screen-title {
+  margin-top: 4px;
+  font-size: var(--po-display-size); line-height: var(--po-display-line);
+  font-weight: var(--po-display-weight); letter-spacing: -0.035em;
+  color: var(--po-text-primary);
+}
+.screen-sub {
+  margin-top: 4px;
+  font-size: var(--po-body-l-size); line-height: var(--po-body-l-line);
+  color: var(--po-text-secondary);
+}
+.header-logo { flex: 0 0 auto; height: 24px; max-width: 68px; width: auto; object-fit: contain; }
+
+.screen-body { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+
+/* 화면 아래에 붙는 주요 CTA — 배경을 흐리게 덮어 목록 위로 떠 보이게 */
+.screen-foot {
+  position: sticky; bottom: 0; z-index: 20;
+  margin: 16px -20px calc(-28px - env(safe-area-inset-bottom));
+  padding: 14px 20px calc(20px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--po-bg-base) 62%, transparent);
+}
+.screen-foot .btn-primary { width: 100%; }
+
+/* ============================================================
+   2. 공통 컴포넌트 — 버튼 · 카드 · 안내 패널
+   ============================================================ */
+
+.btn-primary,
+.btn-call,
+.cart-submit {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: var(--po-cta-height); padding: 14px 18px;
+  border: none; border-radius: var(--po-radius-card);
+  background: var(--po-accent); color: var(--po-text-on-accent);
+  font-size: var(--po-body-l-size); font-weight: 600; line-height: 1.2;
+  cursor: pointer;
+  box-shadow: var(--po-lit-shadow);
+  transition: background var(--po-dur-lit) var(--po-ease-lit), transform 110ms;
+}
+.btn-primary:active,
+.btn-call:active,
+.cart-submit:active { background: var(--po-accent-pressed); transform: translateY(1px); }
+.btn-primary:disabled,
+.btn-call:disabled,
+.cart-submit:disabled {
+  background: var(--po-bg-sunken); color: var(--po-text-muted);
+  box-shadow: none; cursor: default; transform: none;
+}
+
+/* 두 번째 행동 — 테두리만 */
+.btn-ghost {
+  min-height: 44px; padding: 10px 14px;
+  border: 1px solid var(--po-border-strong); border-radius: var(--po-radius-input);
+  background: transparent; color: var(--po-text-primary);
+  font-size: var(--po-label-size); font-weight: 600; cursor: pointer;
+}
+.btn-ghost:active { background: var(--po-bg-sunken); }
+.btn-ghost:disabled { color: var(--po-text-muted); border-color: var(--po-border); cursor: default; }
+
+.btn-danger-ghost {
+  background: transparent; border: 1px solid var(--po-state-error); color: var(--po-state-error);
+  border-radius: var(--po-radius-card); padding: 14px 16px;
+  font-size: var(--po-body-size); cursor: pointer; white-space: nowrap;
+}
+
+/* 면(surface) — 화면 위에 얹히는 모든 상자의 기본형 */
+.card,
+.notice-panel,
+.guide-block,
+.allergy-person-block,
+.served-meal,
+.call-log,
+.call-status-box,
+.call-limit-box,
+.reason-box,
+.picked-summary,
+.food-card,
+.history-meal,
+.image-board-frame {
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-card);
+  background: var(--po-bg-surface);
+  box-shadow: var(--po-card-shadow);
+}
+.card { padding: 16px; }
+/* 제목 옆 캐릭터 로고는 글자와 가운데를 맞춥니다.
+   flex 없이 두면 img가 인라인으로 글자 베이스라인에 앉아, 로고만
+   한 줄 위로 들린 것처럼 보입니다. */
+.card-title {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  font-size: var(--po-heading-size); line-height: var(--po-heading-line);
+  font-weight: var(--po-heading-weight); letter-spacing: -0.02em;
+}
+/* 화면 제목 줄 — 제목 왼쪽, 팀 프로필(과 새로고침) 오른쪽. 한 줄입니다.
+   폰 폭에서 넘치지 않도록 제목·프로필·버튼 크기를 아래 미디어 쿼리에서
+   함께 줄입니다 (한 곳만 줄이면 다른 쪽이 밀려 두 줄이 됩니다). */
+.card-head-row,
+.board-title-row,
+.board-header {
+  display: flex; align-items: center; flex-wrap: nowrap;
+  gap: 10px; padding-bottom: 16px;
+}
+.card-head-row > .card-title,
+.board-title-row > .card-title,
+.board-header > .board-header-text {
+  flex: 1 1 auto; min-width: 0; margin: 0;
+}
+.card-head-row > .team-profile-btn,
+.board-title-row > .team-profile-btn,
+.board-header > .board-header-actions {
+  flex: 0 0 auto; margin-left: auto;
+}
+.notice-card { text-align: center; margin-top: 60px; }
+.notice-card p { margin-top: 10px; color: var(--po-text-secondary); line-height: 1.6; }
+.empty-text {
+  color: var(--po-text-secondary); font-size: var(--po-body-size); line-height: var(--po-body-line);
+  padding: 6px 0;
+}
+
+/* 안내 패널 — 주문 화면 '공지사항'과 호출 화면 '호출 전에 꼭 읽어보세요'.
+   두 탭에서 똑같이 보여야 하므로 크기·간격을 한 곳에서만 정합니다.
+   (예전에는 공지 15px / 호출 13.5px 로 갈려 두 탭이 달라 보였습니다) */
+.notice-panel,
+.call-guide { padding: 13px 15px; }
+.notice-panel-title,
+.call-guide-title {
+  display: block; margin-bottom: 8px;
+  font-size: var(--po-label-size); line-height: var(--po-label-line); font-weight: 700;
+  color: var(--po-text-primary);
+}
+.notice-panel-list,
+.call-guide-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.notice-panel-list li,
+.call-guide-list li {
+  position: relative; padding-left: 15px;
+  font-size: 13.5px; line-height: 19px;
+  color: var(--po-text-secondary);
+}
+.notice-panel-list li::before,
+.call-guide-list li::before {
+  content: ''; position: absolute; left: 0; top: 8px;
+  width: 5px; height: 5px; border-radius: 999px; background: var(--po-accent);
+}
+.notice-panel-list b,
+.call-guide-list b { color: var(--po-text-primary); font-weight: 650; }
+.call-guide-quote {
+  display: block; margin-top: 5px; padding: 7px 10px;
+  border-left: 2px solid var(--po-border-strong); border-radius: 0 8px 8px 0;
+  background: var(--po-bg-sunken);
+  font-size: 12.5px; line-height: 18px;
+  color: var(--po-text-secondary);
+}
+
+/* 상황을 알리는 띠 — 마감 임박 · 품절 · 알레르기 상한 */
+.deadline-warn,
+.soldout-warn,
+.diet-cap-hint,
+.setup-solo-note,
+.fixed-menu-hint {
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-card);
+  background: var(--po-bg-surface);
+  padding: 14px 16px;
+  font-size: var(--po-body-size); line-height: var(--po-body-line);
+}
+.setup-solo-note {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 18px;
+  border-color: var(--edge-accent); background: var(--po-accent-subtle);
+  color: var(--po-accent-ink); font-weight: 600;
+}
+/* 주문 화면 맨 위 '한 명만 대표로' — 담기 전에 읽어야 하는 한 줄이라
+   목록 위에 둡니다. 상자 없이 글만 얹습니다: 이 화면에는 이미 흰 메뉴
+   카드가 있어서 색 띠를 하나 더 두면 눈이 갈 곳이 셋으로 늘어납니다. */
+.order-solo-note {
+  display: flex; align-items: center; gap: 7px;
+  margin: 0 0 14px; padding: 0 2px;
+  color: var(--po-accent-ink);
+  font-size: var(--po-label-size); line-height: 20px; font-weight: 700;
+  word-break: keep-all;
+}
+.order-solo-note > span { flex: 0 0 auto; line-height: 1; }
+.deadline-warn {
+  margin-bottom: 12px; border-color: var(--edge-error);
+  background: var(--tint-error); color: var(--po-state-error); font-weight: 600;
+}
+.deadline-warn b { font-weight: 800; }
+.soldout-warn {
+  margin-bottom: 12px; border-color: var(--edge-accent);
+  background: var(--po-accent-subtle); color: var(--po-accent-ink); font-weight: 600;
+}
+.diet-cap-hint { margin-bottom: 12px; display: flex; flex-direction: column; gap: 5px; }
+.diet-cap-hint b:first-child {
+  font-size: var(--po-label-size); font-weight: 700; color: var(--po-accent-ink);
+}
+.diet-cap-hint p { font-size: var(--po-caption-size); line-height: 19px; color: var(--po-text-secondary); }
+.diet-cap-hint p b { color: var(--po-text-primary); }
+.fixed-menu-hint {
+  margin-bottom: 12px; border-style: dashed; background: transparent;
+  color: var(--po-text-secondary);
+}
+.fixed-menu-hint b { color: var(--po-text-primary); }
+.limit-hint {
+  margin-top: 10px; font-size: var(--po-caption-size); line-height: var(--po-caption-line);
+  color: var(--po-text-secondary); text-align: center;
+}
+
+/* 서버 연결 오류 배너 */
 .sync-error {
-  background: var(--tint-error); color: var(--po-state-error); padding: 10px 14px; border-radius: 12px;
-  margin-bottom: 12px; font-size: 13px; font-weight: 700; display: flex;
-  align-items: center; justify-content: space-between; gap: 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-bottom: 14px; padding: 12px 14px;
+  border: 1px solid var(--edge-error); border-radius: var(--po-radius-card);
+  background: var(--tint-error); color: var(--po-state-error);
+  font-size: var(--po-caption-size); font-weight: 700; line-height: 1.5;
 }
 .sync-error span { min-width: 0; }
-.sync-error small { display: block; margin-top: 3px; font-size: 11px; font-weight: 600; }
+.sync-error small { display: block; margin-top: 3px; font-size: 11.5px; font-weight: 500; }
 .sync-error button {
-  flex: 0 0 auto; min-height: 38px; border: 1px solid currentColor; border-radius: 9px;
-  background: transparent; color: inherit; padding: 6px 10px; font: inherit; cursor: pointer;
+  flex: 0 0 auto; min-height: 38px; padding: 6px 12px;
+  border: 1px solid currentColor; border-radius: 9px;
+  background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+.sync-footer {
+  margin-top: 12px; text-align: center;
+  font-size: 11.5px; color: var(--po-text-muted);
 }
 
-.app { max-width: 520px; margin: 0 auto; padding: 12px 12px 40px; }
-.app.has-sticky-bar { padding-bottom: 96px; }
+/* ============================================================
+   3. 팀 프로필 — 우상단. 눌러서 우리 팀 정보를 여는 자리
+      번호만 떠 있으면 "표시"로 읽혀서, 아바타·이름·화살표를 갖춘
+      계정 칩 모양으로 둡니다.
+   ============================================================ */
 
-/* ---- 폴더 탭 오른쪽 팀 프로필 ---- */
 .team-profile-btn {
-  min-height: 40px; display: flex; align-items: center; gap: 5px;
-  padding: 3px 8px 3px 4px; border: 1px solid var(--edge-accent);
-  border-radius: var(--po-radius-pill);
-  background: linear-gradient(180deg, var(--po-bg-surface) 0%, var(--po-accent-subtle) 100%);
-  color: var(--text);
-  box-shadow: 0 2px 7px rgba(239, 109, 47, 0.14); font-family: inherit;
-  cursor: pointer; white-space: nowrap; transition: transform 120ms, box-shadow 120ms;
-}
-.team-profile-btn:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(239, 109, 47, 0.12); }
-.team-profile-btn:focus-visible { outline: 3px solid rgba(254, 134, 72, 0.28); outline-offset: 2px; }
-.team-profile-avatar {
-  width: 27px; height: 27px; border-radius: 999px; display: flex; align-items: center;
-  justify-content: center; background: var(--primary); font-size: 13px;
-}
-.team-profile-label { font-size: 12px; font-weight: 800; }
-.team-profile-chevron { margin-left: -1px; color: var(--primary-dark); font-size: 17px; line-height: 1; }
-
-/* ---- 폴더(서류철) 탭 ---- */
-.folder { position: relative; }
-.folder-tabs {
-  display: flex; align-items: flex-end; min-width: 0;
-  padding-left: 6px; position: relative; z-index: 2;
-}
-.folder-tab {
   flex: 0 0 auto;
-  border: 1px solid var(--line); border-bottom: none;
-  background: var(--po-bg-sunken); color: var(--sub);
-  border-radius: 14px 14px 0 0; padding: 12px 17px 13px;
-  font-size: 16px; font-weight: 700; cursor: pointer; position: relative;
-  margin-bottom: -1px; /* 본문 시트 상단 테두리와 겹쳐 이어붙게 */
-  transition: background 0.15s, color 0.15s;
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 5px 12px 5px 5px;
+  border: 1px solid var(--edge-accent); border-radius: var(--po-radius-pill);
+  background: var(--po-bg-surface); color: var(--po-text-primary);
+  box-shadow: var(--po-card-shadow);
+  cursor: pointer; white-space: nowrap;
+  transition: transform 120ms, border-color 120ms;
 }
-.folder-tab + .folder-tab { margin-left: -12px; } /* 두 탭이 겹쳐 보이게 */
-.folder-tab:not(.active) { z-index: 1; padding-top: 11px; padding-bottom: 12px; }
-.folder-tab.active {
-  background: var(--card); color: var(--primary); z-index: 3;
-  box-shadow: 0 -3px 8px rgba(0,0,0,0.05);
+.team-profile-btn:active { transform: translateY(1px); border-color: var(--po-accent); }
+.team-profile-avatar {
+  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--po-accent); font-size: 15px; line-height: 1;
+  box-shadow: var(--po-lit-shadow);
 }
-.folder-tab.active::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: -3px;
-  height: 4px; background: var(--card);
+.team-profile-label {
+  display: flex; flex-direction: column; align-items: flex-start;
+  font-size: 15px; line-height: 17px; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--po-text-primary);
 }
-.folder-team {
-  display: flex; align-items: center; gap: 4px; margin-left: auto;
-  padding: 0 2px 5px 8px; white-space: nowrap;
+/* 무엇을 여는 버튼인지 — 번호 위에 한 줄 */
+.team-profile-label::before {
+  content: '우리 팀';
+  font-size: 10px; line-height: 13px; font-weight: 500; letter-spacing: 0.02em;
+  color: var(--po-text-secondary);
 }
-/* ---- 안내 이미지 탭 (타임테이블 · 음식 여정) ---- */
-.image-board-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.image-board .card-head-row { margin-bottom: 8px; }
-.image-board-icon { font-size: 1.15em; line-height: 1; }
-/* 이미지는 폭에 맞추고 높이는 비율대로 — 잘라내지 않습니다 */
-.image-board-frame {
-  display: block; position: relative; margin-top: 4px;
-  border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
-  background: var(--bg);
-}
-.image-board-frame img { display: block; width: 100%; height: auto; }
-/* 확대해 볼 수 있다는 것을 알려주는 표시 */
-.image-board-zoom {
-  position: absolute; right: 8px; bottom: 8px;
-  padding: 5px 9px; border-radius: 999px;
-  background: rgba(0, 0, 0, 0.62); color: var(--on-accent);
-  font-size: 11.5px; font-weight: 700; letter-spacing: -0.2px;
+.team-profile-chevron {
+  flex: 0 0 auto; margin-left: 1px;
+  font-size: 18px; line-height: 1; color: var(--po-text-muted);
 }
 
+/* ============================================================
+   4. 하단 내비게이션 — 호출 · 주문 · 타임테이블 · 음식 여정
+
+   행사장에서는 폰을 한 손으로 들고 씁니다. 화면 위쪽 탭은 엄지가 닿지
+   않아 이동할 때마다 손을 고쳐 잡아야 하고, 탭 네 개를 한 줄에 밀어
+   넣느라 글자도 계속 줄여야 했습니다. 아래로 내리면 아이콘과 글자를
+   세로로 쌓을 수 있어 좁은 폰에서도 네 개가 여유 있게 들어갑니다.
+   ============================================================ */
+
+.folder { min-height: 0; flex: 1; display: flex; flex-direction: column; }
+.folder-tabs { display: none; }
 .folder-body {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: 16px; padding: 16px; position: relative; z-index: 2;
+  /* z-index를 주지 않습니다. 여기에 쌓임 맥락이 생기면 안쪽에서 뜨는
+     화면(주문 완료·장바구니 시트)이 이 상자 안에 갇혀, z-index를 아무리
+     올려도 하단 바 아래로 깔립니다. */
+  flex: 1; position: relative;
+  padding: 0; border: 0; background: transparent; box-shadow: none;
 }
+
+.app-nav {
+  position: fixed; z-index: 80; left: 50%; bottom: 0; transform: translateX(-50%);
+  width: min(520px, 100%); min-height: var(--nav-h);
+  padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+  display: flex; align-items: stretch; gap: 4px;
+  border-top: 1px solid var(--po-border);
+  background: color-mix(in srgb, var(--po-bg-surface) 92%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.app-nav-item {
+  position: relative; flex: 1 1 0; min-width: 0; min-height: 54px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  border: 0; border-radius: 12px; background: transparent; color: var(--po-text-muted);
+  font-size: 11.5px; line-height: 15px; font-weight: 600; cursor: pointer;
+  transition: color 140ms, background 140ms;
+}
+.app-nav-item.active { background: var(--po-accent-subtle); color: var(--po-accent-ink); }
+.app-nav-item img { width: 22px; height: 22px; object-fit: contain; filter: grayscale(1); opacity: 0.6; }
+.app-nav-item.active img { filter: none; opacity: 1; }
+.app-nav-emoji { height: 22px; font-size: 18px; line-height: 22px; filter: grayscale(1); opacity: 0.65; }
+.app-nav-item.active .app-nav-emoji { filter: none; opacity: 1; }
+.app-nav-dot {
+  position: absolute; top: 7px; right: calc(50% - 20px); width: 7px; height: 7px;
+  border-radius: 999px; background: var(--po-state-error);
+  box-shadow: 0 0 0 2px var(--po-bg-surface);
+}
+@media (max-width: 359px) {
+  .app-nav { padding-left: 6px; padding-right: 6px; }
+  .app-nav-item { font-size: 10.5px; }
+}
+
 .p-tab-dot {
-  display: inline-block; width: 8px; height: 8px; border-radius: 999px;
-  background: var(--red); margin-left: 5px; vertical-align: middle;
+  display: inline-block; width: 7px; height: 7px; border-radius: 999px;
+  background: var(--po-state-error); margin-left: 5px; vertical-align: middle;
 }
 
-/* ---- 카드 공통 ---- */
-.card {
-  background: var(--card); border-radius: 16px; padding: 16px;
-  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+/* 담아둔 메뉴 알림 — 주문 탭이 아닐 때 내비 바로 위에 붙습니다.
+   담기만 하고 '주문하기'를 누르지 않으면 마감과 함께 사라지므로, 다른
+   화면을 보는 동안에도 눈에 걸려 있어야 합니다.
+   장바구니 바와 같은 자리·같은 방식으로 붙여서, 하단이 늘 한 덩어리로
+   보이게 합니다 (떠 있는 알약으로 두면 본문 마지막 줄을 가립니다). */
+.draft-chip {
+  position: fixed; z-index: 60; left: 50%;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(520px, 100%);
+  display: flex; align-items: center; gap: 12px;
+  min-height: var(--draft-chip-h); padding: 8px 20px;
+  border: none; border-radius: 14px 14px 0 0;
+  background: var(--po-accent); color: var(--po-text-on-accent);
+  text-align: left; cursor: pointer;
+  box-shadow: var(--po-lit-shadow);
+  filter: drop-shadow(var(--po-lit-glow, none));
+  animation: draft-chip-in var(--po-dur-sheet) var(--po-ease-sheet);
 }
-.card-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+@keyframes draft-chip-in {
+  from { opacity: 0; transform: translate(-50%, 100%); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+.draft-chip:active { background: var(--po-accent-pressed); }
+.draft-chip-icon {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--po-text-on-accent) 20%, transparent);
+  font-size: 15px; line-height: 1;
+}
+.draft-chip-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.draft-chip-text b {
+  font-size: var(--po-label-size); line-height: 19px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.draft-chip-text small {
+  font-size: 11.5px; line-height: 15px;
+  color: color-mix(in srgb, var(--po-text-on-accent) 78%, transparent);
+}
+.draft-chip-go { flex: 0 0 auto; font-size: 20px; line-height: 1; opacity: 0.85; }
+@media (max-width: 400px) {
+  .draft-chip { padding-left: 16px; padding-right: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .draft-chip { animation: none; }
+}
 
-/* 주문 없이 제공되는 식사 — 한 끼에 12~13가지라 접어둡니다.
-   주문 대상이 아니라는 게 드러나도록 공지사항과 같은 담담한 톤. */
-/* 접었다 펼칠 때 브라우저가 스크롤을 스스로 보정하면(스크롤 앵커링)
-   여닫은 칸으로 옮기려는 스크롤과 싸워 엉뚱한 위치에 멈춥니다. */
-.served-meals { display: grid; gap: 8px; margin-bottom: 12px; overflow-anchor: none; }
-.served-meal { border: 1px solid var(--line); border-radius: 12px; background: var(--card); overflow: hidden; }
+/* 관리자가 누른 '주문해주세요' 재촉 배너 — 화면에서 가장 먼저 눈에 들어와야
+   하므로 강조색을 씁니다 */
+.nudge-banner {
+  width: 100%; text-align: left; border: none; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px; padding: 14px 16px;
+  border-radius: var(--po-radius-card);
+  background: var(--po-accent); color: var(--po-text-on-accent);
+  box-shadow: var(--po-lit-shadow);
+  animation: nudge-in 260ms var(--po-ease-screen);
+}
+.nudge-banner-icon { font-size: 22px; line-height: 1; }
+.nudge-banner-text { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.nudge-banner b { font-size: var(--po-body-l-size); font-weight: 700; }
+.nudge-banner-text span { font-size: var(--po-caption-size); line-height: 19px; opacity: 0.92; }
+.nudge-banner-go { font-size: 20px; opacity: 0.9; }
+@keyframes nudge-in {
+  from { transform: translateY(-6px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ============================================================
+   5. S2 이용 안내 (첫 화면)
+   ============================================================ */
+
+.screen-guide .screen-body { gap: 20px; }
+/* 배경 워터마크 — 안내를 읽는 데 방해되지 않을 만큼만 */
+.screen-guide > .screen-guide-mark {
+  position: absolute; right: -52px; top: -8px; z-index: 0;
+  opacity: 0.08; pointer-events: none;
+}
+.screen-guide > .screen-head,
+.screen-guide > .screen-body,
+.screen-guide > .screen-foot { position: relative; z-index: 1; }
+
+.guide-body { display: flex; flex-direction: column; gap: 10px; }
+.guide-block {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 16px;
+}
+.guide-block-icon {
+  flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--po-bg-sunken); font-size: 20px; line-height: 1;
+}
+.guide-block-text { min-width: 0; }
+.guide-block b {
+  display: block; margin-bottom: 3px;
+  font-size: var(--po-body-l-size); line-height: 24px; font-weight: 650;
+  color: var(--po-text-primary);
+}
+.guide-block p {
+  font-size: var(--po-body-size); line-height: var(--po-body-line);
+  color: var(--po-text-secondary);
+}
+.guide-call-limit { display: flex; align-items: baseline; gap: 5px; margin-top: 6px; }
+.guide-call-limit strong {
+  font-size: 22px; line-height: 1; font-weight: 800;
+  color: var(--po-accent-ink); font-variant-numeric: tabular-nums;
+}
+/* 접었다 펼치는 옛 형태가 남아 있어도 화면이 깨지지 않게 */
+.guide-section { border: 0; background: transparent; box-shadow: none; padding: 0; }
+.guide-summary { display: none; }
+
+/* ============================================================
+   6. S1 팀 등록
+   ============================================================ */
+
+.setup-app .screen-head { padding-bottom: 18px; }
+.setup-form { padding: 18px 16px 6px; }
+.setup-field { margin-bottom: 22px; }
+.setup-field:last-of-type { margin-bottom: 6px; }
+.setup-label {
+  display: block; margin-bottom: 10px;
+  font-size: var(--po-label-size); line-height: var(--po-label-line); font-weight: 600;
+  color: var(--po-text-secondary);
+}
+
+/* 리그 선택 — 두 장의 카드. 고른 쪽에 랜턴이 켜집니다. */
+.league-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.league-tab {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  min-height: 108px; padding: 14px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-card);
+  background: var(--po-bg-surface); color: var(--po-text-primary);
+  box-shadow: var(--po-card-shadow); cursor: pointer; text-align: left;
+  transition: border-color var(--po-dur-lit) var(--po-ease-lit);
+}
+.league-tab-lantern { margin-bottom: auto; }
+.league-tab-name {
+  font-size: var(--po-body-l-size); line-height: 24px; font-weight: 650;
+  color: var(--po-text-primary);
+}
+.league-tab-code {
+  font-size: var(--po-caption-size); line-height: var(--po-caption-line); font-weight: 600;
+  color: var(--po-text-secondary); font-variant-numeric: tabular-nums;
+}
+.league-tab.on {
+  border: 2px solid var(--po-accent); padding: 13px;
+  box-shadow: var(--po-lit-shadow); filter: drop-shadow(var(--po-lit-glow-soft, none));
+}
+.league-tab.on .league-tab-code { color: var(--po-accent-ink); }
+
+/* 테이블 번호 — 접두어를 칸 안에 붙박이로 */
+.team-no-field {
+  display: flex; align-items: center; min-height: var(--po-cta-height); padding: 0 16px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-input);
+  background: var(--po-bg-sunken);
+  transition: border-color var(--po-dur-lit) var(--po-ease-lit);
+}
+.team-no-field:focus-within { border-color: var(--po-accent); }
+.team-no-prefix {
+  flex: 0 0 auto;
+  font-size: 22px; line-height: 30px; font-weight: 700;
+  color: var(--po-accent-ink); font-variant-numeric: tabular-nums;
+}
+.setup-input {
+  width: 100%; min-height: var(--po-cta-height); padding: 14px 16px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-input);
+  background: var(--po-bg-sunken); color: var(--po-text-primary);
+  /* 16px 미만이면 iOS가 입력창을 탭하는 순간 화면을 확대하고 되돌리지 않습니다 */
+  font-size: 16px; font-family: inherit;
+}
+.team-no-input {
+  flex: 1; min-width: 0; min-height: 54px; padding: 0 0 0 4px;
+  border: 0; background: transparent;
+  font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.team-no-input:focus { outline: none; box-shadow: none; }
+.team-no-input::placeholder { font-size: 17px; font-weight: 500; color: var(--po-text-muted); }
+/* 오타로 다른 팀 번호를 넣으면 그 팀 정보를 덮어쓰게 되므로 알려줍니다 */
+.setup-exists {
+  margin-top: 9px; font-size: var(--po-caption-size); line-height: 19px;
+  font-weight: 600; color: var(--po-accent-ink);
+}
+.setup-error {
+  margin: 4px 0 14px; padding: 11px 13px;
+  border: 1px solid var(--edge-error); border-radius: var(--po-radius-input);
+  background: var(--tint-error); color: var(--po-state-error);
+  font-size: var(--po-caption-size); line-height: 19px; font-weight: 600;
+}
+
+/* 알레르기 — 사람 단위 블록 (대체식 준비 수량이 사람 수로 갈립니다) */
+.allergy-person-block { padding: 14px; margin-bottom: 10px; background: var(--po-bg-sunken); }
+.allergy-person-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; margin-bottom: 10px;
+}
+.allergy-person-head b { font-size: var(--po-label-size); font-weight: 700; }
+.allergy-person-head .btn-ghost {
+  min-height: 34px; padding: 6px 12px; font-size: 12.5px;
+  border-color: var(--po-border); color: var(--po-text-secondary);
+}
+.chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.setup-chip {
+  min-height: 42px; padding: 10px 15px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-pill);
+  background: var(--po-bg-surface); color: var(--po-text-secondary);
+  font-size: var(--po-label-size); font-weight: 600; cursor: pointer;
+  transition: background var(--po-dur-lit) var(--po-ease-lit), color var(--po-dur-lit);
+}
+.setup-chip.on {
+  background: var(--po-accent); border-color: var(--po-accent);
+  color: var(--po-text-on-accent);
+}
+.add-person-btn {
+  width: 100%; min-height: 48px; margin-top: 4px;
+  border-style: dashed; border-color: var(--po-border);
+  color: var(--po-accent-ink); font-weight: 600;
+}
+.add-person-btn:disabled { color: var(--po-text-muted); }
+
+/* 고른 알레르기가 어떤 결과가 되는지 그 자리에서 보여줍니다 */
+/* 알레르기는 경고가 아니라 정보입니다 — 경고색 대신 중립 배경.
+   끼니 이름과 결과를 두 칸으로 나눠, 결과가 두 줄이 되어도 끼니 이름
+   아래로 흘러내리지 않게 합니다. */
+.diet-summary {
+  margin-top: 12px; padding: 11px 13px; border-radius: var(--po-radius-input);
+  background: var(--po-bg-surface); border: 1px solid var(--po-border);
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 12.5px; line-height: 1.55; text-align: left;
+}
+.diet-summary p {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px;
+  word-break: keep-all;
+}
+.diet-meal { font-weight: 700; color: var(--po-accent-ink); white-space: nowrap; }
+.diet-ok { color: var(--po-state-done); font-weight: 600; }
+.diet-partial { color: var(--po-text-secondary); }
+
+.setup-submit { width: 100%; }
+
+/* ============================================================
+   7. S3 주문
+   ============================================================ */
+
+.menu-board { display: flex; flex-direction: column; }
+.board-header-text { min-width: 0; }
+.board-header-title,
+.call-title {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  font-size: var(--po-title-size); line-height: var(--po-title-line);
+  font-weight: var(--po-title-weight); letter-spacing: -0.03em;
+  color: var(--po-text-primary);
+  /* 한 줄로 둡니다 — 넘치면 글자를 줄이는 쪽(아래 미디어 쿼리)으로 맞춥니다 */
+  white-space: nowrap;
+}
+.title-logo { flex: 0 0 auto; width: 1.5em; height: 1.5em; object-fit: contain; }
+.board-header-sub { margin-top: 3px; font-size: var(--po-label-size); color: var(--po-text-secondary); }
+.board-header-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+
+/* 폰 폭에서 제목 · 팀 프로필을 한 줄에 담기 위한 축소 단계.
+   새로고침 버튼을 없앤 자리만큼 여유가 생겨 제목 옆 캐릭터는 늘 보입니다. */
+@media (max-width: 430px) {
+  .board-header-title, .call-title { font-size: 21px; line-height: 28px; }
+  .board-header-actions { gap: 6px; }
+  .team-profile-btn { gap: 6px; min-height: 40px; padding: 3px 9px 3px 3px; }
+  .team-profile-avatar { width: 28px; height: 28px; font-size: 13px; }
+  .team-profile-label { font-size: 14px; line-height: 16px; }
+  .team-profile-label::before { font-size: 9.5px; line-height: 12px; }
+  .team-profile-chevron { font-size: 16px; margin-left: 0; }
+}
+@media (max-width: 359px) {
+  .board-header-title, .call-title { font-size: 18.5px; line-height: 25px; }
+  .team-profile-label { font-size: 13px; }
+}
+
+/* 주문 화면 공지사항 — 호출 화면의 '호출 전에 꼭 읽어보세요'와 같은 결로,
+   카드 없이 배경 위에 바로 얹습니다. 메뉴 카드가 이미 흰 카드라서 그 위에
+   또 흰 카드를 두면 무엇이 목록이고 무엇이 안내인지 구분이 안 됩니다. */
+.notice-panel.order-notice {
+  /* 여백(padding)은 공통 규칙을 그대로 씁니다 — 호출 화면 안내와 왼쪽
+     시작점이 같아야 두 탭이 같은 화면처럼 보입니다. 상자만 벗깁니다. */
+  margin: 10px 0 0;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none;
+}
+
+/* 주문 없이 제공되는 식사 — 한 끼에 12~13가지라 접어둡니다 */
+.served-meals { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; overflow-anchor: none; }
+.served-meal { overflow: hidden; }
 .served-meal-summary {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 12px 14px; cursor: pointer; list-style: none;
-  font-size: 14px; font-weight: 700; min-height: 44px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 52px; padding: 13px 16px; cursor: pointer; list-style: none;
+  font-size: var(--po-body-size); font-weight: 650;
 }
 .served-meal-summary::-webkit-details-marker { display: none; }
-/* 접힘/펼침을 알 수 있게 화살표를 직접 붙입니다 */
-.served-meal-summary::after { content: '▾'; margin-left: 2px; color: var(--sub); font-size: 12px; transition: transform 120ms; }
+.served-meal-summary::after {
+  content: '⌄'; margin-left: 2px; color: var(--po-text-muted);
+  font-size: 15px; line-height: 1; transition: transform 140ms;
+}
 .served-meal[open] .served-meal-summary::after { transform: rotate(180deg); }
 .served-meal-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.served-meal-meta { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--sub); white-space: nowrap; }
-/* 제공 음식 사진 — 여러 장이면 두 칸으로 (선택 가능한 종류를 나란히) */
-.served-photos { display: grid; gap: 9px; padding: 10px 14px 2px; }
+.served-meal-meta {
+  margin-left: auto; font-size: 12px; font-weight: 600; white-space: nowrap;
+  color: var(--po-text-secondary); font-variant-numeric: tabular-nums;
+}
+.served-photos { display: grid; gap: 10px; padding: 4px 16px 2px; }
 .served-photos.multi { grid-template-columns: repeat(2, 1fr); }
 .served-photo { margin: 0; min-width: 0; }
 .served-photo img {
   display: block; width: 100%; aspect-ratio: var(--ratio, 4 / 3); object-fit: cover;
-  border-radius: 10px; background: var(--bg);
+  border-radius: 10px; background: var(--po-bg-sunken);
 }
 .served-photo figcaption {
-  margin-top: 5px; font-size: 11.5px; line-height: 1.4; color: var(--sub);
+  margin-top: 6px; font-size: 11.5px; line-height: 1.45; color: var(--po-text-secondary);
+}
+.served-meal-list {
+  margin: 0; padding: 10px 16px 4px 32px; list-style: disc;
+  display: flex; flex-direction: column; gap: 5px;
+  font-size: var(--po-caption-size); line-height: 1.5; color: var(--po-text-secondary);
+}
+.served-meal-note {
+  padding: 8px 16px 14px; font-size: 12px; line-height: 1.5; color: var(--po-text-muted);
 }
 
-.served-meal-list { margin: 0; padding: 0 14px 4px 30px; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.5; }
-.served-meal-note { padding: 6px 14px 12px; font-size: 12px; color: var(--sub); }
-/* 탭 줄이 없는 화면(개발자리그)에서 제목 오른쪽에 팀 버튼을 답니다 */
-.board-title-row {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; margin-bottom: 10px;
+/* 끼니 전환 칩 */
+.cat-tabs {
+  display: flex; gap: 8px; margin-bottom: 12px;
+  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
 }
-.board-title-row .card-title { margin-bottom: 0; }
-.card-head-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-.notice-card { text-align: center; margin-top: 60px; }
-.notice-card p { margin-top: 10px; color: var(--sub); line-height: 1.6; }
-
-.btn-ghost {
-  background: transparent; border: 1px solid var(--line); color: var(--sub);
-  border-radius: 10px; padding: 6px 12px; font-size: 13px; cursor: pointer;
+.cat-tabs::-webkit-scrollbar { display: none; }
+.cat-tab {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
+  min-height: 38px; padding: 8px 16px; white-space: nowrap;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-pill);
+  background: transparent; color: var(--po-text-secondary);
+  font-size: var(--po-label-size); font-weight: 600; cursor: pointer;
 }
-.empty-text { color: var(--sub); font-size: 14px; padding: 8px 0; }
-.sync-footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 4px; }
-
-/* ---- 주문 마감/안내 ---- */
-.closed-box { text-align: center; padding: 20px 8px; }
-.closed-emoji { font-size: 40px; margin-bottom: 8px; }
-.closed-main { font-size: 16px; font-weight: 700; }
-.closed-sub { margin-top: 6px; color: var(--sub); }
-.closed-hint { margin-top: 14px; font-size: 13px; color: var(--sub); }
-
-.badge-open {
-  background: var(--tint-done); color: var(--green); font-size: 12px;
-  padding: 3px 8px; border-radius: 999px; vertical-align: middle; margin-left: 4px;
+.cat-tab.on {
+  background: var(--po-accent); border-color: var(--po-accent);
+  color: var(--po-text-on-accent);
 }
-.countdown { font-size: 13px; color: var(--red); }
-.guide-banner {
-  background: var(--tint-accent); color: var(--amber); font-size: 13px;
-  padding: 8px 12px; border-radius: 10px; margin: 8px 0 4px;
+.cat-tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  background: var(--po-bg-sunken); color: var(--po-text-primary);
+  font-size: 11.5px; font-weight: 700; line-height: 1;
 }
-.guide-banner.limit { background: var(--tint-error); color: var(--red); font-weight: 600; }
-.limit-hint { font-size: 12px; color: var(--red); margin-top: 8px; }
-
-/* 공용 버튼 (온보딩/호출 등에서 사용) */
-.btn-primary {
-  flex: 1; background: var(--primary); color: var(--on-accent); border: none;
-  border-radius: var(--po-radius-card); min-height: var(--po-cta-height); padding: 14px;
-  font-size: var(--po-body-l-size); font-weight: 700; cursor: pointer;
-}
-.btn-primary:active { background: var(--primary-dark); }
-.btn-primary:disabled { background: var(--po-bg-sunken); cursor: default; }
-.btn-danger-ghost {
-  background: transparent; border: 1px solid var(--red); color: var(--red);
-  border-radius: 12px; padding: 14px 16px; font-size: 15px; cursor: pointer; white-space: nowrap;
+.cat-tab.on .cat-tab-count {
+  background: color-mix(in srgb, var(--po-text-on-accent) 22%, transparent);
+  color: var(--po-text-on-accent);
 }
 
-/* ---- 메뉴판 (티오더식) ---- */
-.menu-board { margin-bottom: 12px; }
+/* 메뉴 카드 — 사진 · 이름 · 성분 · 수량. 한 줄에 한 장.
+   담은 수량은 화면 가운데 상자 대신 하단 바에서 '담은 수 / 담을 수 있는 수'로
+   보여줍니다 — 목록을 한 칸이라도 더 위로 끌어올리려고요. */
+.food-grid { display: flex; flex-direction: column; gap: 10px; }
+.food-card {
+  display: flex; align-items: center; gap: 12px; padding: 10px;
+  transition: border-color var(--po-dur-lit) var(--po-ease-lit);
+}
+.food-card.picked { border-color: var(--po-accent); }
+.food-card.soldout { opacity: 0.72; }
+.food-card-photo {
+  position: relative; flex: 0 0 76px; width: 76px; height: 76px;
+  border-radius: 8px; overflow: hidden; background: var(--po-bg-sunken);
+  display: flex; align-items: center; justify-content: center;
+}
+.food-card-photo img { width: 100%; height: 100%; object-fit: cover; }
+.food-card-ph { font-size: 30px; opacity: 0.35; }
+.food-card-qtybadge { display: none; }
+.food-card-soldout {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--po-bg-sunken) 82%, transparent);
+  color: var(--po-state-error); font-size: 13px; font-weight: 800;
+}
+.food-card-body {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;
+}
+.food-card-info { min-width: 0; }
+/* white-space: pre-line — config의 메뉴명에 넣은 줄바꿈을 그대로 표시 */
+.food-card-name {
+  font-size: var(--po-body-l-size); line-height: 23px; font-weight: 650;
+  white-space: pre-line; text-wrap: pretty;
+}
+.food-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.diet-badge {
+  padding: 3px 9px; border-radius: var(--po-radius-pill);
+  background: var(--po-bg-sunken); color: var(--po-text-secondary);
+  font-size: 12px; line-height: 16px; font-weight: 500;
+}
+/* white-space: pre-line — config의 allergyNote에 넣은 위치에서 줄을 나눔 */
+.allergy-note {
+  width: 100%; min-width: 0;
+  font-size: 11.5px; line-height: 1.4; color: var(--po-text-secondary);
+  overflow-wrap: anywhere; white-space: pre-line;
+}
+.food-card-action { align-self: flex-end; margin-top: 1px; }
 
-/* 탭 줄이 없는 화면(개발자리그)에서는 팀 버튼이 이 헤더로 들어옵니다.
-   폰에서는 제목·마감·팀 버튼이 한 줄에 안 들어가 제목이 세 줄로 찌그러지므로,
-   줄바꿈을 허용하고 오른쪽 묶음을 아랫줄로 내려 제목이 온전히 보이게 합니다. */
-.board-header {
-  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  padding: 2px 2px 16px; margin-bottom: 4px;
+.add-btn {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--po-accent); border-radius: 8px;
+  background: transparent; color: var(--po-accent-ink);
+  font-size: 19px; font-weight: 600; line-height: 1; cursor: pointer;
 }
-.board-header-text { flex: 1 1 160px; }
-.board-header .team-profile-btn { flex: 0 0 auto; }
-/* 제목 글자 옆에 붙는 캐릭터 로고 — 두 탭(호출·주문)이 같은 값을 쓰게
-   한 곳에만 둡니다. 한쪽만 배지로 크게 두면 제목 줄 자체가 다른 크기로
-   보입니다. */
-/* 크기를 글자에 비례(em)하게 둡니다. 제목은 데스크탑 24px · 폰 21px ·
-   마감 화면 17px로 세 가지라, px로 박으면 한 곳을 맞출 때 다른 곳이
-   어긋납니다. */
-.title-logo {
-  /* 글자 두 줄 높이만큼 — 예전 주황 배지(52px)와 비슷한 존재감을 유지하되,
-     제목 글자 크기는 건드리지 않습니다 */
-  width: 2.1em; height: 2.1em; object-fit: contain;
-  vertical-align: -0.72em; margin-right: 3px;
+.add-btn:disabled {
+  border-color: var(--po-border); color: var(--po-text-muted);
+  background: var(--po-bg-sunken); cursor: default;
 }
-/* 상단 탭의 로고 — 같은 방식으로 탭 글자에 비례 */
-/* 로고 이미지가 없는 탭(타임테이블·음식 여정)의 이모지 — 로고와 같은 자리 */
-.folder-tab-icon { font-size: 1.1em; line-height: 1; margin-right: 3px; }
-.folder-tab-logo {
-  width: 1.35em; height: 1.35em; object-fit: contain;
-  vertical-align: -0.35em; margin-right: 3px;
+.card-stepper { display: flex; align-items: center; gap: 12px; }
+.qty-btn {
+  width: 36px; height: 36px; flex: 0 0 auto;
+  border: 1px solid var(--po-border-strong); border-radius: 8px;
+  background: transparent; color: var(--po-text-primary);
+  font-size: 18px; font-weight: 500; line-height: 1; cursor: pointer;
 }
-.board-header-text { flex: 1; min-width: 0; }
-.board-header-title, .call-title {
-  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  font-size: 27px; font-weight: 800;
+.qty-btn:disabled { border-color: var(--po-border); color: var(--po-text-muted); cursor: default; }
+.qty-num {
+  min-width: 18px; text-align: center;
+  font-size: var(--po-body-l-size); font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
-/* 하단 고정 바의 마감 시간 — 담긴 수량과 화살표 사이 */
+
+/* 주문 마감/대기 안내 */
+.closed-box {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 34px 20px; border: 1px dashed var(--po-border); border-radius: var(--po-radius-card);
+}
+.closed-emoji { font-size: 38px; line-height: 1; margin-bottom: 12px; }
+.closed-main {
+  font-size: var(--po-heading-size); line-height: var(--po-heading-line); font-weight: 700;
+}
+.closed-sub {
+  margin-top: 8px; font-size: var(--po-body-size); line-height: var(--po-body-line);
+  color: var(--po-text-secondary);
+}
+.closed-hint {
+  margin-top: 18px; padding: 8px 16px; border-radius: var(--po-radius-pill);
+  background: var(--po-bg-sunken);
+  font-size: var(--po-caption-size); color: var(--po-text-secondary);
+}
+
+/* 하단 고정 바 — 누르면 장바구니 시트.
+   내비게이션 바로 위에 붙여 하나의 하단 덩어리로 둡니다. 내비 자리를
+   덮어쓰면 주문을 끝내거나 비우기 전까지 다른 탭으로 갈 수 없게 됩니다 —
+   담아둔 채 타임테이블을 확인하는 일이 실제로 자주 있습니다. */
+.cart-bar {
+  position: fixed; left: 50%; z-index: 40;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(520px, 100%);
+  display: flex; align-items: center; gap: 12px;
+  min-height: var(--cart-bar-h); padding: 12px 20px;
+  border: none; border-radius: 14px 14px 0 0;
+  background: var(--po-accent); color: var(--po-text-on-accent);
+  cursor: pointer;
+  box-shadow: var(--po-lit-shadow);
+  filter: drop-shadow(var(--po-lit-glow, none));
+}
+.cart-bar-left {
+  display: flex; align-items: center; gap: 8px;
+  font-size: var(--po-body-size); font-weight: 650;
+}
+.cart-bar-icon { display: none; }
+.cart-bar-count {
+  display: inline-flex; align-items: baseline; justify-content: center; gap: 3px;
+  padding: 3px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--po-text-on-accent) 20%, transparent);
+  font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+/* '3 / 6' 의 빗금 — 담은 수는 굵게, 전체 수는 그보다 여리게 */
+.cart-bar-count i { font-style: normal; font-weight: 500; opacity: 0.65; }
 .cart-bar-deadline {
-  margin-left: auto; margin-right: 10px; font-size: 13px; font-weight: 700;
-  color: color-mix(in srgb, var(--on-accent) 76%, transparent);
-  font-variant-numeric: tabular-nums; white-space: nowrap;
+  margin-left: auto;
+  font-size: var(--po-caption-size); font-weight: 650; white-space: nowrap;
+  color: color-mix(in srgb, var(--po-text-on-accent) 78%, transparent);
+  font-variant-numeric: tabular-nums;
 }
-/* 오렌지 바 위에서도 읽히도록 경고색을 글자색 쪽으로 섞습니다 */
-.cart-bar-deadline.urgent { color: color-mix(in srgb, var(--po-state-error) 55%, var(--on-accent)); }
-.board-header-sub {
-  margin-top: 2px; color: var(--sub); font-size: 12px;
-  letter-spacing: -0.15px; white-space: nowrap;
+.cart-bar-deadline.urgent {
+  color: var(--po-text-on-accent); font-weight: 800;
+  animation: countdown-pulse var(--po-pulse-cycle) ease-in-out infinite;
 }
-.board-header-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
-.board-refresh-btn {
-  width: 34px; height: 34px; flex: 0 0 auto; display: flex; align-items: center;
-  justify-content: center; border: 1px solid var(--line); border-radius: 11px;
-  background: var(--card); color: var(--sub); font: inherit; font-size: 15px; cursor: pointer;
-}
-.board-refresh-btn:active { background: var(--line); }
-.board-refresh-btn:disabled { opacity: 0.55; cursor: default; }
-.board-refresh-btn span { display: inline-flex; }
-.board-refresh-btn.refreshing span { animation: refresh-spin 700ms linear infinite; }
-@keyframes refresh-spin { to { transform: rotate(360deg); } }
+.cart-bar-more { font-size: 20px; line-height: 1; opacity: 0.8; }
+@keyframes countdown-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 
-/* ---- 팀 정보 하단 팝업 ---- */
-.team-sheet-backdrop {
-  position: fixed; inset: 0; z-index: 1200; display: flex; align-items: flex-end;
-  justify-content: center; background: rgba(28, 25, 23, 0.42); animation: sheet-fade-in 160ms ease-out;
+/* ============================================================
+   8. S4 주문 완료 — "주문이 전달됐어요"
+   ============================================================ */
+
+.order-success {
+  position: fixed; inset: 0; z-index: 1600;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 28px 24px calc(28px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: radial-gradient(120% 52% at 50% 28%, var(--po-bg-elevated) 0%, var(--po-bg-base) 64%);
+  animation: order-success-in var(--po-dur-screen) var(--po-ease-screen);
 }
-.team-sheet {
-  width: min(520px, 100%); max-height: 82dvh; overflow-y: auto;
-  padding: 8px 18px max(18px, env(safe-area-inset-bottom));
-  border-radius: 22px 22px 0 0; background: var(--card);
-  box-shadow: 0 -12px 40px rgba(28, 25, 23, 0.2); animation: sheet-slide-up 220ms ease-out;
+@keyframes order-success-in { from { opacity: 0; } }
+.order-success-inner {
+  width: 100%; max-width: 380px; margin: auto;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
 }
-.team-sheet-handle {
-  position: relative; width: 42px; height: 4px; margin: 2px auto 12px;
-  border-radius: 999px; background: var(--line); touch-action: none; cursor: grab;
+/* 주문을 넣는 순간 랜턴에 불이 '탁' 들어옵니다 — 화면이 바뀐 게 아니라
+   무언가 켜졌다는 느낌이 이 화면의 전부라서요. 켜진 뒤에는 아주 얕게
+   숨만 쉽니다. */
+.order-success .lantern-icon {
+  filter: drop-shadow(0 0 30px color-mix(in srgb, var(--po-state-active) 55%, transparent));
+  animation:
+    lantern-ignite 560ms var(--po-ease-lit) both,
+    po-breathe var(--po-pulse-cycle) 560ms ease-in-out infinite;
 }
-.team-sheet-handle::before {
+@keyframes lantern-ignite {
+  0%   { transform: scale(0.7); opacity: 0.15; filter: drop-shadow(0 0 0 transparent); }
+  45%  { transform: scale(1.08); opacity: 1;
+         filter: drop-shadow(0 0 44px color-mix(in srgb, var(--po-state-active) 85%, transparent)); }
+  100% { transform: scale(1); opacity: 1;
+         filter: drop-shadow(0 0 30px color-mix(in srgb, var(--po-state-active) 55%, transparent)); }
+}
+.order-success h2 {
+  margin-top: 20px;
+  font-size: var(--po-display-size); line-height: var(--po-display-line);
+  font-weight: 700; letter-spacing: -0.035em;
+  animation: order-line-in 420ms 200ms var(--po-ease-screen) both;
+}
+@keyframes order-line-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+.order-success-table {
+  display: inline-flex; flex-direction: column; align-items: center;
+  margin-top: 22px; padding: 14px 32px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-card);
+  background: var(--po-bg-surface);
+}
+.order-success-table span { font-size: var(--po-label-size); color: var(--po-text-secondary); }
+.order-success-table strong {
+  font-size: 38px; line-height: 46px; font-weight: 700;
+  color: var(--po-accent-ink); font-variant-numeric: tabular-nums;
+}
+.order-success-summary {
+  width: 100%; margin-top: 18px; padding: 14px 18px; text-align: left;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-card);
+  background: var(--po-bg-surface);
+}
+.order-success-meal + .order-success-meal { margin-top: 10px; }
+.order-success-meal-label {
+  margin-bottom: 6px;
+  font-size: var(--po-label-size); line-height: var(--po-label-line); font-weight: 600;
+  color: var(--po-text-secondary);
+}
+.order-success-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+  font-size: var(--po-body-l-size); line-height: 26px;
+}
+.order-success-total {
+  display: flex; justify-content: space-between; gap: 14px;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--po-border);
+  font-size: var(--po-body-l-size); line-height: 26px; font-weight: 650;
+}
+
+/* ============================================================
+   9. S5 마스터 메이트 호출
+   ============================================================ */
+
+.call-section { display: flex; flex-direction: column; }
+.call-quota-row { display: none; } /* 남은 횟수는 아래 랜턴 옆 배지로 보여줍니다 */
+
+/* 랜턴 히어로 — 호출 상태를 한눈에.
+   '호출 전에 꼭 읽어보세요'가 스크롤 없이 한 화면에 들어와야 하므로
+   히어로는 필요한 만큼만 차지합니다 (랜턴 82 · 여백 축소). */
+.call-hero {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 18px 16px 16px; margin-bottom: 10px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-card);
+  background: radial-gradient(110% 70% at 50% 24%, var(--po-bg-elevated) 0%, var(--po-bg-surface) 70%);
+  box-shadow: var(--po-card-shadow);
+}
+.call-hero .lantern-icon { margin-bottom: 10px; }
+.call-hero.active .lantern-icon {
+  animation: po-pulse var(--po-pulse-cycle) ease-in-out infinite;
+  filter: drop-shadow(var(--po-lit-glow, none));
+}
+.call-hero.exhausted .lantern-icon { opacity: 0.45; }
+.call-hero h2 {
+  font-size: var(--po-title-size); line-height: var(--po-title-line);
+  font-weight: 700; letter-spacing: -0.03em; text-wrap: balance;
+}
+.call-hero p {
+  margin-top: 6px; max-width: 30ch;
+  font-size: var(--po-body-size); line-height: var(--po-body-line);
+  color: var(--po-text-secondary); text-wrap: pretty;
+}
+.call-remaining {
+  margin-top: 12px; padding: 7px 15px; border-radius: var(--po-radius-pill);
+  border: 1px solid var(--po-border); background: var(--po-bg-surface);
+  font-size: var(--po-label-size); font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.call-remaining strong { color: var(--po-accent-ink); font-weight: 800; }
+
+/* 진행 중인 호출 */
+.call-status-box { padding: 16px; margin-bottom: 14px; }
+.call-status-reason {
+  font-size: var(--po-label-size); font-weight: 600; color: var(--po-text-secondary);
+  margin-bottom: 10px;
+}
+.call-sent-reason {
+  margin-bottom: 12px; padding: 12px 14px; border-radius: var(--po-radius-input);
+  background: var(--po-bg-sunken);
+  font-size: var(--po-body-size); line-height: var(--po-body-line);
+  word-break: break-word;
+}
+.status-steps { display: flex; gap: 6px; }
+.status-step {
+  flex: 1; text-align: center; padding: 11px 4px; border-radius: 10px;
+  border: 1px solid var(--po-border); background: var(--po-bg-sunken);
+  color: var(--po-text-muted); font-size: var(--po-label-size); font-weight: 600;
+}
+/* 랜턴 3상태: 꺼짐 → 점등 → 완료. 색만으로 나누지 않도록 채움·테두리도 바꿉니다. */
+.status-step.on {
+  border-color: var(--edge-accent); background: var(--tint-active); color: var(--ink-accent);
+  box-shadow: var(--po-lit-shadow);
+}
+.status-step.on:last-child {
+  border-color: color-mix(in srgb, var(--po-state-done) 40%, transparent);
+  background: var(--tint-done); color: var(--po-state-done); box-shadow: none;
+}
+.call-hint {
+  margin: 10px 0; font-size: var(--po-caption-size); line-height: 1.55;
+  color: var(--po-text-secondary);
+}
+.call-hint.board-todo { color: var(--po-accent-ink); font-weight: 600; }
+
+.call-limit-box { padding: 18px 16px; margin-bottom: 14px; text-align: center; }
+.call-limit-box p:first-child { color: var(--po-state-error); margin-bottom: 6px; }
+.call-limit-box .btn-primary { margin-top: 12px; }
+
+/* 호출 사유 작성 */
+.reason-box { padding: 16px; margin-bottom: 14px; }
+.reason-label {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+  font-size: var(--po-label-size); font-weight: 700;
+}
+.reason-required {
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--tint-error); color: var(--po-state-error);
+  font-size: 11px; font-weight: 700;
+}
+.reason-help { margin-bottom: 10px; font-size: 12px; color: var(--po-text-secondary); }
+.reason-input {
+  width: 100%; padding: 14px 16px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-input);
+  background: var(--po-bg-sunken); color: var(--po-text-primary);
+  font-size: 16px; line-height: 1.5; font-family: inherit; resize: vertical;
+}
+.reason-input.has-error { border-color: var(--po-state-error); }
+.reason-input::placeholder { color: var(--po-text-muted); }
+.reason-meta {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  margin-top: 8px; font-size: 12px;
+}
+.reason-err-text { color: var(--po-state-error); font-weight: 600; }
+.reason-count { margin-left: auto; color: var(--po-text-muted); font-variant-numeric: tabular-nums; }
+.confirm-call-row { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.confirm-call-row .btn-ghost { min-height: 48px; justify-content: center; text-align: center; }
+
+/* 호출 전 안내 — 규칙을 다 읽고 부르게.
+   한 화면에 다 들어오도록 본문보다 한 단계 작게 둡니다. 다섯 항목을
+   15px/24로 두면 마지막 두 줄이 화면 밖으로 밀립니다. */
+/* 크기·간격은 위 안내 패널 공통 규칙을 그대로 씁니다 — 여기서는 위치만 */
+.call-guide-detail { margin: 10px 0 0; }
+
+/* 지난 호출 내역 */
+.call-log { margin-top: 14px; overflow: hidden; }
+.call-log-summary {
+  display: flex; align-items: center; min-height: 48px; padding: 13px 16px;
+  cursor: pointer; list-style: none;
+  font-size: var(--po-label-size); font-weight: 650; color: var(--po-text-secondary);
+}
+.call-log-summary::-webkit-details-marker { display: none; }
+.call-log-summary::after { content: '⌄'; margin-left: auto; font-size: 15px; line-height: 1; }
+.call-log[open] .call-log-summary::after { transform: rotate(180deg); }
+.call-log-list { margin: 0; padding: 0 16px 12px; list-style: none; }
+.call-log-item { padding: 11px 0; border-top: 1px solid var(--po-border); }
+.call-log-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 7px;
+  font-size: 12.5px; color: var(--po-text-secondary);
+}
+.call-log-time { font-weight: 700; font-variant-numeric: tabular-nums; }
+.call-log-status {
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--po-bg-sunken); color: var(--po-text-secondary);
+  font-size: 11.5px; font-weight: 700;
+}
+.call-log-status.st-done { background: var(--tint-done); color: var(--po-state-done); }
+.call-log-status.st-in_progress { background: var(--tint-active); color: var(--ink-accent); }
+.call-log-who { font-weight: 600; }
+.call-log-done { font-variant-numeric: tabular-nums; }
+.call-log-reason {
+  margin-top: 6px; font-size: var(--po-caption-size); line-height: 1.5;
+  color: var(--po-text-primary); word-break: break-word;
+}
+
+/* ============================================================
+   10. 안내 이미지 탭 (타임테이블 · 음식 여정)
+   ============================================================ */
+
+.image-board { display: flex; flex-direction: column; }
+.image-board-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.image-board-icon { font-size: 1.1em; line-height: 1; }
+.image-board-frame {
+  display: block; position: relative; overflow: hidden; background: var(--po-bg-sunken);
+}
+.image-board-frame img { display: block; width: 100%; height: auto; }
+.image-board-zoom {
+  position: absolute; right: 10px; bottom: 10px;
+  padding: 6px 12px; border-radius: var(--po-radius-pill);
+  background: color-mix(in srgb, var(--po-text-primary) 78%, transparent);
+  color: var(--po-bg-surface); font-size: 11.5px; font-weight: 700;
+}
+/* 주문 없이 제공되는 끼니 — 음식 여정 지도 아래로 옮겨 왔습니다.
+   지도에서 순서를 보고 그 자리에서 끼니를 펼쳐 볼 수 있게. */
+.image-board-meals { margin-top: 22px; }
+.image-board-subtitle {
+  margin-bottom: 12px;
+  font-size: var(--po-heading-size); line-height: var(--po-heading-line);
+  font-weight: var(--po-heading-weight); letter-spacing: -0.02em;
+}
+.image-board-meals .served-meals { margin-bottom: 0; }
+
+/* ============================================================
+   11. 오버레이 — 팀 정보 시트 · 장바구니 시트 · 확인 팝업
+   ============================================================ */
+
+.team-sheet-backdrop,
+.sheet-overlay {
+  position: fixed; inset: 0; z-index: 1200;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: var(--po-scrim);
+  animation: sheet-fade-in 160ms ease-out;
+}
+.team-sheet,
+.sheet {
+  width: min(520px, 100%); max-height: 84dvh; overflow-y: auto;
+  padding: 8px 20px calc(20px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--po-border);
+  border-radius: var(--po-radius-sheet) var(--po-radius-sheet) 0 0;
+  background: var(--po-bg-elevated);
+  box-shadow: var(--po-sheet-shadow);
+  animation: sheet-slide-up var(--po-dur-sheet) var(--po-ease-sheet);
+}
+.sheet { display: flex; flex-direction: column; }
+.team-sheet-handle,
+.sheet-handle {
+  position: relative; width: 40px; height: 4px; margin: 4px auto 16px;
+  border-radius: 999px; background: var(--po-border-strong);
+  touch-action: none; cursor: grab;
+}
+.team-sheet-handle::before,
+.sheet-handle::before {
   content: ''; position: absolute; left: -30px; right: -30px; top: -12px; bottom: -12px;
 }
-.team-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.team-sheet-head h2 { font-size: 20px; }
-.team-sheet-close {
-  min-width: 48px; min-height: 40px; border: 0; border-radius: 10px;
-  background: var(--bg); color: var(--sub); font: inherit; font-size: 13px;
-  font-weight: 700; cursor: pointer;
+.team-sheet-head,
+.sheet-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 12px;
 }
+.team-sheet-head h2,
+.sheet-head h3 {
+  font-size: var(--po-title-size); line-height: var(--po-title-line);
+  font-weight: 700; letter-spacing: -0.03em;
+}
+.sheet-head h3 { font-size: var(--po-heading-size); line-height: var(--po-heading-line); }
+.team-sheet-close,
+.sheet-close {
+  min-width: 44px; min-height: 40px; padding: 6px 12px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-pill);
+  background: transparent; color: var(--po-text-secondary);
+  font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+
 .team-sheet-details {
-  margin: 16px 0; padding: 0 14px; border: 1px solid var(--line); border-radius: 14px;
+  margin: 4px 0 18px; padding: 0 16px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-card);
+  background: var(--po-bg-surface);
 }
-.team-sheet-row, .team-sheet-allergies {
+.team-sheet-row,
+.team-sheet-allergies {
   display: flex; justify-content: space-between; gap: 16px; padding: 14px 0;
-  border-bottom: 1px solid var(--line); font-size: 14px;
+  border-bottom: 1px solid var(--po-border);
+  font-size: var(--po-body-size); line-height: var(--po-body-line);
 }
 .team-sheet-allergies { border-bottom: 0; align-items: flex-start; }
-.team-sheet-row > span, .team-sheet-allergies > span { color: var(--sub); white-space: nowrap; }
-.team-sheet-row strong, .team-sheet-allergies > strong { text-align: right; }
-.team-sheet-allergy-list { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.team-sheet-row > span,
+.team-sheet-allergies > span { color: var(--po-text-secondary); white-space: nowrap; }
+.team-sheet-row strong,
+.team-sheet-allergies > strong { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.team-sheet-allergy-list { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .team-sheet-allergy-group { text-align: right; }
-.team-sheet-allergy-group b { display: block; margin-bottom: 2px; font-size: 12px; color: var(--sub); }
-.team-sheet-allergy-group span { font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.team-sheet-allergy-group b {
+  display: block; margin-bottom: 2px; font-size: 12px; font-weight: 500;
+  color: var(--po-text-secondary);
+}
+.team-sheet-allergy-group span { font-size: var(--po-body-size); font-weight: 700; overflow-wrap: anywhere; }
+/* 시트 아래 두 갈래 행동 — 안내 다시 보기(보조) · 팀 정보 편집(주요) */
+.team-sheet-actions { display: flex; flex-direction: column; gap: 8px; }
+.team-sheet-guide {
+  width: 100%; min-height: var(--po-cta-height); justify-content: center;
+  border-style: dashed; border-color: var(--po-border);
+  color: var(--po-accent-ink); font-size: var(--po-body-size); font-weight: 600;
+}
 .team-sheet-edit { width: 100%; }
+
+/* 이용 안내 다시 보기 시트 — 첫 화면과 같은 내용 */
+.guide-sheet .team-sheet-head { margin-bottom: 2px; }
+.guide-sheet-sub {
+  margin-bottom: 16px;
+  font-size: var(--po-body-size); line-height: var(--po-body-line);
+  color: var(--po-text-secondary);
+}
+.guide-sheet .guide-body { padding-bottom: 4px; }
+
 @keyframes sheet-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sheet-slide-up {
   from { opacity: 0; transform: translateY(28px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.cat-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
-/* 라벨에 [DAY 1]이 붙어 길어졌으므로 두 탭이 한 줄을 나눠 갖게 합니다
-   (카드 안쪽 폭은 375px 화면에서 319px뿐) */
-.cat-tab {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  flex: 1 1 0; min-width: 0; white-space: nowrap;
-  border: none; background: var(--card); border: 1px solid var(--line);
-  color: var(--sub); border-radius: 12px; padding: 9px 12px;
-  font-size: 15px; font-weight: 700; cursor: pointer;
-}
-/* 그보다 좁은 폰에서는 줄을 옆으로 밀어 봅니다 (글자를 자르지 않도록) */
-@media (max-width: 359px) {
-  .cat-tabs { overflow-x: auto; overscroll-behavior-x: contain; }
-  .cat-tab { flex: 0 0 auto; }
-}
-/* 선택된 칩은 채움으로 구분합니다 — 오렌지는 화면당 하나(주문 버튼)뿐이라
-   여기에 또 쓰면 둘 다 안 보입니다. */
-.cat-tab.on {
-  background: var(--po-text-primary); border-color: var(--po-text-primary);
-  color: var(--po-bg-surface);
-}
-.cat-tab-count {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 18px; height: 18px; padding: 0 5px;
-  border-radius: 999px; background: var(--primary); color: var(--on-accent); font-size: 11px; line-height: 1;
-}
-
-/* 일괄 메뉴(도시락) 안내 */
-.fixed-menu-hint {
-  font-size: 13px; color: var(--sub); background: var(--card);
-  border: 1px dashed var(--line); border-radius: 10px;
-  padding: 9px 12px; margin-bottom: 12px; line-height: 1.5;
-}
-.fixed-menu-hint b { color: var(--primary-dark); }
-
-.food-guide {
-  font-size: 12px; color: var(--sub); background: var(--card);
-  border-radius: 10px; padding: 8px 12px; margin-bottom: 12px;
-}
-.food-guide.limit { background: var(--tint-error); color: var(--red); font-weight: 600; }
-
-.food-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.food-card {
-  background: var(--card); border-radius: 16px; overflow: hidden;
-  display: flex; flex-direction: column;
-  border: 1.5px solid var(--line);
-}
-.food-card.picked { border-color: var(--primary); }
-.food-card-photo {
-  position: relative; aspect-ratio: 4 / 3; background: var(--po-bg-sunken);
-  display: flex; align-items: center; justify-content: center;
-}
-.food-card-photo img { width: 100%; height: 100%; object-fit: cover; }
-.food-card-ph { font-size: 34px; opacity: 0.35; }
-.food-card-qtybadge {
-  position: absolute; top: 8px; left: 8px; min-width: 24px; height: 24px; padding: 0 7px;
-  background: var(--primary); color: var(--on-accent); border-radius: 999px;
-  font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-}
-.food-card-soldout {
-  position: absolute; inset: 0; background: rgba(255,255,255,0.72);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 800; color: var(--red);
-}
-html.dark .food-card-soldout { background: rgba(0,0,0,0.6); }
-/* 1행: 메뉴명 + 담기 버튼 / 2행: 알레르기 표기(카드 전체 폭)
-   order로 배치 — DOM 순서는 이름 → 알레르기 → 버튼(읽는 순서)이지만
-   화면에서는 버튼이 1행에 올라오도록 함 */
-.food-card-body {
-  padding: 10px 12px 12px; display: flex; align-items: center; justify-content: space-between;
-  gap: 8px 8px; flex: 1; flex-wrap: wrap;
-}
-.food-card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; order: 0; }
-/* white-space: pre-line — config의 메뉴명에 넣은 
- 을 줄바꿈으로 표시 */
-.food-card-name { font-size: 15px; font-weight: 700; line-height: 1.3; white-space: pre-line; }
-.food-badges { display: flex; flex-wrap: wrap; gap: 4px; flex: 0 0 100%; order: 2; }
-.diet-badge {
-  font-size: 11px; background: var(--po-bg-sunken); border: 1px solid var(--line);
-  padding: 2px 6px; border-radius: 999px; color: var(--sub);
-}
-/* white-space: pre-line — config의 allergyNote에 넣은 \n 위치에서 줄을 나눔
-   (성분이 많은 메뉴는 자동 줄바꿈이 어색하게 끊겨 위치를 직접 지정함) */
-.allergy-note {
-  width: 100%; min-width: 0; font-size: 11px; line-height: 1.35;
-  color: var(--amber); overflow-wrap: anywhere; white-space: pre-line;
-}
-.food-card-action { flex: 0 0 auto; order: 1; }
-
-/* 흰 동그라미 + 버튼 */
-.add-btn {
-  width: var(--po-touch-min); height: var(--po-touch-min); border-radius: var(--po-radius-pill);
-  background: var(--po-bg-surface); color: var(--primary); border: 1px solid var(--line);
-  font-size: 22px; font-weight: 700; line-height: 1; cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-  display: flex; align-items: center; justify-content: center;
-}
-.add-btn:disabled { background: var(--po-bg-sunken); color: var(--sub); box-shadow: none; cursor: default; }
-
-.card-stepper {
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--po-bg-sunken); border: 1px solid var(--line); border-radius: 10px; padding: 3px;
-}
-.qty-btn {
-  width: var(--po-touch-min); height: var(--po-touch-min);
-  border-radius: var(--po-radius-input); border: none;
-  background: var(--card); font-size: 20px; font-weight: 700; cursor: pointer; color: var(--text);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-}
-.qty-btn:disabled { opacity: 0.35; cursor: default; }
-.qty-num {
-  min-width: 24px; text-align: center; font-size: 20px; font-weight: 700;
-  font-variant-numeric: tabular-nums; /* 수가 바뀌어도 자리가 안 흔들리게 */
-}
-
-.limit-hint { font-size: 12px; color: var(--red); margin-top: 10px; }
-
-/* ---- 하단 고정 바 (누르면 장바구니 시트) ---- */
-.cart-bar {
-  position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
-  width: calc(100% - 24px); max-width: 496px; z-index: 40;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: var(--po-accent); color: var(--on-accent); border: none;
-  border-radius: var(--po-radius-card); padding: 14px 18px; cursor: pointer;
-  min-height: var(--po-cta-height);
-  /* 라이트는 그림자로, 다크는 글로우로 "켜진" 느낌을 냅니다 */
-  box-shadow: var(--po-lit-shadow);
-  filter: drop-shadow(var(--po-lit-glow, none));
-}
-.cart-bar-left { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 7px; }
-.cart-bar-icon { font-size: 17px; }
-.cart-bar-count {
-  background: var(--primary); color: var(--on-accent); border-radius: 999px;
-  min-width: 22px; padding: 1px 7px; text-align: center; font-size: 13px; font-weight: 800;
-}
-.cart-bar-more { font-size: 23px; line-height: 1; opacity: 0.85; }
-
-/* ---- 가운데 확인 팝업 (첫 호출 전 아이디어 보드 확인) ---- */
-.ask-overlay {
-  position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.45);
-  display: flex; align-items: center; justify-content: center; padding: 20px;
-}
-.ask-box {
-  width: 100%; max-width: 340px; background: var(--card);
-  border-radius: 20px; padding: 24px 20px 18px; text-align: center;
-  animation: ask-in 0.16s ease;
-}
-@keyframes ask-in { from { transform: scale(0.94); opacity: 0; } to { transform: none; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .ask-box { animation: none; } }
-.ask-emoji { font-size: 34px; line-height: 1; margin-bottom: 10px; }
-.ask-title { font-size: 18px; font-weight: 800; line-height: 1.4; }
-.ask-body {
-  margin-top: 9px; font-size: 13.5px; line-height: 1.6; color: var(--sub);
-}
-.ask-actions { display: flex; gap: 8px; margin-top: 18px; }
-.ask-actions > button { flex: 1 1 0; margin: 0; }
-/* "아직이요"를 고른 뒤 호출 버튼 위에 남는 안내 */
-.call-hint.board-todo { color: var(--primary); font-weight: 600; }
-
-/* ---- 장바구니 하단 시트 ---- */
-.sheet-overlay {
-  position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.4);
-  display: flex; align-items: flex-end; justify-content: center;
-}
-.sheet {
-  width: 100%; max-width: 520px; background: var(--card);
-  border-radius: 20px 20px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
-  max-height: 80vh; display: flex; flex-direction: column;
-  animation: sheet-up 0.2s ease;
-}
-@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-@media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
-.sheet-handle {
-  position: relative; width: 40px; height: 4px; border-radius: 999px;
-  background: var(--line); margin: 4px auto 10px; touch-action: none; cursor: grab;
-}
-.sheet-handle::before {
-  content: ''; position: absolute; left: -30px; right: -30px; top: -12px; bottom: -12px;
-}
-.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.sheet-head h3 { font-size: 17px; font-weight: 800; }
-.sheet-close {
-  background: transparent; border: none; font-size: 18px; color: var(--sub); cursor: pointer; padding: 4px 8px;
-}
-.sheet-body { overflow-y: auto; flex: 1; }
-/* 장바구니 식사별 그룹 (저녁/야식/아침 통합 주문) */
-.cart-meal-group { margin-bottom: 4px; }
+.sheet-body { flex: 1; overflow-y: auto; }
+.cart-meal-group + .cart-meal-group { margin-top: 6px; }
 .cart-meal-label {
-  font-size: 12px; font-weight: 800; color: var(--primary-dark);
-  margin: 10px 0 2px; letter-spacing: 0.02em;
+  margin: 12px 0 2px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+  color: var(--po-accent-ink);
 }
-.cart-meal-group:first-child .cart-meal-label { margin-top: 2px; }
+.cart-meal-group:first-child .cart-meal-label { margin-top: 0; }
 .cart-item {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 10px 0; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--po-border);
 }
 .cart-item:last-child { border-bottom: none; }
-.cart-item-name { font-size: 15px; font-weight: 600; }
-/* 장바구니 — 이미 주문한 팀에게 주는 수정 안내 */
+.cart-item-name { font-size: var(--po-body-size); font-weight: 600; min-width: 0; }
 .cart-edit-hint {
-  margin: 10px 0 0;
-  padding: 9px 11px;
-  border-radius: 10px;
-  background: var(--bg);
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--sub);
+  margin-top: 12px; padding: 11px 13px; border-radius: var(--po-radius-input);
+  background: var(--po-bg-sunken);
+  font-size: 12.5px; line-height: 1.5; color: var(--po-text-secondary);
 }
-.cart-edit-hint.ready { color: var(--primary); font-weight: 600; }
-
-.sheet-foot { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); margin-top: 4px; }
+.cart-edit-hint.ready { color: var(--po-accent-ink); font-weight: 600; }
+.sheet-foot {
+  display: flex; gap: 8px; margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--po-border);
+}
 .cart-clear-dark {
-  background: transparent; border: 1px solid var(--line); color: var(--sub);
-  border-radius: 12px; padding: 13px 16px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  flex: 0 0 auto; min-height: var(--po-cta-height); padding: 14px 18px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-card);
+  background: transparent; color: var(--po-text-secondary);
+  font-size: var(--po-body-size); font-weight: 600; cursor: pointer; white-space: nowrap;
 }
-.cart-submit {
-  flex: 1; background: var(--primary); border: none; color: var(--on-accent);
-  border-radius: var(--po-radius-card); min-height: var(--po-cta-height); padding: 14px;
-  font-size: var(--po-body-l-size); font-weight: 700; cursor: pointer;
-}
-.cart-submit:disabled { background: var(--po-bg-sunken); cursor: default; }
+.cart-submit { flex: 1; }
 
-/* ---- 주문 내역 ---- */
-.history-meal { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
-.history-meal-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
-.history-meal-head b { font-size: 15px; }
-.history-meta { font-size: 12px; color: var(--sub); }
+/* 가운데 확인 팝업 (첫 호출 전 아이디어 보드 확인) */
+.ask-overlay {
+  position: fixed; inset: 0; z-index: 1400;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: var(--po-scrim);
+}
+.ask-box {
+  width: 100%; max-width: 348px; padding: 26px 22px 20px; text-align: center;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-sheet);
+  background: var(--po-bg-elevated); box-shadow: var(--po-sheet-shadow);
+  animation: ask-in 160ms var(--po-ease-sheet);
+}
+@keyframes ask-in { from { transform: scale(0.94); opacity: 0; } to { transform: none; opacity: 1; } }
+.ask-emoji { font-size: 34px; line-height: 1; margin-bottom: 12px; }
+.ask-title {
+  font-size: var(--po-heading-size); line-height: var(--po-heading-line);
+  font-weight: 700; letter-spacing: -0.02em; text-wrap: balance;
+}
+.ask-body {
+  margin-top: 10px; font-size: var(--po-body-size); line-height: var(--po-body-line);
+  color: var(--po-text-secondary);
+}
+.ask-actions { display: flex; gap: 8px; margin-top: 20px; }
+.ask-actions > button { flex: 1 1 0; margin: 0; min-height: var(--po-cta-height); }
+.ask-actions .btn-ghost { justify-content: center; }
+
+/* ---- 주문 내역 (관리자 연동 화면에서 사용) ---- */
+.history-meal { padding: 14px; margin-bottom: 8px; }
+.history-meal-head { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+.history-meal-head b { font-size: var(--po-body-l-size); font-weight: 650; }
+.history-meta { font-size: 12px; color: var(--po-text-secondary); }
 .history-list { list-style: none; }
 .history-list li {
-  display: flex; justify-content: space-between; padding: 6px 0;
-  border-bottom: 1px dashed var(--line); font-size: 15px;
+  display: flex; justify-content: space-between; padding: 8px 0;
+  border-bottom: 1px dashed var(--po-border); font-size: var(--po-body-size);
 }
 .history-list li:last-child { border-bottom: none; }
 
-/* ---- 마스터 메이트 호출 ---- */
-/* 호출 횟수 — 제목 줄에 팀 버튼이 들어가면서 아랫줄로 내렸습니다 */
-.call-quota-row { margin: 2px 0 4px; }
-.call-quota { font-size: 13px; color: var(--sub); font-weight: 600; }
-.quota-over { color: var(--red); }
-.btn-call {
-  width: 100%; background: var(--primary); color: var(--on-accent); border: none;
-  border-radius: var(--po-radius-card); min-height: var(--po-cta-height); padding: 16px;
-  font-size: var(--po-body-l-size); font-weight: 700; cursor: pointer;
-}
-.btn-call:active { background: var(--primary-dark); }
-.btn-call:disabled { background: var(--po-bg-sunken); }
-/* 우리 팀 지난 호출 내역 — 접어둔 상태가 기본입니다 */
-.call-log {
-  margin-top: 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--card);
-}
-.call-log-summary {
-  cursor: pointer;
-  padding: 11px 13px;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--sub);
-  list-style: none;
-}
-.call-log-summary::-webkit-details-marker { display: none; }
-.call-log-summary::after { content: " ▾"; }
-.call-log[open] .call-log-summary::after { content: " ▴"; }
-.call-log-list {
-  margin: 0;
-  padding: 0 13px 11px;
-  list-style: none;
-}
-.call-log-item {
-  padding: 9px 0;
-  border-top: 1px solid var(--line);
-}
-.call-log-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  color: var(--sub);
-}
-.call-log-time { font-weight: 700; font-variant-numeric: tabular-nums; }
-.call-log-status {
-  padding: 1px 7px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 700;
-  background: var(--po-bg-sunken);
-  color: var(--sub);
-}
-.call-log-status.st-done { background: var(--tint-done); color: var(--po-state-done); }
-.call-log-status.st-in_progress { background: var(--tint-active); color: var(--ink-accent); }
-/* 시간대별 다크모드에서도 읽히도록 칩 색을 따로 둡니다 */
-.call-log-who { font-weight: 600; }
-.call-log-done { font-variant-numeric: tabular-nums; }
-.call-log-reason {
-  margin: 5px 0 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--text);
-  word-break: break-word;
+/* ============================================================
+   12. 랜턴 · 모션 · 반응형
+   ============================================================ */
+
+.lantern-icon { display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  .order-success .lantern-icon,
+  .order-success h2,
+  .call-hero.active .lantern-icon,
+  .cart-bar-deadline.urgent,
+  .nudge-banner,
+  .ask-box,
+  .team-sheet,
+  .sheet,
+  .order-success { animation: none !important; }
 }
 
-.call-limit-box { text-align: center; padding: 8px 0; }
-.call-limit-box p:first-child { color: var(--red); margin-bottom: 6px; }
-.call-limit-box .btn-primary { margin-top: 10px; }
-.call-hint { font-size: 13px; color: var(--sub); margin: 8px 0; line-height: 1.5; }
-.call-status-box { padding: 4px 0; }
-.call-status-reason { font-size: 14px; margin-bottom: 10px; }
-.status-steps { display: flex; gap: 6px; }
-.status-step {
-  flex: 1; text-align: center; padding: 10px 4px; border-radius: 10px;
-  background: var(--po-bg-sunken); color: var(--sub); font-size: 14px; font-weight: 600;
-}
-/* 랜턴 3상태: 꺼짐(위 기본값) → 점등 → 완료.
-   색만으로 나누지 않도록 채움과 테두리를 함께 바꿉니다. */
-.status-step.on {
-  background: var(--tint-active); color: var(--ink-accent);
-  box-shadow: inset 0 0 0 1px var(--edge-accent), var(--po-lit-shadow);
-}
-.status-step.on:last-child {
-  background: var(--tint-done); color: var(--po-state-done);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--po-state-done) 40%, transparent);
-}
-.reason-box { text-align: center; }
-/* 호출 사유 입력 (필수) */
-.reason-label {
-  display: block; text-align: left; font-size: 14px; font-weight: 700; margin-bottom: 7px;
-}
-.reason-required {
-  font-size: 11px; font-weight: 700; color: var(--red);
-  background: var(--tint-error); border-radius: 999px; padding: 2px 7px; margin-left: 4px;
-}
-.reason-input {
-  width: 100%; padding: 14px 16px; border: 1px solid var(--line);
-  border-radius: var(--po-radius-input);
-  /* 16px 미만이면 iOS가 입력창을 탭하는 순간 화면을 확대하고 되돌리지 않습니다
-     (확대된 상태로 남아 하단 고정 바가 화면 밖으로 나감) */
-  font-size: 16px; line-height: 1.5; background: var(--card); color: var(--text);
-  font-family: inherit; resize: vertical;
-}
-.reason-input:focus { outline: 2px solid var(--primary); outline-offset: -1px; border-color: var(--primary); }
-.reason-input.has-error { border-color: var(--red); }
-.reason-input::placeholder { color: var(--sub); opacity: 0.75; }
-.reason-meta {
-  display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  margin-top: 6px; font-size: 12px;
-}
-.reason-help { color: var(--sub); font-size: 12px; text-align: left; margin: -2px 0 7px; }
-.reason-err-text { color: var(--red); font-weight: 600; }
-/* 오류 문구가 없을 때도 오른쪽 끝에 붙어 있도록 */
-.reason-count { color: var(--sub); font-variant-numeric: tabular-nums; margin-left: auto; }
-/* 전송된 호출 사유 (진행 상태 박스) */
-.call-sent-reason {
-  font-size: 13.5px; line-height: 1.55; color: var(--text);
-  background: var(--po-bg-sunken); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px;
-}
-/* 호출 확인 단계: 호출하기 + 취소 */
-.confirm-call-row { display: flex; flex-direction: column; gap: 8px; }
-.btn-primary.sm { flex: 0 0 auto; padding: 12px 16px; font-size: 14px; white-space: nowrap; }
-
-.call-company-note {
-  font-size: 12.5px; color: var(--sub); background: var(--po-bg-sunken);
-  padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; line-height: 1.5;
-}
-
-/* 호출 가이드 (호출 전 안내) */
-.call-guide {
-  background: var(--tint-accent); border: 1px solid var(--edge-accent); border-radius: 12px;
-  padding: 12px 14px; margin-bottom: 14px;
-}
-.call-guide-title { display: block; font-size: 14px; font-weight: 800; color: var(--ink-accent); margin-bottom: 8px; }
-.call-guide-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
-.call-guide-list li {
-  position: relative; padding-left: 14px;
-  font-size: 13px; line-height: 1.55; color: var(--text);
-}
-.call-guide-list li::before {
-  content: '●'; position: absolute; left: 0; top: 0;
-  font-size: 8px; line-height: 1.9; color: var(--primary);
-}
-.call-guide-quote {
-  display: block; margin-top: 4px; font-size: 12.5px; font-weight: 600;
-  color: var(--sub); line-height: 1.5;
-}
-/* 음식 주문 탭의 주문 시간 공지 — 호출 가이드와 동일한 형태 */
-.order-notice { margin-top: 12px; }
-
-/* ---- 팀 등록(온보딩) 화면 ---- */
-.setup-header {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: var(--primary); color: var(--on-accent);
-  border-radius: 16px; padding: 18px 16px; margin-bottom: 12px;
-}
-.header-logo { height: 28px; width: auto; object-fit: contain; }
-.setup-header .header-table {
-  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  font-size: 24px; font-weight: 800;
-}
-.setup-header .header-sub { margin-top: 2px; font-size: 13px; opacity: 0.9; }
-.setup-field { margin-bottom: 18px; }
-.setup-label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
-.chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
-.setup-chip {
-  border: 1px solid var(--line); background: var(--card); border-radius: 999px;
-  padding: 10px 14px; min-height: 44px; font-size: 14px; font-weight: 600;
-  cursor: pointer; color: var(--sub);
-}
-.setup-chip.on { background: var(--primary); border-color: var(--primary); color: var(--on-accent); }
-/* 저장된 팀을 확인하는 사이의 빈 화면 — 깜빡임만 막는 용도 */
-.boot-wait { min-height: 100vh; }
-/* 마감 임박 — 담아만 두면 사라지므로 눈에 띄게 */
-.deadline-warn {
-  background: var(--tint-error); border: 1px solid var(--edge-error); color: var(--po-state-error);
-  border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
-  font-size: 13.5px; font-weight: 700; line-height: 1.55;
-}
-/* 주문한 메뉴가 뒤늦게 품절된 경우 */
-.soldout-warn {
-  background: var(--tint-accent); border: 1px solid var(--edge-accent); color: var(--ink-accent);
-  border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
-  font-size: 13.5px; font-weight: 700; line-height: 1.55;
-}
-/* 이미 등록된 팀 번호 경고 — 오타로 남의 팀을 덮어쓰지 않게 */
-.setup-exists {
-  margin-top: 8px; font-size: 13px; line-height: 1.5; font-weight: 700; color: var(--ink-accent);
-}
-.add-person-btn:disabled { opacity: 0.55; cursor: default; }
-/* 등록 안내 — 호출 가이드 박스와 같은 결로 (참가자 앱의 강조 면) */
-.setup-solo-note {
-  background: var(--tint-accent); border: 1px solid var(--edge-accent); border-radius: 12px;
-  padding: 11px 13px; margin-bottom: 14px;
-  font-size: 13.5px; font-weight: 700; line-height: 1.5; color: var(--ink-accent);
-}
-.setup-input {
-  width: 100%; min-height: var(--po-cta-height); padding: 14px 16px;
-  border: 1px solid var(--line); border-radius: var(--po-radius-input);
-  font-size: 16px; background: var(--card); color: var(--text);
-}
-.stepper { display: flex; align-items: center; gap: 16px; }
-.stepper-num { font-size: 18px; font-weight: 800; min-width: 48px; text-align: center; }
-.allergy-person-block {
-  border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px;
-}
-.allergy-person-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.allergy-person-head b { font-size: 14px; }
-.add-person-btn { width: 100%; text-align: center; min-height: 44px; }
-.setup-error { color: var(--red); font-size: 13px; margin-bottom: 10px; font-weight: 600; }
-.setup-submit { width: 100%; margin-top: 4px; }
-
-/* ---- 이용 안내 섹션 ---- */
-.guide-section { padding: 0; }
-.guide-summary {
-  cursor: pointer; font-size: 15px; font-weight: 700; padding: 16px; list-style: none;
-}
-.guide-summary::-webkit-details-marker { display: none; }
-.guide-summary::after { content: ' ▾'; color: var(--sub); }
-.guide-section[open] .guide-summary::after { content: ' ▴'; }
-.guide-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 14px; }
-.guide-block b { display: block; font-size: 14px; margin-bottom: 6px; }
-.guide-block p { font-size: 13px; color: var(--sub); line-height: 1.5; }
-.guide-call-limit {
-  display: flex; align-items: baseline; gap: 5px; margin-top: 4px;
-}
-.guide-call-limit span { font-size: 13px; color: var(--sub); }
-.guide-call-limit strong { font-size: 20px; line-height: 1; color: var(--text); font-weight: 800; }
-.guide-block ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
-.guide-block li { font-size: 13px; color: var(--text); }
-.guide-meal {
-  display: inline-block; min-width: 40px; margin-right: 6px; font-weight: 700; color: var(--primary);
-}
-.guide-eat { display: block; color: var(--sub); margin-top: 2px; }
-
-@media (max-width: 520px) {
-  .food-card.picked .food-card-body {
-    flex-direction: column; align-items: stretch; gap: 8px;
+/* 데스크탑에서는 폰 폭을 유지하고 좌우를 어둡게 — 실제 사용 폭을 그대로 봅니다 */
+@media (min-width: 521px) {
+  body { background: color-mix(in srgb, var(--po-bg-base) 86%, var(--po-text-primary)); }
+  .app {
+    background: var(--po-bg-base);
+    border-left: 1px solid var(--po-border); border-right: 1px solid var(--po-border);
   }
-  /* 세로로 쌓일 때는 이름 → 알레르기 → 수량조절 순서가 자연스러움.
-     flex-basis는 주축(세로) 기준으로 해석되므로, 가로 배치용 100%를 풀어야
-     알레르기 문구가 좁게 눌리지 않음 */
-  .food-card.picked .food-badges { order: 1; flex: 0 0 auto; }
-  .food-card.picked .food-card-action { order: 2; }
-  .food-card.picked .food-card-action, .food-card.picked .card-stepper { width: 100%; }
-}
-
-/* 아주 좁은 화면(320~340px)에서는 탭 네 개가 한 줄을 넘겨 페이지가 좌우로
-   밀렸습니다. 글자와 여백을 한 단계 더 줄여 한 줄에 담습니다. */
-@media (max-width: 360px) {
-  .folder-tab { padding: 10px 6px 11px; font-size: 12.5px; }
-  .folder-tab + .folder-tab { margin-left: -6px; }
-  .folder-tab-logo { width: 1.2em; height: 1.2em; vertical-align: -0.3em; margin-right: 2px; }
-  .folder-tab-icon { font-size: 1em; margin-right: 2px; }
 }
 
 @media (max-width: 400px) {
-  .folder-tabs { padding-left: 2px; }
-  .folder-tab { padding: 11px 9px 12px; font-size: 13.5px; }
-  .folder-tab + .folder-tab { margin-left: -8px; }
-  .folder-team { gap: 3px; padding-left: 4px; padding-right: 0; }
-  .team-profile-btn { min-height: 36px; gap: 3px; padding: 2px 6px 2px 3px; }
-  .team-profile-avatar { width: 24px; height: 24px; font-size: 12px; }
-  .team-profile-label { font-size: 11px; }
-  .team-profile-chevron { font-size: 15px; }
-  .folder-body { padding: 14px; }
-  .board-header { gap: 7px; }
-  .board-header-title, .call-title { font-size: 24px; }
-  .board-header-sub { font-size: 11.5px; }
-  .board-header-actions { gap: 4px; }
-  .board-refresh-btn { width: 32px; height: 32px; }
+  .app { padding-left: 16px; padding-right: 16px; }
+  .screen-foot { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
+  .screen-title { font-size: 28px; line-height: 36px; }
+  .food-card-photo { flex-basis: 68px; width: 68px; height: 68px; }
+  .cart-bar { padding-left: 16px; padding-right: 16px; }
+  .league-tab { min-height: 96px; padding: 12px; }
+  .league-tab.on { padding: 11px; }
+  .order-success h2 { font-size: 28px; line-height: 36px; }
 }
 
-/* ---- 알레르기 선택 결과 안내 (팀 등록 화면) ----
-   고른 알레르기가 "어떤 메뉴를 먹을 수 있는지 / 대체식이 필요한지"로
-   바로 번역돼 보이도록. 판정은 config.personDiet 에서 옵니다. */
-.diet-summary {
-  margin-top: 10px; padding: 9px 11px; border-radius: 10px;
-  background: var(--po-bg-sunken); font-size: 12.5px; line-height: 1.5;
-  display: flex; flex-direction: column; gap: 3px; text-align: left;
-}
-/* 알레르기는 경고가 아니라 정보입니다 — 노란 경고색 대신 중립 배경.
-   (PLAI ORDER 토큰 적용 메모) */
-.diet-summary.diet-alt { background: var(--po-bg-sunken); }
-.diet-summary.diet-alt b { color: var(--po-text-primary); font-weight: 700; }
-.diet-meal {
-  display: inline-block; min-width: 74px; font-weight: 700; color: var(--primary);
-}
-.diet-ok { color: var(--green); }
-.diet-partial { color: var(--text); }
-.diet-none { color: var(--amber); font-weight: 700; }
-
-/* 알레르기로 담기 상한이 줄었을 때 그 이유를 밝히는 안내 (주문 화면).
-   버튼만 막히면 품절/오류로 오해하므로 반드시 이유를 함께 보여줍니다. */
-.diet-cap-hint {
-  background: var(--tint-accent); border: 1px solid var(--edge-accent); border-radius: 12px;
-  padding: 10px 12px; margin-bottom: 10px;
-  display: flex; flex-direction: column; gap: 4px;
-}
-.diet-cap-hint b:first-child { font-size: 13px; color: var(--ink-accent); }
-.diet-cap-hint p { font-size: 12.5px; line-height: 1.5; color: var(--text); }
-
-/* 마감 10분 전부터 카운트다운을 강조 — 조용히 지나가지 않도록 */
-@keyframes countdown-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
-}
-/* 움직임을 불편해하는 사용자에게는 깜빡임 없이 색만 */
-
-
-/* 관리자가 누른 '주문해주세요' 재촉 배너 — 화면에서 가장 먼저 눈에 들어와야
-   하므로 강조색을 씁니다 (마감 경고보다 위) */
-.nudge-banner {
-  display: flex; align-items: flex-start; gap: 12px;
-  background: var(--primary); color: var(--on-accent);
-  border-radius: 14px; padding: 14px 16px; margin-bottom: 12px;
-  box-shadow: 0 6px 18px rgba(194, 75, 10, 0.28);
-  animation: nudge-in 260ms ease-out;
-}
-.nudge-banner-icon { font-size: 22px; line-height: 1.2; }
-.nudge-banner b { font-size: 15px; }
-.nudge-banner p { font-size: 13.5px; line-height: 1.55; margin-top: 3px; opacity: 0.95; }
-@keyframes nudge-in {
-  from { transform: translateY(-6px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .nudge-banner { animation: none; }
-}
-
-/* 배너를 눌러 주문 탭으로 이동할 수 있게 — 알림을 보고 어디로 가야 할지
-   찾게 두지 않습니다. 탭 밖에 두어 호출 탭에서도 보입니다 */
-.nudge-banner {
-  width: 100%; text-align: left; border: none; cursor: pointer;
-  display: flex; align-items: center; gap: 12px;
-}
-.nudge-banner-text { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
-.nudge-banner-text span { font-size: 13.5px; line-height: 1.5; opacity: 0.95; }
-.nudge-banner-go { font-size: 20px; opacity: 0.9; }
-
-/* ---- 리그 선택 + 테이블 번호 ---- */
-/* 테이블에 붙은 번호가 곧 팀 번호입니다(E-45 / G-12). 접두어를 칸 안에 고정으로
-   보여주고 숫자만 받으면, 참가자는 눈앞의 번호를 그대로 옮겨 적으면 됩니다 */
-.league-tabs { display: flex; gap: 8px; }
-.league-tab {
-  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px;
-  align-items: center; justify-content: center;
-  padding: 11px 10px; border-radius: 12px;
-  border: 1px solid var(--line); background: var(--card);
-  color: var(--sub); font-size: 15px; font-weight: 700; cursor: pointer;
-}
-.league-tab.on { background: var(--primary); border-color: var(--primary); color: var(--on-accent); }
-.league-tab-code { font-size: 12px; font-weight: 800; opacity: 0.75; }
-.team-no-field { display: flex; align-items: center; gap: 8px; }
-.team-no-prefix {
-  flex: 0 0 auto; font-size: 20px; font-weight: 800; color: var(--primary);
-  font-variant-numeric: tabular-nums;
-}
-.team-no-input { flex: 1; min-width: 0; }
-
-
-/* ============================================================
-   PLAI ORDER — 마감 손질
-   ============================================================ */
-
-/* 입력 포커스: 디자인은 액센트 테두리로 표시합니다 */
-input:focus, textarea:focus, select:focus {
-  outline: none;
-  border-color: var(--po-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--po-accent) 22%, transparent);
-}
-
-/* 카드 층: 라이트는 그림자, 다크는 테두리 — 토큰이 알아서 갈립니다 */
-.card, .food-card, .served-meal, .call-log, .image-board-frame {
-  box-shadow: var(--po-card-shadow);
-}
-
-/* 바텀 시트 — 상단 모서리만 16 */
-.sheet { border-radius: var(--po-radius-sheet) var(--po-radius-sheet) 0 0; }
-
-/* 숫자가 흔들리지 않아야 하는 곳 — 팀 번호, 남은 호출, 마감 시계 */
-.team-profile-label, .call-quota, .cart-bar-count, .served-meal-meta {
-  font-variant-numeric: tabular-nums;
-}
-
-/* 브랜드 워드마크 — 팀 등록 화면 상단 */
-.header-brand {
-  font-size: var(--po-caption-size); line-height: 1;
-  font-weight: 800; letter-spacing: 0.04em;
-  opacity: 0.9; margin-bottom: 5px;
+@media (max-width: 340px) {
+  .setup-chip { padding: 9px 12px; font-size: 13px; }
+  .cart-bar-deadline { font-size: 12px; }
 }
