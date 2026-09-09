@@ -1,0 +1,227 @@
+/* ============================================================
+   PLAI ORDER (플라오더) — Design Tokens
+   제5회 GS그룹 해커톤 · PLAI CAMP 하위 서비스
+   v1.0 · 2026-09-09
+
+   목적: 기존 Hackathon-service 코드의 "비주얼만" 교체합니다.
+   화면 흐름·로직·문구는 건드리지 않습니다.
+
+   사용법
+   1) 이 파일을 전역 스타일보다 먼저 로드합니다.
+        import "./plai-order-tokens.css";
+   2) 기존 하드코딩된 색/사이즈를 var(--po-*)로 치환합니다.
+   3) 라이트/다크는 시스템 설정(prefers-color-scheme)을 따릅니다.
+      수동 토글이 필요해지면 <html data-po-theme="dark"> 를 쓰세요.
+
+   ── 이 앱에 넣으면서 고친 곳 (2026-09-09) ─────────────────
+   아래 prefers-color-scheme 블록의 선택자를 :root 에서
+   :root:not([data-po-theme="light"]) 로 좁혔습니다.
+
+   이 앱은 OS 설정이 아니라 시각(config.DARK_MODE_HOURS)으로 낮/밤을
+   정합니다 — 밤샘 행사라 그게 의도된 동작입니다. 원래대로 두면 낮에도
+   폰이 다크 모드인 참가자는 밤 화면을 보게 되어, 앱의 판단이 무시됩니다.
+   파일이 이미 data-po-theme 를 수동 토글로 정의해 두었으므로, 그 토글이
+   양방향으로 실제 동작하게 만든 것입니다. 색값은 하나도 바꾸지 않았습니다.
+   ============================================================ */
+
+/* ---------- 1. 색 — 라이트(낮 포스터) 기본값 ---------- */
+:root {
+  /* 배경 */
+  --po-bg-base:        #F2FAFE;
+  --po-bg-surface:     #FFFFFF;
+  --po-bg-sunken:      #E3F1FA;
+  --po-bg-elevated:    #FFFFFF;
+  --po-scrim:          rgba(23, 41, 58, 0.45);
+
+  /* 선 */
+  --po-border:         #CFE3EF;
+  --po-border-strong:  #A9CCE0;
+
+  /* 텍스트 */
+  --po-text-primary:   #17293A;
+  --po-text-secondary: #55707F;
+  --po-text-muted:     #8AA3B0;
+  --po-text-on-accent: #FFFFFF;
+
+  /* 액션 — GS 캠핑카 오렌지. 화면당 1회만 사용 */
+  --po-accent:         #E8752A;
+  --po-accent-hover:   #D66A24;
+  --po-accent-pressed: #C95F1D;
+  --po-accent-subtle:  #FDEEE3;
+  --po-accent-ink:     #C95F1D; /* 밝은 배경 위 오렌지 텍스트용 (4.5:1) */
+
+  /* 보조 — 잔디 그린 */
+  --po-secondary:        #5F9E2E;
+  --po-secondary-subtle: #EDF6E4;
+
+  /* 상태 — 랜턴 */
+  --po-state-idle:     #8AA3B0;
+  --po-state-active:   #F08B2C;
+  --po-state-done:     #5F9E2E;
+  --po-state-error:    #C4392F;
+
+  /* 점등 표현: 라이트는 그림자 상승, 글로우 없음 */
+  --po-lit-shadow:     0 6px 16px rgba(232, 117, 42, 0.28);
+  --po-lit-glow:       none;
+  --po-card-shadow:    0 2px 6px rgba(23, 41, 58, 0.08);
+  --po-sheet-shadow:   0 -8px 24px rgba(23, 41, 58, 0.12);
+}
+
+/* ---------- 2. 색 — 다크(밤 포스터). 행사장 기본값 ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-po-theme="light"]) {
+    --po-bg-base:        #101B31;
+    --po-bg-surface:     #1B2A47;
+    --po-bg-sunken:      #0B1424;
+    --po-bg-elevated:    #22334F;
+    --po-scrim:          rgba(11, 20, 36, 0.60);
+
+    --po-border:         #2E4166;
+    --po-border-strong:  #43598A;
+
+    --po-text-primary:   #F4EEDD;
+    --po-text-secondary: #B9C6DC;
+    --po-text-muted:     #7D8DA8;
+    --po-text-on-accent: #17110A;
+
+    --po-accent:         #F5A93C;
+    --po-accent-hover:   #E79A2C;
+    --po-accent-pressed: #D98C22;
+    --po-accent-subtle:  #2A2416;
+    --po-accent-ink:     #F5A93C;
+
+    --po-secondary:        #7FB03C;
+    --po-secondary-subtle: #1E2A18;
+
+    --po-state-idle:     #7D8DA8;
+    --po-state-active:   #FFC061;
+    --po-state-done:     #7FB03C;
+    --po-state-error:    #E4644F;
+
+    /* 점등 표현: 다크는 글로우가 가장 강한 신호 */
+    --po-lit-shadow:     none;
+    --po-lit-glow:       0 0 24px rgba(245, 169, 60, 0.45);
+    --po-lit-glow-soft:  0 0 12px rgba(245, 169, 60, 0.25);
+    --po-card-shadow:    none;   /* 다크에서 그림자는 안 보임 — 테두리로 층을 만듦 */
+    --po-sheet-shadow:   none;
+  }
+}
+
+/* 수동 토글이 필요할 때만 사용 (기본은 시스템 자동) */
+:root[data-po-theme="light"] {
+  color-scheme: light;
+}
+:root[data-po-theme="dark"] {
+  color-scheme: dark;
+  --po-bg-base: #101B31;
+  --po-bg-surface: #1B2A47;
+  --po-bg-sunken: #0B1424;
+  --po-bg-elevated: #22334F;
+  --po-scrim: rgba(11, 20, 36, 0.60);
+  --po-border: #2E4166;
+  --po-border-strong: #43598A;
+  --po-text-primary: #F4EEDD;
+  --po-text-secondary: #B9C6DC;
+  --po-text-muted: #7D8DA8;
+  --po-text-on-accent: #17110A;
+  --po-accent: #F5A93C;
+  --po-accent-hover: #E79A2C;
+  --po-accent-pressed: #D98C22;
+  --po-accent-subtle: #2A2416;
+  --po-accent-ink: #F5A93C;
+  --po-secondary: #7FB03C;
+  --po-secondary-subtle: #1E2A18;
+  --po-state-idle: #7D8DA8;
+  --po-state-active: #FFC061;
+  --po-state-done: #7FB03C;
+  --po-state-error: #E4644F;
+  --po-lit-shadow: none;
+  --po-lit-glow: 0 0 24px rgba(245, 169, 60, 0.45);
+  --po-lit-glow-soft: 0 0 12px rgba(245, 169, 60, 0.25);
+  --po-card-shadow: none;
+  --po-sheet-shadow: none;
+}
+
+/* ---------- 3. 타이포그래피 — Pretendard ---------- */
+/* 이 앱은 CDN 대신 번들된 폰트를 씁니다 (styles.css 의 @font-face —
+   현장 와이파이가 느려도 첫 화면이 시스템 폰트로 튀지 않게). */
+:root {
+  --po-font-sans: "Pretendard Variable", Pretendard, -apple-system,
+                  BlinkMacSystemFont, system-ui, "Malgun Gothic", sans-serif;
+
+  /* size / line-height / weight */
+  --po-display-size: 32px;  --po-display-line: 40px;  --po-display-weight: 700;
+  --po-title-size:   24px;  --po-title-line:   32px;  --po-title-weight:   700;
+  --po-heading-size: 20px;  --po-heading-line: 28px;  --po-heading-weight: 600;
+  --po-body-l-size:  17px;  --po-body-l-line:  26px;  --po-body-l-weight:  400;
+  --po-body-size:    15px;  --po-body-line:    24px;  --po-body-weight:    400;
+  --po-label-size:   14px;  --po-label-line:   20px;  --po-label-weight:   500;
+  --po-caption-size: 13px;  --po-caption-line: 18px;  --po-caption-weight: 400;
+  /* 13px 미만 금지. 읽어야 하는 정보는 Body-L(17px) 이상 */
+}
+
+/* 숫자가 바뀔 때 자리가 흔들리지 않게 — 수량, 남은 호출, 테이블 번호에 적용 */
+.po-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 4. 간격 · 모서리 · 터치 ---------- */
+:root {
+  --po-space-1:  4px;
+  --po-space-2:  8px;
+  --po-space-3:  12px;
+  --po-space-4:  16px;
+  --po-space-5:  20px;
+  --po-space-6:  24px;
+  --po-space-8:  32px;
+  --po-space-10: 40px;
+
+  --po-radius-input:  8px;
+  --po-radius-card:   12px;
+  --po-radius-sheet:  16px;  /* 상단 모서리만 */
+  --po-radius-pill:   999px;
+
+  --po-touch-min:     48px;  /* 터치 타깃 최소 48×48 */
+  --po-touch-gap:     8px;   /* 터치 요소 간 최소 간격 */
+  --po-cta-height:    56px;  /* 주요 CTA */
+  --po-safe-bottom:   env(safe-area-inset-bottom, 0px);
+}
+
+/* ---------- 5. 모션 ---------- */
+:root {
+  --po-dur-lit:     200ms;  --po-ease-lit:     ease-out;    /* 점등 */
+  --po-dur-unlit:   320ms;  --po-ease-unlit:   ease-in;     /* 소등 */
+  --po-dur-screen:  240ms;  --po-ease-screen:  ease-in-out; /* 화면 전환 */
+  --po-dur-sheet:   280ms;  --po-ease-sheet:   ease-out;    /* 바텀시트 */
+  --po-dur-toast:   180ms;  --po-ease-toast:   ease-out;
+  --po-pulse-cycle: 2400ms;                                 /* 대기 중 표시 */
+}
+
+/* 다크 — 글로우 펄스 / 라이트 — 미세한 스케일 호흡 */
+@keyframes po-pulse   { 0%, 100% { opacity: 1; }       50% { opacity: 0.75; } }
+@keyframes po-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+.po-lantern--lit {
+  filter: drop-shadow(var(--po-lit-glow, none));
+  box-shadow: var(--po-lit-shadow, none);
+  animation: po-breathe var(--po-pulse-cycle) ease-in-out infinite;
+}
+@media (prefers-color-scheme: dark) {
+  .po-lantern--lit { animation-name: po-pulse; }
+}
+
+/* 접근성 — 펄스·호흡 정지. 점등은 테두리 두께 + 문구로 대체 */
+@media (prefers-reduced-motion: reduce) {
+  .po-lantern--lit { animation: none; outline: 2px solid var(--po-state-active); }
+  * { transition-duration: 1ms !important; }
+}
+
+/* ---------- 6. 적용 메모 (코드 치환 가이드) ----------
+   · 액션 컬러(--po-accent)는 화면당 1회. 두 개가 동시에 오렌지면 둘 다 안 보입니다.
+   · 알레르기 뱃지는 경고가 아닙니다 — --po-bg-sunken + --po-text-secondary 중립 조합.
+     --po-state-error 는 실제 오류·실패에만.
+   · 점등/소등을 색만으로 구분하지 않습니다. 채움/외곽선 + 문구를 함께 바꿉니다.
+   · 카드: 라이트는 --po-card-shadow, 다크는 1px --po-border. 같은 변수로 자동 처리됩니다.
+   · 개발자리그 화면에서 호출 관련 요소는 비활성이 아니라 렌더링하지 않습니다.
+   · 주문 선택이 있는 끼니는 1일차 야식(피자)과 2일차 아침(베이글 샌드위치) 두 개입니다.
+   --------------------------------------------------- */

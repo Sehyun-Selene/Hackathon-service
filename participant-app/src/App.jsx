@@ -304,6 +304,9 @@ export default function App() {
     darkStart > darkEnd ? hour >= darkStart || hour < darkEnd : hour >= darkStart && hour < darkEnd
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
+    // 디자인 토큰(plai-order-tokens.css)은 data-po-theme 로 낮/밤을 가립니다.
+    // OS 설정이 아니라 이 앱의 시각 판단을 따르게 하려고 함께 세웁니다.
+    document.documentElement.dataset.poTheme = isDark ? 'dark' : 'light'
   }, [isDark])
 
   // 저장된 팀을 확인하는 사이에는 아무것도 보여주지 않습니다

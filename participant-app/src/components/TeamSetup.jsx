@@ -234,6 +234,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     <div className="app">
       <header className="header setup-header">
         <div>
+          <div className="header-brand">PLAI ORDER</div>
           <div className="header-table">팀 등록</div>
         </div>
         <img className="header-logo" src={logo52g} alt="52g" />

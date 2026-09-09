@@ -7,7 +7,7 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 summary:focus-visible {
-  outline: 3px solid rgba(194, 75, 10, 0.35);
+  outline: 3px solid color-mix(in srgb, var(--po-accent) 45%, transparent);
   outline-offset: 2px;
 }
 
@@ -19,38 +19,39 @@ summary:focus-visible {
   font-display: swap;
 }
 
+/* PLAI ORDER 토큰 위에 앱의 기존 이름을 얹습니다.
+   styles.css 전체가 --primary/--bg/--text 같은 이름을 쓰고 있어서, 이름을
+   바꾸면 화면이 아니라 코드가 흔들립니다. 값만 갈아끼웁니다. */
 :root {
-  --primary: #c24b0a;
-  --primary-dark: #9a3412;
-  --bg: #f5f4f2;
-  --card: #ffffff;
-  --text: #1c1917;
-  --sub: #78716c;
-  --line: #e7e5e4;
-  --green: #16a34a;
-  --amber: #d97706;
-  --red: #dc2626;
+  --primary: var(--po-accent);
+  --primary-dark: var(--po-accent-pressed);
+  --bg: var(--po-bg-base);
+  --card: var(--po-bg-surface);
+  --text: var(--po-text-primary);
+  --sub: var(--po-text-secondary);
+  --line: var(--po-border);
+  --green: var(--po-state-done);
+  --amber: var(--po-state-active);
+  --red: var(--po-state-error);
+
+  /* 살짝 깔리는 배경들. 상태색에서 섞어 만들면 낮/밤이 저절로 따라옵니다 —
+     예전에는 밤 화면용 배경을 규칙마다 따로 적어야 했습니다. */
+  --tint-accent: var(--po-accent-subtle);
+  --tint-done:   var(--po-secondary-subtle);
+  --tint-error:  color-mix(in srgb, var(--po-state-error) 14%, var(--po-bg-surface));
+  --tint-active: color-mix(in srgb, var(--po-state-active) 18%, var(--po-bg-surface));
+  --edge-accent: color-mix(in srgb, var(--po-accent) 38%, transparent);
+  --edge-error:  color-mix(in srgb, var(--po-state-error) 40%, transparent);
+  --on-accent:   var(--po-text-on-accent);
+  --ink-accent:  var(--po-accent-ink);
 }
 
-/* 시간대별 다크모드 (config.DARK_MODE_HOURS 기준, App에서 html.dark 토글) */
-html.dark {
-  --bg: #16130f;
-  --card: #231f1a;
-  --text: #f2ede7;
-  --sub: #a89f94;
-  --line: #3b352d;
-}
-html.dark .qty-btn { background: #2c2721; }
-html.dark .diet-badge { background: #2c2721; }
-html.dark .status-step { background: #2c2721; }
-html.dark .status-step.on { background: #1e2a44; color: #9ec1ff; }
-html.dark .guide-banner { background: #3a2c14; }
-html.dark .menu-photo { background: #2c2721; }
-html.dark .setup-chip { background: #231f1a; }
-html.dark .sticky-order-bar { background: #231f1a; }
-html.dark .guide-section { background: #231f1a; }
-html.dark .zone-box.has-coach { background: #1e2a44; border-color: #2c3e66; }
-html.dark .fixed-menu-hint { background: #231f1a; border-color: #3a352f; }
+/* 낮/밤은 App 이 html.dark 와 data-po-theme 를 함께 토글합니다.
+   색은 토큰 파일이 data-po-theme 로 이미 뒤집으므로 여기서는 다시 적지
+   않습니다. html.dark 는 이미지 밝기 같은 비색상 조정에만 씁니다. */
+html.dark .menu-photo img,
+html.dark .served-photo img,
+html.dark .image-board-frame img { filter: brightness(0.92); }
 
 body {
   font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
@@ -67,7 +68,7 @@ body {
 
 /* 공유 서버 연결 오류 배너 */
 .sync-error {
-  background: #fee2e2; color: #b91c1c; padding: 10px 14px; border-radius: 12px;
+  background: var(--tint-error); color: var(--po-state-error); padding: 10px 14px; border-radius: 12px;
   margin-bottom: 12px; font-size: 13px; font-weight: 700; display: flex;
   align-items: center; justify-content: space-between; gap: 10px;
 }
@@ -77,7 +78,6 @@ body {
   flex: 0 0 auto; min-height: 38px; border: 1px solid currentColor; border-radius: 9px;
   background: transparent; color: inherit; padding: 6px 10px; font: inherit; cursor: pointer;
 }
-html.dark .sync-error { background: #450a0a; color: #fca5a5; }
 
 .app { max-width: 520px; margin: 0 auto; padding: 12px 12px 40px; }
 .app.has-sticky-bar { padding-bottom: 96px; }
@@ -85,8 +85,10 @@ html.dark .sync-error { background: #450a0a; color: #fca5a5; }
 /* ---- 폴더 탭 오른쪽 팀 프로필 ---- */
 .team-profile-btn {
   min-height: 40px; display: flex; align-items: center; gap: 5px;
-  padding: 3px 8px 3px 4px; border: 1px solid #fdba91; border-radius: 999px;
-  background: linear-gradient(180deg, #fff 0%, #fff8f3 100%); color: var(--text);
+  padding: 3px 8px 3px 4px; border: 1px solid var(--edge-accent);
+  border-radius: var(--po-radius-pill);
+  background: linear-gradient(180deg, var(--po-bg-surface) 0%, var(--po-accent-subtle) 100%);
+  color: var(--text);
   box-shadow: 0 2px 7px rgba(239, 109, 47, 0.14); font-family: inherit;
   cursor: pointer; white-space: nowrap; transition: transform 120ms, box-shadow 120ms;
 }
@@ -98,7 +100,6 @@ html.dark .sync-error { background: #450a0a; color: #fca5a5; }
 }
 .team-profile-label { font-size: 12px; font-weight: 800; }
 .team-profile-chevron { margin-left: -1px; color: var(--primary-dark); font-size: 17px; line-height: 1; }
-html.dark .team-profile-btn { background: #2c2721; border-color: #7c3f20; }
 
 /* ---- 폴더(서류철) 탭 ---- */
 .folder { position: relative; }
@@ -109,13 +110,12 @@ html.dark .team-profile-btn { background: #2c2721; border-color: #7c3f20; }
 .folder-tab {
   flex: 0 0 auto;
   border: 1px solid var(--line); border-bottom: none;
-  background: #ece9e4; color: var(--sub);
+  background: var(--po-bg-sunken); color: var(--sub);
   border-radius: 14px 14px 0 0; padding: 12px 17px 13px;
   font-size: 16px; font-weight: 700; cursor: pointer; position: relative;
   margin-bottom: -1px; /* 본문 시트 상단 테두리와 겹쳐 이어붙게 */
   transition: background 0.15s, color 0.15s;
 }
-html.dark .folder-tab { background: #2c2721; }
 .folder-tab + .folder-tab { margin-left: -12px; } /* 두 탭이 겹쳐 보이게 */
 .folder-tab:not(.active) { z-index: 1; padding-top: 11px; padding-bottom: 12px; }
 .folder-tab.active {
@@ -145,7 +145,7 @@ html.dark .folder-tab { background: #2c2721; }
 .image-board-zoom {
   position: absolute; right: 8px; bottom: 8px;
   padding: 5px 9px; border-radius: 999px;
-  background: rgba(0, 0, 0, 0.62); color: #fff;
+  background: rgba(0, 0, 0, 0.62); color: var(--on-accent);
   font-size: 11.5px; font-weight: 700; letter-spacing: -0.2px;
 }
 
@@ -221,24 +221,25 @@ html.dark .folder-tab { background: #2c2721; }
 .closed-hint { margin-top: 14px; font-size: 13px; color: var(--sub); }
 
 .badge-open {
-  background: #dcfce7; color: var(--green); font-size: 12px;
+  background: var(--tint-done); color: var(--green); font-size: 12px;
   padding: 3px 8px; border-radius: 999px; vertical-align: middle; margin-left: 4px;
 }
 .countdown { font-size: 13px; color: var(--red); }
 .guide-banner {
-  background: #fff7ed; color: var(--amber); font-size: 13px;
+  background: var(--tint-accent); color: var(--amber); font-size: 13px;
   padding: 8px 12px; border-radius: 10px; margin: 8px 0 4px;
 }
-.guide-banner.limit { background: #fee2e2; color: var(--red); font-weight: 600; }
+.guide-banner.limit { background: var(--tint-error); color: var(--red); font-weight: 600; }
 .limit-hint { font-size: 12px; color: var(--red); margin-top: 8px; }
 
 /* 공용 버튼 (온보딩/호출 등에서 사용) */
 .btn-primary {
-  flex: 1; background: var(--primary); color: #fff; border: none;
-  border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer;
+  flex: 1; background: var(--primary); color: var(--on-accent); border: none;
+  border-radius: var(--po-radius-card); min-height: var(--po-cta-height); padding: 14px;
+  font-size: var(--po-body-l-size); font-weight: 700; cursor: pointer;
 }
 .btn-primary:active { background: var(--primary-dark); }
-.btn-primary:disabled { background: #d6d3d1; cursor: default; }
+.btn-primary:disabled { background: var(--po-bg-sunken); cursor: default; }
 .btn-danger-ghost {
   background: transparent; border: 1px solid var(--red); color: var(--red);
   border-radius: 12px; padding: 14px 16px; font-size: 15px; cursor: pointer; white-space: nowrap;
@@ -283,9 +284,11 @@ html.dark .folder-tab { background: #2c2721; }
 /* 하단 고정 바의 마감 시간 — 담긴 수량과 화살표 사이 */
 .cart-bar-deadline {
   margin-left: auto; margin-right: 10px; font-size: 13px; font-weight: 700;
-  color: rgba(255, 255, 255, 0.72); font-variant-numeric: tabular-nums; white-space: nowrap;
+  color: color-mix(in srgb, var(--on-accent) 76%, transparent);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.cart-bar-deadline.urgent { color: #ffb4b4; }
+/* 오렌지 바 위에서도 읽히도록 경고색을 글자색 쪽으로 섞습니다 */
+.cart-bar-deadline.urgent { color: color-mix(in srgb, var(--po-state-error) 55%, var(--on-accent)); }
 .board-header-sub {
   margin-top: 2px; color: var(--sub); font-size: 12px;
   letter-spacing: -0.15px; white-space: nowrap;
@@ -363,11 +366,16 @@ html.dark .folder-tab { background: #2c2721; }
   .cat-tabs { overflow-x: auto; overscroll-behavior-x: contain; }
   .cat-tab { flex: 0 0 auto; }
 }
-.cat-tab.on { background: #262220; border-color: #262220; color: #fff; }
+/* 선택된 칩은 채움으로 구분합니다 — 오렌지는 화면당 하나(주문 버튼)뿐이라
+   여기에 또 쓰면 둘 다 안 보입니다. */
+.cat-tab.on {
+  background: var(--po-text-primary); border-color: var(--po-text-primary);
+  color: var(--po-bg-surface);
+}
 .cat-tab-count {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 18px; height: 18px; padding: 0 5px;
-  border-radius: 999px; background: var(--primary); color: #fff; font-size: 11px; line-height: 1;
+  border-radius: 999px; background: var(--primary); color: var(--on-accent); font-size: 11px; line-height: 1;
 }
 
 /* 일괄 메뉴(도시락) 안내 */
@@ -382,7 +390,7 @@ html.dark .folder-tab { background: #2c2721; }
   font-size: 12px; color: var(--sub); background: var(--card);
   border-radius: 10px; padding: 8px 12px; margin-bottom: 12px;
 }
-.food-guide.limit { background: #fee2e2; color: var(--red); font-weight: 600; }
+.food-guide.limit { background: var(--tint-error); color: var(--red); font-weight: 600; }
 
 .food-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .food-card {
@@ -392,14 +400,14 @@ html.dark .folder-tab { background: #2c2721; }
 }
 .food-card.picked { border-color: var(--primary); }
 .food-card-photo {
-  position: relative; aspect-ratio: 4 / 3; background: #ece9e4;
+  position: relative; aspect-ratio: 4 / 3; background: var(--po-bg-sunken);
   display: flex; align-items: center; justify-content: center;
 }
 .food-card-photo img { width: 100%; height: 100%; object-fit: cover; }
 .food-card-ph { font-size: 34px; opacity: 0.35; }
 .food-card-qtybadge {
   position: absolute; top: 8px; left: 8px; min-width: 24px; height: 24px; padding: 0 7px;
-  background: var(--primary); color: #fff; border-radius: 999px;
+  background: var(--primary); color: var(--on-accent); border-radius: 999px;
   font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center;
 }
 .food-card-soldout {
@@ -421,7 +429,7 @@ html.dark .food-card-soldout { background: rgba(0,0,0,0.6); }
 .food-card-name { font-size: 15px; font-weight: 700; line-height: 1.3; white-space: pre-line; }
 .food-badges { display: flex; flex-wrap: wrap; gap: 4px; flex: 0 0 100%; order: 2; }
 .diet-badge {
-  font-size: 11px; background: #f5f5f4; border: 1px solid var(--line);
+  font-size: 11px; background: var(--po-bg-sunken); border: 1px solid var(--line);
   padding: 2px 6px; border-radius: 999px; color: var(--sub);
 }
 /* white-space: pre-line — config의 allergyNote에 넣은 \n 위치에서 줄을 나눔
@@ -434,27 +442,29 @@ html.dark .food-card-soldout { background: rgba(0,0,0,0.6); }
 
 /* 흰 동그라미 + 버튼 */
 .add-btn {
-  width: 40px; height: 40px; border-radius: 999px;
-  background: #fff; color: var(--primary); border: 1px solid var(--line);
+  width: var(--po-touch-min); height: var(--po-touch-min); border-radius: var(--po-radius-pill);
+  background: var(--po-bg-surface); color: var(--primary); border: 1px solid var(--line);
   font-size: 22px; font-weight: 700; line-height: 1; cursor: pointer;
   box-shadow: 0 1px 4px rgba(0,0,0,0.12);
   display: flex; align-items: center; justify-content: center;
 }
-.add-btn:disabled { background: #f5f5f4; color: var(--sub); box-shadow: none; cursor: default; }
-html.dark .add-btn { background: #2c2721; border-color: #3b352d; }
+.add-btn:disabled { background: var(--po-bg-sunken); color: var(--sub); box-shadow: none; cursor: default; }
 
 .card-stepper {
   display: flex; align-items: center; justify-content: space-between;
-  background: #fafaf9; border: 1px solid var(--line); border-radius: 10px; padding: 3px;
+  background: var(--po-bg-sunken); border: 1px solid var(--line); border-radius: 10px; padding: 3px;
 }
-html.dark .card-stepper { background: #2c2721; }
 .qty-btn {
-  width: 38px; height: 38px; border-radius: 8px; border: none;
+  width: var(--po-touch-min); height: var(--po-touch-min);
+  border-radius: var(--po-radius-input); border: none;
   background: var(--card); font-size: 20px; font-weight: 700; cursor: pointer; color: var(--text);
   box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 .qty-btn:disabled { opacity: 0.35; cursor: default; }
-.qty-num { min-width: 22px; text-align: center; font-size: 16px; font-weight: 800; }
+.qty-num {
+  min-width: 24px; text-align: center; font-size: 20px; font-weight: 700;
+  font-variant-numeric: tabular-nums; /* 수가 바뀌어도 자리가 안 흔들리게 */
+}
 
 .limit-hint { font-size: 12px; color: var(--red); margin-top: 10px; }
 
@@ -463,14 +473,17 @@ html.dark .card-stepper { background: #2c2721; }
   position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
   width: calc(100% - 24px); max-width: 496px; z-index: 40;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: #262220; color: #fff; border: none;
-  border-radius: 16px; padding: 14px 18px; cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  background: var(--po-accent); color: var(--on-accent); border: none;
+  border-radius: var(--po-radius-card); padding: 14px 18px; cursor: pointer;
+  min-height: var(--po-cta-height);
+  /* 라이트는 그림자로, 다크는 글로우로 "켜진" 느낌을 냅니다 */
+  box-shadow: var(--po-lit-shadow);
+  filter: drop-shadow(var(--po-lit-glow, none));
 }
 .cart-bar-left { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 7px; }
 .cart-bar-icon { font-size: 17px; }
 .cart-bar-count {
-  background: var(--primary); color: #fff; border-radius: 999px;
+  background: var(--primary); color: var(--on-accent); border-radius: 999px;
   min-width: 22px; padding: 1px 7px; text-align: center; font-size: 13px; font-weight: 800;
 }
 .cart-bar-more { font-size: 23px; line-height: 1; opacity: 0.85; }
@@ -554,10 +567,11 @@ html.dark .card-stepper { background: #2c2721; }
   border-radius: 12px; padding: 13px 16px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
 }
 .cart-submit {
-  flex: 1; background: var(--primary); border: none; color: #fff;
-  border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 800; cursor: pointer;
+  flex: 1; background: var(--primary); border: none; color: var(--on-accent);
+  border-radius: var(--po-radius-card); min-height: var(--po-cta-height); padding: 14px;
+  font-size: var(--po-body-l-size); font-weight: 700; cursor: pointer;
 }
-.cart-submit:disabled { background: #d6d3d1; cursor: default; }
+.cart-submit:disabled { background: var(--po-bg-sunken); cursor: default; }
 
 /* ---- 주문 내역 ---- */
 .history-meal { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
@@ -577,11 +591,12 @@ html.dark .card-stepper { background: #2c2721; }
 .call-quota { font-size: 13px; color: var(--sub); font-weight: 600; }
 .quota-over { color: var(--red); }
 .btn-call {
-  width: 100%; background: var(--primary); color: #fff; border: none;
-  border-radius: 12px; padding: 16px; font-size: 17px; font-weight: 800; cursor: pointer;
+  width: 100%; background: var(--primary); color: var(--on-accent); border: none;
+  border-radius: var(--po-radius-card); min-height: var(--po-cta-height); padding: 16px;
+  font-size: var(--po-body-l-size); font-weight: 700; cursor: pointer;
 }
 .btn-call:active { background: var(--primary-dark); }
-.btn-call:disabled { background: #d6d3d1; }
+.btn-call:disabled { background: var(--po-bg-sunken); }
 /* 우리 팀 지난 호출 내역 — 접어둔 상태가 기본입니다 */
 .call-log {
   margin-top: 14px;
@@ -623,15 +638,12 @@ html.dark .card-stepper { background: #2c2721; }
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 700;
-  background: #eef1f5;
+  background: var(--po-bg-sunken);
   color: var(--sub);
 }
-.call-log-status.st-done { background: #e6f5ec; color: #1d7a45; }
-.call-log-status.st-in_progress { background: #fff2e0; color: #a45b00; }
+.call-log-status.st-done { background: var(--tint-done); color: var(--po-state-done); }
+.call-log-status.st-in_progress { background: var(--tint-active); color: var(--ink-accent); }
 /* 시간대별 다크모드에서도 읽히도록 칩 색을 따로 둡니다 */
-html.dark .call-log-status { background: #2c2721; color: var(--sub); }
-html.dark .call-log-status.st-done { background: #1b3324; color: #7ddba4; }
-html.dark .call-log-status.st-in_progress { background: #3a2c14; color: #fbbf24; }
 .call-log-who { font-weight: 600; }
 .call-log-done { font-variant-numeric: tabular-nums; }
 .call-log-reason {
@@ -651,9 +663,18 @@ html.dark .call-log-status.st-in_progress { background: #3a2c14; color: #fbbf24;
 .status-steps { display: flex; gap: 6px; }
 .status-step {
   flex: 1; text-align: center; padding: 10px 4px; border-radius: 10px;
-  background: #f5f5f4; color: var(--sub); font-size: 14px; font-weight: 600;
+  background: var(--po-bg-sunken); color: var(--sub); font-size: 14px; font-weight: 600;
 }
-.status-step.on { background: #dbeafe; color: #1d4ed8; }
+/* 랜턴 3상태: 꺼짐(위 기본값) → 점등 → 완료.
+   색만으로 나누지 않도록 채움과 테두리를 함께 바꿉니다. */
+.status-step.on {
+  background: var(--tint-active); color: var(--ink-accent);
+  box-shadow: inset 0 0 0 1px var(--edge-accent), var(--po-lit-shadow);
+}
+.status-step.on:last-child {
+  background: var(--tint-done); color: var(--po-state-done);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--po-state-done) 40%, transparent);
+}
 .reason-box { text-align: center; }
 /* 호출 사유 입력 (필수) */
 .reason-label {
@@ -661,11 +682,11 @@ html.dark .call-log-status.st-in_progress { background: #3a2c14; color: #fbbf24;
 }
 .reason-required {
   font-size: 11px; font-weight: 700; color: var(--red);
-  background: #fee2e2; border-radius: 999px; padding: 2px 7px; margin-left: 4px;
+  background: var(--tint-error); border-radius: 999px; padding: 2px 7px; margin-left: 4px;
 }
-html.dark .reason-required { background: #4a1d1d; }
 .reason-input {
-  width: 100%; padding: 12px 13px; border: 1px solid var(--line); border-radius: 12px;
+  width: 100%; padding: 14px 16px; border: 1px solid var(--line);
+  border-radius: var(--po-radius-input);
   /* 16px 미만이면 iOS가 입력창을 탭하는 순간 화면을 확대하고 되돌리지 않습니다
      (확대된 상태로 남아 하단 고정 바가 화면 밖으로 나감) */
   font-size: 16px; line-height: 1.5; background: var(--card); color: var(--text);
@@ -685,25 +706,23 @@ html.dark .reason-required { background: #4a1d1d; }
 /* 전송된 호출 사유 (진행 상태 박스) */
 .call-sent-reason {
   font-size: 13.5px; line-height: 1.55; color: var(--text);
-  background: #f5f5f4; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px;
+  background: var(--po-bg-sunken); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px;
 }
-html.dark .call-sent-reason { background: #2c2721; }
 /* 호출 확인 단계: 호출하기 + 취소 */
 .confirm-call-row { display: flex; flex-direction: column; gap: 8px; }
 .btn-primary.sm { flex: 0 0 auto; padding: 12px 16px; font-size: 14px; white-space: nowrap; }
 
 .call-company-note {
-  font-size: 12.5px; color: var(--sub); background: #f5f5f4;
+  font-size: 12.5px; color: var(--sub); background: var(--po-bg-sunken);
   padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; line-height: 1.5;
 }
-html.dark .call-company-note { background: #2c2721; }
 
 /* 호출 가이드 (호출 전 안내) */
 .call-guide {
-  background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;
+  background: var(--tint-accent); border: 1px solid var(--edge-accent); border-radius: 12px;
   padding: 12px 14px; margin-bottom: 14px;
 }
-.call-guide-title { display: block; font-size: 14px; font-weight: 800; color: #b45309; margin-bottom: 8px; }
+.call-guide-title { display: block; font-size: 14px; font-weight: 800; color: var(--ink-accent); margin-bottom: 8px; }
 .call-guide-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
 .call-guide-list li {
   position: relative; padding-left: 14px;
@@ -719,13 +738,11 @@ html.dark .call-company-note { background: #2c2721; }
 }
 /* 음식 주문 탭의 주문 시간 공지 — 호출 가이드와 동일한 형태 */
 .order-notice { margin-top: 12px; }
-html.dark .call-guide { background: #3a2c14; border-color: #5c451c; }
-html.dark .call-guide-title { color: #fbbf24; }
 
 /* ---- 팀 등록(온보딩) 화면 ---- */
 .setup-header {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: var(--primary); color: #fff;
+  background: var(--primary); color: var(--on-accent);
   border-radius: 16px; padding: 18px 16px; margin-bottom: 12px;
 }
 .header-logo { height: 28px; width: auto; object-fit: contain; }
@@ -742,38 +759,35 @@ html.dark .call-guide-title { color: #fbbf24; }
   padding: 10px 14px; min-height: 44px; font-size: 14px; font-weight: 600;
   cursor: pointer; color: var(--sub);
 }
-.setup-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.setup-chip.on { background: var(--primary); border-color: var(--primary); color: var(--on-accent); }
 /* 저장된 팀을 확인하는 사이의 빈 화면 — 깜빡임만 막는 용도 */
 .boot-wait { min-height: 100vh; }
 /* 마감 임박 — 담아만 두면 사라지므로 눈에 띄게 */
 .deadline-warn {
-  background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b;
+  background: var(--tint-error); border: 1px solid var(--edge-error); color: var(--po-state-error);
   border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
   font-size: 13.5px; font-weight: 700; line-height: 1.55;
 }
-html.dark .deadline-warn { background: #4a1d1d; border-color: #7f2d2d; color: #fecaca; }
 /* 주문한 메뉴가 뒤늦게 품절된 경우 */
 .soldout-warn {
-  background: #fff7ed; border: 1px solid #fed7aa; color: #b45309;
+  background: var(--tint-accent); border: 1px solid var(--edge-accent); color: var(--ink-accent);
   border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
   font-size: 13.5px; font-weight: 700; line-height: 1.55;
 }
-html.dark .soldout-warn { background: #3a2c14; border-color: #5c451c; color: #fbbf24; }
 /* 이미 등록된 팀 번호 경고 — 오타로 남의 팀을 덮어쓰지 않게 */
 .setup-exists {
-  margin-top: 8px; font-size: 13px; line-height: 1.5; font-weight: 700; color: #b45309;
+  margin-top: 8px; font-size: 13px; line-height: 1.5; font-weight: 700; color: var(--ink-accent);
 }
-html.dark .setup-exists { color: #fbbf24; }
 .add-person-btn:disabled { opacity: 0.55; cursor: default; }
 /* 등록 안내 — 호출 가이드 박스와 같은 결로 (참가자 앱의 강조 면) */
 .setup-solo-note {
-  background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;
+  background: var(--tint-accent); border: 1px solid var(--edge-accent); border-radius: 12px;
   padding: 11px 13px; margin-bottom: 14px;
-  font-size: 13.5px; font-weight: 700; line-height: 1.5; color: #b45309;
+  font-size: 13.5px; font-weight: 700; line-height: 1.5; color: var(--ink-accent);
 }
-html.dark .setup-solo-note { background: #3a2c14; border-color: #5c451c; color: #fbbf24; }
 .setup-input {
-  width: 100%; padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px;
+  width: 100%; min-height: var(--po-cta-height); padding: 14px 16px;
+  border: 1px solid var(--line); border-radius: var(--po-radius-input);
   font-size: 16px; background: var(--card); color: var(--text);
 }
 .stepper { display: flex; align-items: center; gap: 16px; }
@@ -853,32 +867,29 @@ html.dark .setup-solo-note { background: #3a2c14; border-color: #5c451c; color: 
    바로 번역돼 보이도록. 판정은 config.personDiet 에서 옵니다. */
 .diet-summary {
   margin-top: 10px; padding: 9px 11px; border-radius: 10px;
-  background: #f5f5f4; font-size: 12.5px; line-height: 1.5;
+  background: var(--po-bg-sunken); font-size: 12.5px; line-height: 1.5;
   display: flex; flex-direction: column; gap: 3px; text-align: left;
 }
-.diet-summary.diet-alt { background: #fef3c7; }
-.diet-summary.diet-alt b { color: #92400e; font-weight: 700; }
+/* 알레르기는 경고가 아니라 정보입니다 — 노란 경고색 대신 중립 배경.
+   (PLAI ORDER 토큰 적용 메모) */
+.diet-summary.diet-alt { background: var(--po-bg-sunken); }
+.diet-summary.diet-alt b { color: var(--po-text-primary); font-weight: 700; }
 .diet-meal {
   display: inline-block; min-width: 74px; font-weight: 700; color: var(--primary);
 }
 .diet-ok { color: var(--green); }
 .diet-partial { color: var(--text); }
 .diet-none { color: var(--amber); font-weight: 700; }
-html.dark .diet-summary { background: #2c2721; }
-html.dark .diet-summary.diet-alt { background: #3a2c14; }
-html.dark .diet-summary.diet-alt b { color: #fbbf24; }
 
 /* 알레르기로 담기 상한이 줄었을 때 그 이유를 밝히는 안내 (주문 화면).
    버튼만 막히면 품절/오류로 오해하므로 반드시 이유를 함께 보여줍니다. */
 .diet-cap-hint {
-  background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;
+  background: var(--tint-accent); border: 1px solid var(--edge-accent); border-radius: 12px;
   padding: 10px 12px; margin-bottom: 10px;
   display: flex; flex-direction: column; gap: 4px;
 }
-.diet-cap-hint b:first-child { font-size: 13px; color: #b45309; }
+.diet-cap-hint b:first-child { font-size: 13px; color: var(--ink-accent); }
 .diet-cap-hint p { font-size: 12.5px; line-height: 1.5; color: var(--text); }
-html.dark .diet-cap-hint { background: #3a2c14; border-color: #5c451c; }
-html.dark .diet-cap-hint b:first-child { color: #fbbf24; }
 
 /* 마감 10분 전부터 카운트다운을 강조 — 조용히 지나가지 않도록 */
 @keyframes countdown-pulse {
@@ -892,7 +903,7 @@ html.dark .diet-cap-hint b:first-child { color: #fbbf24; }
    하므로 강조색을 씁니다 (마감 경고보다 위) */
 .nudge-banner {
   display: flex; align-items: flex-start; gap: 12px;
-  background: var(--primary); color: #fff;
+  background: var(--primary); color: var(--on-accent);
   border-radius: 14px; padding: 14px 16px; margin-bottom: 12px;
   box-shadow: 0 6px 18px rgba(194, 75, 10, 0.28);
   animation: nudge-in 260ms ease-out;
@@ -929,7 +940,7 @@ html.dark .diet-cap-hint b:first-child { color: #fbbf24; }
   border: 1px solid var(--line); background: var(--card);
   color: var(--sub); font-size: 15px; font-weight: 700; cursor: pointer;
 }
-.league-tab.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.league-tab.on { background: var(--primary); border-color: var(--primary); color: var(--on-accent); }
 .league-tab-code { font-size: 12px; font-weight: 800; opacity: 0.75; }
 .team-no-field { display: flex; align-items: center; gap: 8px; }
 .team-no-prefix {
@@ -937,3 +948,35 @@ html.dark .diet-cap-hint b:first-child { color: #fbbf24; }
   font-variant-numeric: tabular-nums;
 }
 .team-no-input { flex: 1; min-width: 0; }
+
+
+/* ============================================================
+   PLAI ORDER — 마감 손질
+   ============================================================ */
+
+/* 입력 포커스: 디자인은 액센트 테두리로 표시합니다 */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--po-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--po-accent) 22%, transparent);
+}
+
+/* 카드 층: 라이트는 그림자, 다크는 테두리 — 토큰이 알아서 갈립니다 */
+.card, .food-card, .served-meal, .call-log, .image-board-frame {
+  box-shadow: var(--po-card-shadow);
+}
+
+/* 바텀 시트 — 상단 모서리만 16 */
+.sheet { border-radius: var(--po-radius-sheet) var(--po-radius-sheet) 0 0; }
+
+/* 숫자가 흔들리지 않아야 하는 곳 — 팀 번호, 남은 호출, 마감 시계 */
+.team-profile-label, .call-quota, .cart-bar-count, .served-meal-meta {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 브랜드 워드마크 — 팀 등록 화면 상단 */
+.header-brand {
+  font-size: var(--po-caption-size); line-height: 1;
+  font-weight: 800; letter-spacing: 0.04em;
+  opacity: 0.9; margin-bottom: 5px;
+}
