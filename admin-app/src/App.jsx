@@ -41,6 +41,7 @@ import CoachProfileSheet from './components/CoachProfileSheet.jsx'
 import KpiDetailSheet from './components/KpiDetailSheet.jsx'
 import Icon from './components/Icon.jsx'
 import LanternIcon from './components/LanternIcon.jsx'
+import { useMediaQuery } from './lib/useMediaQuery.js'
 
 const MY_COACH_KEY = 'torder-coach' // 이 기기의 마스터 메이트 정보(로컬)
 
@@ -128,6 +129,9 @@ export default function App() {
   // 명단 항목 자체를 고르게 합니다 — 오타로 담당 팀이 안 붙는 것도 막습니다.
   const [pickedCrew, setPickedCrew] = useState(null)
 
+  // 로고가 앉을 자리가 폭에 따라 다릅니다 — 노트북은 사이드바 바닥의
+  // 프로필 옆, 폰은 메뉴 시트의 설정 줄 오른쪽 끝.
+  const wide = useMediaQuery('(min-width: 900px)')
   const [wantTab, setWantTab] = useState('calls') // 눌러서 고른 화면
   // 주문 현황의 식사 선택 — 좌측 메뉴의 하위 항목으로 노출되므로 여기서 관리
   const [mealFilter, setMealFilter] = useState(getDefaultMealId)
@@ -597,7 +601,7 @@ export default function App() {
               새 호출 알림음
             </label>
             )}
-            <img className="side-foot-logo" src={logo52g} alt="52g" />
+            {!wide && <img className="side-foot-logo" src={logo52g} alt="52g" />}
           </div>
           <div className="side-foot">
             {/* 이름을 누르면 담당 팀 범위·알림 연결 상태를 확인하는 시트가 열립니다 */}
@@ -613,6 +617,7 @@ export default function App() {
               <span className="side-coach-name">{crewLabel(crewFor(coach)) || coach.name}</span>
               <Icon name="chevron" size={16} className="side-coach-chevron" />
             </button>
+            {wide && <img className="side-foot-logo" src={logo52g} alt="52g" />}
           </div>
         </nav>
         {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
