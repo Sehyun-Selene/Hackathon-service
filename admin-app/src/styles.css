@@ -1211,7 +1211,6 @@ body {
 /* 넓은 화면에서는 왼쪽 사이드바가 있으므로 ☰ 를 감춥니다 */
 @media (min-width: 900px) {
   .dock-menu { display: none; }
-  .dock { left: 232px; }
 }
 
 /* 화면 머리의 새로고침 — 44px 터치 타깃 */
@@ -1270,3 +1269,29 @@ body {
 }
 .side-coach:hover { border-color: var(--line); background: var(--tint-sunken); }
 .side-coach-chevron { flex: none; color: var(--po-text-muted); }
+
+/* 브랜드 랜턴 — 참가자 앱과 같은 표식 */
+.brand-lantern { flex: none; }
+.screen-title { display: flex; align-items: center; gap: 8px; }
+.screen-title-icon { flex: none; color: var(--primary); }
+
+/* 노트북 — 폰 레이아웃을 그대로 늘리지 않습니다.
+   1440px에서 목록 한 줄이 1150px가 되면 46px 아바타 옆에 사유 한 줄만
+   덩그러니 남고, 눈이 팀 번호에서 상태까지 화면 절반을 건너가야 합니다.
+   읽기 좋은 폭으로 묶고, 아래 동작 바도 같은 기둥에 맞춥니다. */
+@media (min-width: 900px) {
+  .screen { max-width: 880px; }
+  .dock { left: 232px; }
+  .dock > * { max-width: 880px; }
+  .dock-slot { max-width: 880px; }
+  /* 동작 바를 본문 기둥 위에 겹쳐 둡니다 — 화면 끝까지 늘어난 바는
+     목록과 다른 물건처럼 보입니다 */
+  .dock {
+    padding-left: 28px; padding-right: 28px;
+    justify-content: flex-start;
+  }
+  .dock-slot { flex: 0 1 880px; }
+  /* 처리 버튼이 880px까지 늘어날 이유는 없습니다 — 손이 가는 크기로 */
+  .dock-btn.primary, .dock-btn.done { flex: 0 1 260px; }
+  .dock-hint { justify-content: flex-start; padding-left: 18px; }
+}

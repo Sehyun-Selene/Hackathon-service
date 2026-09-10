@@ -40,6 +40,7 @@ import CoachStatusTab from './components/CoachStatusTab.jsx'
 import CoachProfileSheet from './components/CoachProfileSheet.jsx'
 import KpiDetailSheet from './components/KpiDetailSheet.jsx'
 import Icon from './components/Icon.jsx'
+import LanternIcon from './components/LanternIcon.jsx'
 
 const MY_COACH_KEY = 'torder-coach' // 이 기기의 마스터 메이트 정보(로컬)
 
@@ -504,6 +505,9 @@ export default function App() {
       <aside className="sidebar">
         <div className="brand-row">
           <div className="brand">
+            {/* 플라오더의 랜턴 — 참가자 앱과 같은 표식입니다.
+                운영자가 참가자 화면을 대신 봐 줄 때 같은 서비스로 읽혀야 합니다. */}
+            <LanternIcon state="active" size={22} className="brand-lantern" />
             <span className="brand-text">
               플라오더 <b>운영</b>
             </span>

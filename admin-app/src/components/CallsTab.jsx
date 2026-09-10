@@ -124,7 +124,10 @@ export default function CallsTab({
     <div className="screen">
       <header className="screen-head">
         <div className="screen-head-text">
-          <h1 className="screen-title">호출 알림</h1>
+          <h1 className="screen-title">
+            <Icon name="bell" size={19} className="screen-title-icon" />
+            호출 알림
+          </h1>
           <p className="screen-sync">
             <span className="live-dot" aria-hidden="true" />
             실시간 동기화{syncAt ? ` · ${fmtTimeOnly(syncAt)}` : ''}

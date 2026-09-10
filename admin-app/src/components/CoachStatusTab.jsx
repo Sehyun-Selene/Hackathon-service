@@ -134,7 +134,10 @@ export default function CoachStatusTab({
     <div className="screen">
       <header className="screen-head">
         <div className="screen-head-text">
-          <h1 className="screen-title">마스터 메이트 현황</h1>
+          <h1 className="screen-title">
+            <Icon name="users" size={19} className="screen-title-icon" />
+            마스터 메이트 현황
+          </h1>
           <p className="screen-sub">
             대기 중인 메이트가 다른 담당자의 팀 호출을 대신 받을 수 있습니다
           </p>
