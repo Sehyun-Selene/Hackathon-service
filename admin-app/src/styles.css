@@ -979,7 +979,10 @@ body {
   font-size: 12px; line-height: 1.4; color: var(--sub);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.call-go { flex: none; color: var(--po-text-muted); }
+.call-go { flex: none; color: var(--po-text-muted); transition: transform 140ms; }
+/* 펼쳐져 있으면 화살표를 뒤집어 접을 수 있다는 것을 알려줍니다
+   (접히는 묶음 .fold-caret 과 같은 규칙) */
+.call-go.open { transform: rotate(180deg); color: var(--primary-dark); }
 /* 내 담당 표시 — 예전 카드는 담당자 이름을 늘 적어 한눈에 갈렸습니다.
    지금은 줄이 짧아 이름을 다 넣을 수 없어, 내 것만 표시합니다. */
 .call-mine {

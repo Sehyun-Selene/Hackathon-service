@@ -212,7 +212,14 @@ export default function CallsTab({
                     </span>
                     <span className="call-reason-line">{c.reason || '사유 미작성'}</span>
                   </span>
-                  <Icon name="chevron" size={18} className="call-go" />
+                  {/* 화살표는 열리는 방향을 가리킵니다 — 폰은 아래로 펼치고,
+                      노트북은 오른쪽 상세 칸에 나타납니다. 열려 있으면
+                      뒤집혀 접을 수 있다는 것을 알려줍니다. */}
+                  <Icon
+                    name={wide ? 'chevron' : 'chevronDown'}
+                    size={18}
+                    className={`call-go${!wide && isSel ? ' open' : ''}`}
+                  />
                 </button>
                 {/* 폰에서는 고른 호출을 여기서 펼칩니다. 노트북은 오른쪽
                     상세 칸이 같은 일을 하지만, 폰에는 그 자리가 없습니다.
