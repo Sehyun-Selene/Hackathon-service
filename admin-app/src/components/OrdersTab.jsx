@@ -12,6 +12,9 @@ import {
   TEAM_IDS_BY_LEAGUE,
 } from '../config.js'
 import { getOpenMeals, now } from '../lib/time.js'
+import { useMediaQuery } from '../lib/useMediaQuery.js'
+import Icon from './Icon.jsx'
+import AdminDock from './AdminDock.jsx'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 
@@ -104,7 +107,17 @@ function assignedShortName(teamId) {
   if (group) return group.label
   return getAssignedCoachForTeam(teamId)?.name
 }
-export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleDelivered }) {
+export default function OrdersTab({
+  scan,
+  mealFilter,
+  onToggleSoldout,
+  onToggleDelivered,
+  onOpenMenu,
+  menuAlert,
+  menuOpen,
+}) {
+  // 넓은 화면에서는 왼쪽 사이드바가 메뉴 역할을 하므로 아래 바가 없습니다
+  const wide = useMediaQuery('(min-width: 900px)')
   const [showSoldoutPanel, setShowSoldoutPanel] = useState(false)
   const [showAllergyPanel, setShowAllergyPanel] = useState(false)
   const [teamQuery, setTeamQuery] = useState('')
@@ -399,7 +412,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
   }
 
   return (
-    <div>
+    <div className={wide ? undefined : 'screen'}>
       <section className="panel">
         <h3>메뉴별 합산 수량</h3>
         {Object.keys(totals.total).length === 0 ? (
@@ -779,6 +792,18 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
           />
         )}
       </section>
+
+      {/* 폰에서는 이 바가 메뉴로 나가는 유일한 길입니다. 상단 햄버거를
+          없애고 아래로 모았는데, 이 화면만 빠져 있어 들어오면 나갈 수가
+          없었습니다. 넓은 화면에서는 왼쪽 사이드바가 그 일을 합니다. */}
+      {!wide && (
+        <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen}>
+          <div className="dock-status">
+            <Icon name="clipboard" size={17} />
+            <span>{MEAL_BY_ID[mealFilter]?.label || '끼니를 고르세요'}</span>
+          </div>
+        </AdminDock>
+      )}
     </div>
   )
 }
