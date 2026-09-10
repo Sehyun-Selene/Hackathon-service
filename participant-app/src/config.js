@@ -163,7 +163,7 @@ export const TEAMS = {
   'E-05': { name: "리투(Lee Two)", size: 2 },
   'E-06': { name: "KJ", size: 2 },
   'E-07': { name: "안녕하세요차지비입니다잘부탁드립니다.", size: 3 },
-  'E-08': { name: "지금, 차지", size: 3 },
+  'E-08': { name: "PLAI, 차지", size: 3 },
   'E-09': { name: "당진파파", size: 3 },
   'E-10': { name: "빌드업", size: 3 },
   'E-11': { name: "스마트스퀘어", size: 2 },
@@ -185,7 +185,7 @@ export const TEAMS = {
   'E-27': { name: "Bid-Tamin", size: 2 },
   'E-28': { name: "Fixipedia", size: 4 },
   'E-29': { name: "MOC MATE", size: 3 },
-  'E-30': { name: "Pringles", size: 4 },
+  'E-30': { name: "구트레인", size: 4 },
   'E-31': { name: "RA", size: 4 },
   'E-32': { name: "AIDEAL (에이디얼)", size: 4 },
   'E-33': { name: "기사회생", size: 4 },
@@ -267,14 +267,14 @@ export const TEAMS = {
 
   // 외부사 — 자리배치표에는 자리가 없고 번호만 시트에 적혀 있습니다.
   // 팀명이 아직 없어 회사명으로 확인시켜 줍니다(company). 정해지면 name을 채우세요.
-  'E-200': { name: "", company: "오리온", size: 4 },
-  'E-201': { name: "", company: "오리온", size: 4 },
-  'E-202': { name: "", company: "오리온", size: 4 },
-  'E-203': { name: "", company: "한전", size: 4 },
+  'E-200': { name: "오리온 1팀", company: "오리온", size: 4 },
+  'E-201': { name: "오잉메리호", company: "오리온", size: 4 },
+  'E-202': { name: "오리온 3팀", company: "오리온", size: 4 },
+  'E-203': { name: "", company: "한국전력공사", size: 4 },
   'E-204': { name: "", company: "한국표준과학연구원", size: 2 },
   'E-205': { name: "", company: "한국경제신문", size: 4 },
   'E-206': { name: "", company: "한국동서발전", size: 4 },
-  'E-207': { name: "", company: "삼양인터네셔널", size: 4 },
+  'E-207': { name: "", company: "삼양인터내셔날", size: 4 },
   'E-208': { name: "", company: "삼양통상", size: 3 },
 
   'G-01': { name: "JDD", size: 3 },
