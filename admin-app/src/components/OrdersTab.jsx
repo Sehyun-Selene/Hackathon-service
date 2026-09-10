@@ -115,6 +115,7 @@ export default function OrdersTab({
   onOpenMenu,
   menuAlert,
   menuOpen,
+  showMenu,
 }) {
   // 넓은 화면에서는 왼쪽 사이드바가 메뉴 역할을 하므로 아래 바가 없습니다
   const wide = useMediaQuery('(min-width: 900px)')
@@ -797,7 +798,7 @@ export default function OrdersTab({
           없애고 아래로 모았는데, 이 화면만 빠져 있어 들어오면 나갈 수가
           없었습니다. 넓은 화면에서는 왼쪽 사이드바가 그 일을 합니다. */}
       {!wide && (
-        <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen}>
+        <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen} showMenu={showMenu}>
           <div className="dock-status">
             <Icon name="clipboard" size={17} />
             <span>{MEAL_BY_ID[mealFilter]?.label || '끼니를 고르세요'}</span>

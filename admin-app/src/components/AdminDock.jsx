@@ -15,21 +15,30 @@ import Icon from './Icon.jsx'
 // 오른쪽(children)은 화면마다 다릅니다 — 호출 화면은 처리 버튼, 메이트
 // 현황은 갱신 시각. 자리와 높이(56px)는 어느 화면에서나 같아서, 손이
 // 가는 위치가 학습됩니다.
-export default function AdminDock({ onOpenMenu, menuAlert = false, menuOpen = false, children }) {
+export default function AdminDock({
+  onOpenMenu,
+  menuAlert = false,
+  menuOpen = false,
+  // 갈 수 있는 화면이 하나뿐이면 메뉴 자체가 필요 없습니다 (식음 운영).
+  showMenu = true,
+  children,
+}) {
   return (
     <div className="dock">
-      <button
-        type="button"
-        className={`dock-menu${menuOpen ? ' on' : ''}`}
-        onClick={onOpenMenu}
-        aria-expanded={menuOpen}
-        aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
-      >
-        <Icon name={menuOpen ? 'close' : 'menu'} size={20} />
-        <span className="dock-menu-label">{menuOpen ? '닫기' : '메뉴'}</span>
-        {/* 다른 화면에 볼 것이 생겼다는 표시 — 메뉴를 열어야 알 수 있으므로 */}
-        {menuAlert && !menuOpen && <span className="dock-dot" aria-hidden="true" />}
-      </button>
+      {showMenu && (
+        <button
+          type="button"
+          className={`dock-menu${menuOpen ? ' on' : ''}`}
+          onClick={onOpenMenu}
+          aria-expanded={menuOpen}
+          aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
+        >
+          <Icon name={menuOpen ? 'close' : 'menu'} size={20} />
+          <span className="dock-menu-label">{menuOpen ? '닫기' : '메뉴'}</span>
+          {/* 다른 화면에 볼 것이 생겼다는 표시 — 메뉴를 열어야 알 수 있으므로 */}
+          {menuAlert && !menuOpen && <span className="dock-dot" aria-hidden="true" />}
+        </button>
+      )}
       <div className="dock-slot">{children}</div>
     </div>
   )

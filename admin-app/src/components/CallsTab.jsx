@@ -44,6 +44,7 @@ export default function CallsTab({
   onOpenMenu,
   menuAlert,
   menuOpen,
+  showMenu,
   syncAt,
   onRefresh,
   refreshing,
@@ -306,7 +307,7 @@ export default function CallsTab({
       {/* 노트북에서는 처리 버튼이 오른쪽 상세 칸에 있으므로 아래 바가 없습니다.
           메뉴도 왼쪽 사이드바에 늘 보이고요. */}
       {!wide && (
-      <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen}>
+      <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen} showMenu={showMenu}>
         {!selected ? (
           <DockHint>호출을 선택하면 여기서 처리합니다</DockHint>
         ) : (

@@ -26,6 +26,7 @@ export default function CoachStatusTab({
   onOpenMenu,
   menuAlert,
   menuOpen,
+  showMenu,
   syncAt,
   onRefresh,
   refreshing,
@@ -291,7 +292,7 @@ export default function CoachStatusTab({
       {/* 노트북에는 아래 바를 두지 않습니다 — 메뉴가 왼쪽에 늘 보이고,
           갱신 시각은 화면 머리의 새로고침 옆에 이미 있습니다. */}
       {!wide && (
-        <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen}>
+        <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen} showMenu={showMenu}>
           <div className="dock-status">
             <Icon name="clock" size={17} />
             <span>{syncAt ? `${fmtTimeOnly(syncAt)} 갱신` : '갱신 대기'}</span>

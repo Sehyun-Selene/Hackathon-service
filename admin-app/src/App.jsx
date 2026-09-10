@@ -150,6 +150,9 @@ export default function App() {
   const undoActionRef = useRef(null)
   const soundOnRef = useRef(true)
   soundOnRef.current = soundOn
+  // 역할에 따라 호출 화면이 없을 수 있습니다. refresh 는 한 번만 만들어져
+  // 클로저에 옛 값이 잡히므로 ref 로 넘깁니다.
+  const canSeeCallsRef = useRef(true)
 
   // 되돌릴 것이 없는 단순 알림 — 같은 토스트를 씁니다
   const showToast = useCallback((message) => {
@@ -217,7 +220,9 @@ export default function App() {
     )
     if (knownWaitingIds.current) {
       const hasNew = [...waitingIds].some((id) => !knownWaitingIds.current.has(id))
-      if (hasNew && soundOnRef.current) playCallAlert()
+      // 호출 화면을 볼 수 없는 사람(식음 운영)에게는 울리지 않습니다 —
+      // 확인할 방법이 없는 소리는 알림이 아니라 방해입니다.
+      if (hasNew && soundOnRef.current && canSeeCallsRef.current) playCallAlert()
     }
     knownWaitingIds.current = waitingIds
     setScan(result)
@@ -484,13 +489,21 @@ export default function App() {
   const myTabs = TAB_DEFS.filter((t) => myTabIds.includes(t.id))
   const tab = myTabIds.includes(wantTab) ? wantTab : myTabIds[0]
   const activeTab = TAB_DEFS.find((t) => t.id === tab)
+  const canSeeCalls = myTabIds.includes('calls')
+  canSeeCallsRef.current = canSeeCalls
+
   // 화면마다 아래 고정 바를 그리므로, 메뉴 여는 방법을 함께 넘깁니다.
   // 지금 보고 있지 않은 화면에 볼 것이 생겼으면 ☰ 에 점을 찍습니다 —
   // 메뉴를 열어야만 알 수 있으면 알림이 아닙니다.
+  //
+  // 갈 수 없는 화면을 가리키지는 않습니다. 식음 운영은 호출 화면이 없는데,
+  // 대기 호출이 생길 때마다 점이 붙으면 열어봐도 주문 현황 하나뿐입니다.
   const screenProps = {
     onOpenMenu: () => setMenuOpen((o) => !o),
     menuOpen,
-    menuAlert: tab !== 'calls' && waitingCount > 0,
+    // 화면이 하나뿐이면 메뉴로 갈 곳이 없습니다
+    showMenu: myTabIds.length > 1,
+    menuAlert: canSeeCalls && tab !== 'calls' && waitingCount > 0,
     syncAt: scan?.at ? new Date(scan.at) : null,
     onRefresh: refresh,
     refreshing,
@@ -570,6 +583,8 @@ export default function App() {
           {/* 설정과 로고를 한 줄에 둡니다. 로고가 줄 하나를 통째로 쓰면
               시트가 그만큼 높아지는데, 담기는 정보는 없습니다. */}
           <div className="nav-foot">
+            {/* 울리지 않을 소리의 스위치를 두지 않습니다 */}
+            {canSeeCalls && (
             <label className="nav-setting">
               <input
                 type="checkbox"
@@ -581,6 +596,7 @@ export default function App() {
               />
               새 호출 알림음
             </label>
+            )}
             <img className="side-foot-logo" src={logo52g} alt="52g" />
           </div>
           <div className="side-foot">
