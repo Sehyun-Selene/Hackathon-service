@@ -567,17 +567,22 @@ export default function App() {
           )}
           {/* 설정은 메뉴 안이 제자리입니다. 폰에서는 상단바가 없어,
               여기 없으면 알림음을 켤 방법이 사라집니다. */}
-          <label className="nav-setting">
-            <input
-              type="checkbox"
-              checked={soundOn}
-              onChange={(e) => {
-                initAudio()
-                setSoundOn(e.target.checked)
-              }}
-            />
-            새 호출 알림음
-          </label>
+          {/* 설정과 로고를 한 줄에 둡니다. 로고가 줄 하나를 통째로 쓰면
+              시트가 그만큼 높아지는데, 담기는 정보는 없습니다. */}
+          <div className="nav-foot">
+            <label className="nav-setting">
+              <input
+                type="checkbox"
+                checked={soundOn}
+                onChange={(e) => {
+                  initAudio()
+                  setSoundOn(e.target.checked)
+                }}
+              />
+              새 호출 알림음
+            </label>
+            <img className="side-foot-logo" src={logo52g} alt="52g" />
+          </div>
           <div className="side-foot">
             {/* 이름을 누르면 담당 팀 범위·알림 연결 상태를 확인하는 시트가 열립니다 */}
             <button
@@ -592,7 +597,6 @@ export default function App() {
               <span className="side-coach-name">{crewLabel(crewFor(coach)) || coach.name}</span>
               <Icon name="chevron" size={16} className="side-coach-chevron" />
             </button>
-            <img className="side-foot-logo" src={logo52g} alt="52g" />
           </div>
         </nav>
         {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
