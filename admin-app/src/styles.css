@@ -1147,14 +1147,6 @@ body {
   font-size: 14.5px; font-weight: 700;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* 그룹 한 줄 — 여러 명이 한 구간을 함께 맡습니다 */
-.mate-count {
-  flex: none; height: 18px; padding: 0 6px; border-radius: 6px;
-  background: var(--tint-sunken); color: var(--sub);
-  font-size: 10px; font-weight: 800; line-height: 18px;
-  font-variant-numeric: tabular-nums;
-}
-.mate-row.group .mate-avatar { border-radius: 12px; }
 
 .mate-me {
   flex: none; height: 18px; padding: 0 6px; border-radius: 6px;
@@ -1272,11 +1264,13 @@ body {
 
 /* 좁은 화면 — 메뉴 시트 안의 프로필 줄 */
 @media (max-width: 899px) {
+  /* 시트 안에는 52g 로고만 남깁니다. 프로필은 오른쪽 위에 늘 떠 있어서,
+     여기 또 두면 같은 것이 한 화면에 두 번 나옵니다. */
   .side-foot {
-    display: flex; align-items: center; gap: 11px;
+    display: flex; align-items: center; justify-content: flex-start;
     margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
   }
-  .side-coach { flex: 1; min-width: 0; }
+  .side-foot .side-coach { display: none; }
   /* 선택된 화면은 테두리로 한 번 더 말해줍니다 — 연한 색면만으로는
      밝은 곳에서 두 항목이 같아 보입니다 */
   .side-nav.open .nav-item.active {
