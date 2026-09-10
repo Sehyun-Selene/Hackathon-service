@@ -80,7 +80,7 @@ export default function CoachProfileSheet({ scan, coach, onOpenDetail, onClose, 
         <div className="sheet-handle" aria-hidden="true" {...drag.handleHandlers} />
         <div className="sheet-head">
           <h3 id="profile-sheet-title">
-            🧑‍🏫 {crewLabel(assignment) || coach.name}
+            {crewLabel(assignment) || coach.name}
             {roleLabel && <span className="profile-role">{roleLabel}</span>}
           </h3>
           <button className="sheet-close" onClick={onClose}>
@@ -153,7 +153,7 @@ export default function CoachProfileSheet({ scan, coach, onOpenDetail, onClose, 
             <div className="profile-stats">
               <div className={`profile-stat${stats.waitingMine ? ' alert' : ''}`}>
                 <b>{stats.waitingMine}</b>
-                <span>담당 팀 대기</span>
+                <span>담당 팀 미처리</span>
               </div>
               <div className="profile-stat">
                 <b>{stats.inProgressByMe}</b>

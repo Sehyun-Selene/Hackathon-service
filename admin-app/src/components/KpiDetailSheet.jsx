@@ -53,7 +53,7 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
           (d.calls || []).filter((c) => c.status === 'waiting').map((c) => ({ teamId, call: c })),
         )
         .sort((a, b) => (a.call.createdAt || 0) - (b.call.createdAt || 0))
-      return { mode: 'list', title: '대기 중 호출', rows }
+      return { mode: 'list', title: '미처리 호출', rows }
     }
 
     if (kind === 'coaches') {
@@ -293,7 +293,7 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
         <div className="sheet-body">
           {data.mode === 'list' ? (
             data.rows.length === 0 ? (
-              <p className="empty-text">대기 중인 호출이 없습니다.</p>
+              <p className="empty-text">미처리 호출이 없습니다.</p>
             ) : (
               <div className="kpi-detail-list">
                 {data.rows.map(({ teamId, call }) => (
