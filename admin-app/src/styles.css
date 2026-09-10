@@ -1092,7 +1092,12 @@ body {
   padding: 12px 13px; border: 1px solid var(--line); border-radius: 15px;
   background: var(--card);
 }
-.stat-row { display: flex; align-items: flex-end; gap: 14px; }
+/* 두 칸을 정확히 반씩 나눕니다. flex 로 두면 왼쪽 라벨이 길어질 때
+   오른쪽이 밀려 여백만 남습니다 — 가운데 선도 자리를 못 잡고요. */
+.stat-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+  gap: 14px; align-items: center;
+}
 .stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .stat-label {
   font-size: 10.5px; font-weight: 700; color: var(--sub);
@@ -1103,7 +1108,7 @@ body {
 }
 .stat-value.accent { color: var(--primary-dark); }
 .stat-value small { font-size: 12px; font-weight: 700; color: var(--sub); margin-left: 1px; }
-.stat-divide { width: 1px; height: 28px; background: var(--line); flex: none; }
+.stat-divide { width: 1px; height: 32px; background: var(--line); }
 
 /* 세 칸이 곧 요약입니다 — 대기 몇 명, 대응 몇 명, 전부 몇 명 */
 .tile-row { display: flex; gap: 7px; }
@@ -1158,6 +1163,8 @@ body {
   font-size: 14px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
 }
 .mate-calls small { font-size: 10px; font-weight: 700; color: var(--sub); margin-left: 1px; }
+/* 숫자 앞에 오는 '호출' — 뒤 단위와 붙는 방향이 반대입니다 */
+.mate-calls .mate-calls-lead { margin-left: 0; margin-right: 3px; }
 /* 밀린 호출이 있으면 숫자를 붉게 — 이 화면에서 눈이 먼저 가야 할 곳입니다 */
 .mate-calls.hot { color: var(--po-state-error); }
 .mate-at {

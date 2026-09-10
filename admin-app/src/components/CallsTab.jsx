@@ -88,7 +88,9 @@ export default function CallsTab({
 
   const mineCount = active.filter((c) => c.mine).length
   const unassignedCount = active.filter((c) => !c.assignedName).length
-  const waitingCount = active.filter((c) => c.status === 'waiting').length
+  // 아직 아무도 잡지 않은 호출. 이 앱에서 "대기"는 메이트가 쉬고 있다는
+  // 뜻으로만 씁니다 — 같은 말이 두 뜻이면 화면에서도 코드에서도 잘못 읽힙니다.
+  const openCount = active.filter((c) => c.status === 'waiting').length
 
   const shown = active.filter((c) => {
     if (filter === 'mine') return c.mine
@@ -162,7 +164,7 @@ export default function CallsTab({
           </button>
         ))}
         <span className="chip-spacer" />
-        {waitingCount > 0 && <span className="waiting-chip">대기 {waitingCount}</span>}
+        {openCount > 0 && <span className="waiting-chip">미처리 {openCount}</span>}
       </div>
 
       <div className={`screen-body${wide ? ' split' : ''}`}>
@@ -196,7 +198,7 @@ export default function CallsTab({
                     <span className="call-ago">
                       {busy
                         ? `처리중${isHandledByMe(c, coach) ? ' · 나' : c.handledBy ? ` · ${c.handledBy}` : ''}`
-                        : `${agoText(waited)} 대기`}
+                        : `${agoText(waited)} 경과`}
                     </span>
                   </span>
                   <span className="call-reason-line">{c.reason || '사유 미작성'}</span>
@@ -314,7 +316,7 @@ export default function CallsTab({
               <span>
                 {selected.status === 'in_progress'
                   ? `처리중${selected.startedAt ? ` · ${fmtTimeOnly(new Date(selected.startedAt))} 시작` : ''}${selected.handledBy ? ` · ${selected.handledBy}` : ''}`
-                  : `선택됨 · ${agoText(nowMs - selected.createdAt)} 대기`}
+                  : `선택됨 · ${agoText(nowMs - selected.createdAt)} 경과`}
               </span>
             </div>
             <div className="dock-buttons">
@@ -330,16 +332,16 @@ export default function CallsTab({
               ) : canControl(selected) ? (
                 <>
                   {/* 잘못 누른 '처리 시작'을 되돌립니다. 되돌리지 못하면 그
-                      호출이 대기 목록에서 사라지고, 슬랙 미처리 알림도
-                      대기 상태만 보므로 아무 알림 없이 묻힙니다. */}
+                      호출이 미처리 목록에서 사라지고, 슬랙 미처리 알림도
+                      그 상태만 보므로 아무 알림 없이 묻힙니다. */}
                   <button
                     type="button"
                     className="dock-btn ghost"
                     onClick={() => onUpdateStatus(selected.team, selected.id, 'waiting', selected)}
-                    title="대기 상태로 되돌립니다"
+                    title="미처리 상태로 되돌립니다"
                   >
                     <Icon name="undo" size={19} />
-                    대기로
+                    되돌리기
                   </button>
                   <button
                     type="button"

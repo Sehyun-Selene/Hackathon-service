@@ -35,7 +35,7 @@ export default function CallDetail({ call, coach, canControl, onUpdateStatus, ag
         <span className={`detail-state${busy ? ' busy' : ''}`}>
           {busy
             ? `처리중${call.handledBy ? ` · ${call.handledBy}` : ''}`
-            : `${agoText(nowMs - call.createdAt)} 대기`}
+            : `${agoText(nowMs - call.createdAt)} 경과`}
         </span>
       </div>
 
@@ -75,16 +75,16 @@ export default function CallDetail({ call, coach, canControl, onUpdateStatus, ag
         ) : canControl ? (
           <>
             {/* 잘못 누른 '처리 시작'을 되돌립니다. 되돌리지 못하면 그 호출이
-                대기 목록에서 사라지고, 슬랙 미처리 알림도 대기 상태만 보므로
+                미처리 목록에서 사라지고, 슬랙 미처리 알림도 그 상태만 보므로
                 아무 알림 없이 묻힙니다. */}
             <button
               type="button"
               className="dock-btn ghost"
               onClick={() => onUpdateStatus(call.team, call.id, 'waiting', call)}
-              title="대기 상태로 되돌립니다"
+              title="미처리 상태로 되돌립니다"
             >
               <Icon name="undo" size={19} />
-              대기로
+              되돌리기
             </button>
             <button
               type="button"

@@ -3,6 +3,7 @@ import {
   formatTeamRange,
   teamSortKey,
   crewFor,
+  getAssignedCoachForTeam,
   crewLabel,
   crewRoleLabel,
   resolveCrewId,
@@ -55,12 +56,16 @@ export default function CoachStatusTab({
     return map
   }, [scan.calls])
 
-  // 담당 구간에 "지금" 밀려 있는 호출 수.
+  // 담당 구간에 아직 처리되지 않은 호출 수.
   //
-  // 누적(완료 포함)이 아니라 대기 중인 것만 셉니다. 이 화면에서 내리는
-  // 결정은 "지금 손이 빈 사람을 어디로 보낼까" 하나뿐이라, 끝난 일은 그
-  // 판단을 돕지 않습니다. 누가 얼마나 처리했는지는 호출 알림 탭에 있습니다.
-  const waitingByTeam = useMemo(() => {
+  // 누적(완료 포함)이 아니라 아직 아무도 잡지 않은 것만 셉니다. 이 화면에서
+  // 내리는 결정은 "지금 손이 빈 사람을 어디로 보낼까" 하나뿐이라, 끝난 일은
+  // 그 판단을 돕지 않습니다. 누가 얼마나 처리했는지는 호출 알림 탭에 있습니다.
+  //
+  // 이름에 waiting 을 쓰지 않습니다 — 이 화면에서 "대기"는 메이트가 쉬고
+  // 있다는 뜻으로만 씁니다. 같은 말이 두 뜻이면 화면에서도 코드에서도
+  // 잘못 읽힙니다.
+  const openCallsByTeam = useMemo(() => {
     const map = {}
     Object.entries(scan.calls).forEach(([teamId, data]) => {
       map[teamId] = (data.calls || []).filter((c) => c.status === 'waiting').length
@@ -101,7 +106,7 @@ export default function CoachStatusTab({
         return {
           coach: { id: person.ids[0], name: label },
           ids: person.ids,
-          waiting: teams.reduce((n, id) => n + (waitingByTeam[id] || 0), 0),
+          openCalls: teams.reduce((n, id) => n + (openCallsByTeam[id] || 0), 0),
           busy: [
             ...(busyByKey['name:' + person.name] || []),
             ...person.ids.flatMap((id) => busyByKey['id:' + id] || []),
@@ -114,23 +119,27 @@ export default function CoachStatusTab({
           sortKey: teams.length ? Math.min(...teams.map(teamSortKey)) : Number.MAX_SAFE_INTEGER,
         }
       })
-  }, [scan.coaches, busyByKey, waitingByTeam])
+  }, [scan.coaches, busyByKey, openCallsByTeam])
 
   const idle = rows.filter((r) => r.busy.length === 0)
   const busy = rows.filter((r) => r.busy.length > 0)
 
   const myAssignment = crewFor(coach)
   const myTeams = myAssignment?.teamNumbers || []
-  const myRange = formatTeamRange(myTeams)
-  const totalWaiting = Object.values(waitingByTeam).reduce((n, v) => n + v, 0)
-  const myWaiting = myAssignment?.callManager
-    ? totalWaiting
-    : myTeams.reduce((n, id) => n + (waitingByTeam[id] || 0), 0)
+  const totalOpen = Object.values(openCallsByTeam).reduce((n, v) => n + v, 0)
+  // 담당자가 아예 없는 팀의 호출 — 아무도 가지 않을 건이라 총관리자가
+  // 직접 사람을 붙여야 합니다. 그분 화면에서만 씁니다.
+  const unassignedOpen = Object.entries(openCallsByTeam)
+    .filter(([teamId]) => !getAssignedCoachForTeam(teamId))
+    .reduce((n, [, v]) => n + v, 0)
+  const myOpen = myAssignment?.callManager
+    ? totalOpen
+    : myTeams.reduce((n, id) => n + (openCallsByTeam[id] || 0), 0)
 
   const pool = filter === 'idle' ? idle : filter === 'busy' ? busy : rows
   const shown = [...pool].sort((a, b) =>
-    sort === 'waiting'
-      ? b.waiting - a.waiting || a.sortKey - b.sortKey
+    sort === 'calls'
+      ? b.openCalls - a.openCalls || a.sortKey - b.sortKey
       : a.sortKey - b.sortKey || a.coach.name.localeCompare(b.coach.name),
   )
 
@@ -169,19 +178,23 @@ export default function CoachStatusTab({
       <div className="stat-card">
         <div className="stat-row">
           <span className="stat">
-            <span className="stat-label">지금 대기 중인 호출</span>
+            <span className="stat-label">아직 처리하지 않은 호출</span>
             <span className="stat-value">
-              {totalWaiting}
+              {totalOpen}
               <small>건</small>
             </span>
           </span>
           <span className="stat-divide" aria-hidden="true" />
+          {/* 담당 구간(E-97~E-99)은 라벨에서 뺐습니다. 자기 구간은 프로필에
+              늘 있고, 여기서는 괄호가 길어져 오른쪽이 텅 비었습니다.
+              총관리자는 담당 구간이 없어 이 칸이 왼쪽과 같은 숫자가 됐었는데,
+              같은 수를 두 번 보여주느니 그분만 볼 수 있는 것을 둡니다. */}
           <span className="stat">
             <span className="stat-label">
-              내 담당{myRange ? ` (${myRange})` : myAssignment?.callManager ? ' (전체)' : ''}
+              {myAssignment?.callManager ? '담당자 없는 호출' : '내 담당'}
             </span>
             <span className="stat-value accent">
-              {myWaiting}
+              {myAssignment?.callManager ? unassignedOpen : myOpen}
               <small>건</small>
             </span>
           </span>
@@ -197,11 +210,11 @@ export default function CoachStatusTab({
           </button>
           <button
             type="button"
-            className={`filter-chip${sort === 'waiting' ? ' on' : ''}`}
-            onClick={() => setSort('waiting')}
-            aria-pressed={sort === 'waiting'}
+            className={`filter-chip${sort === 'calls' ? ' on' : ''}`}
+            onClick={() => setSort('calls')}
+            aria-pressed={sort === 'calls'}
           >
-            대기 많은 순
+            호출 많은 순
           </button>
         </div>
       </div>
@@ -248,14 +261,14 @@ export default function CoachStatusTab({
                     {m.range ? `팀 ${m.range}` : m.roleLabel || '담당 미배정'}
                   </span>
                 </span>
-                {/* 여기서 '대기'가 두 뜻으로 쓰이던 자리입니다 — 숫자는 그
-                    구간에 밀린 호출, 아래 글자는 그 사람이 비어 있다는 뜻.
-                    말이 겹치면 새벽에 잘못 읽습니다. 숫자에만 '대기'를
-                    남기고, 사람 상태는 아바타 색과 위치 표시로 말합니다. */}
+                {/* '대기'는 이 화면에서 사람이 쉬고 있다는 뜻으로만 씁니다.
+                    처리되지 않은 호출은 "호출 N건" — 같은 말을 두 뜻으로
+                    쓰면 새벽에 잘못 읽습니다. */}
                 <span className="mate-right">
-                  <span className={`mate-calls${m.waiting ? ' hot' : ''}`}>
-                    {m.waiting}
-                    <small>건 대기</small>
+                  <span className={`mate-calls${m.openCalls ? ' hot' : ''}`}>
+                    <small className="mate-calls-lead">호출</small>
+                    {m.openCalls}
+                    <small>건</small>
                   </span>
                   {isBusy && (
                     <span className="mate-at">
