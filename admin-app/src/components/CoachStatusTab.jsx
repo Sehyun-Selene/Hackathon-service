@@ -4,6 +4,7 @@ import {
   teamSortKey,
   crewFor,
   getAssignedCoachForTeam,
+  COACH_GROUPS,
   crewLabel,
   crewRoleLabel,
   resolveCrewId,
@@ -79,7 +80,7 @@ export default function CoachStatusTab({
   // 인원이 부풀고, 한쪽만 대응 중으로 잡히면 같은 사람이 대기·대응에 동시에
   // 뜹니다. 그래서 이름으로 묶고, 그 사람의 어느 기기든 대응 중이면 대응 중으로
   // 봅니다.
-  const rows = useMemo(() => {
+  const people = useMemo(() => {
     // 한 사람이 폰·노트북 두 대로 열 수 있어 사람 단위로 묶습니다.
     // 묶는 열쇠는 명단 id — 이름이 같은 두 분(이상윤)이 한 사람으로
     // 합쳐지지 않게 합니다. 명단에 없는 이름은 이름으로 묶습니다.
@@ -106,6 +107,7 @@ export default function CoachStatusTab({
         return {
           coach: { id: person.ids[0], name: label },
           ids: person.ids,
+          groupId: assigned?.groupId || null,
           openCalls: teams.reduce((n, id) => n + (openCallsByTeam[id] || 0), 0),
           busy: [
             ...(busyByKey['name:' + person.name] || []),
@@ -121,8 +123,43 @@ export default function CoachStatusTab({
       })
   }, [scan.coaches, busyByKey, openCallsByTeam])
 
-  const idle = rows.filter((r) => r.busy.length === 0)
-  const busy = rows.filter((r) => r.busy.length > 0)
+  // 인원수는 사람 단위로 셉니다 — 그룹을 한 줄로 접어도 "지금 부를 수 있는
+  // 사람"은 사람 수라야 맞습니다.
+  const idle = people.filter((r) => r.busy.length === 0)
+  const busy = people.filter((r) => r.busy.length > 0)
+
+  // 화면에 그릴 줄. 한 구간을 여럿이 함께 맡는 그룹(리테일 조)은 한 줄로
+  // 접습니다. 구성원 13명이 같은 구간을 보므로 호출 수가 전부 같은데,
+  // 그대로 펼치면 같은 숫자가 13줄 늘어서서 "왜 다 똑같지?"가 됩니다.
+  const rows = useMemo(() => {
+    const out = []
+    const groups = new Map()
+    people.forEach((p) => {
+      if (!p.groupId) return out.push(p)
+      const g = groups.get(p.groupId) || []
+      g.push(p)
+      groups.set(p.groupId, g)
+    })
+    groups.forEach((members, id) => {
+      const def = COACH_GROUPS.find((x) => x.id === id)
+      const idleN = members.filter((m) => m.busy.length === 0).length
+      const teams = def?.teamNumbers || []
+      out.push({
+        isGroup: true,
+        coach: { id: 'group:' + id, name: (def?.label || '') + ' 마스터 메이트' },
+        ids: members.flatMap((m) => m.ids),
+        openCalls: members[0]?.openCalls ?? 0,
+        busy: members.flatMap((m) => m.busy),
+        idleN,
+        busyN: members.length - idleN,
+        total: members.length,
+        range: formatTeamRange(teams),
+        initial: (def?.label || '?').charAt(0),
+        sortKey: teams.length ? Math.min(...teams.map(teamSortKey)) : Number.MAX_SAFE_INTEGER,
+      })
+    })
+    return out
+  }, [people])
 
   const myAssignment = crewFor(coach)
   const myTeams = myAssignment?.teamNumbers || []
@@ -136,7 +173,14 @@ export default function CoachStatusTab({
     ? totalOpen
     : myTeams.reduce((n, id) => n + (openCallsByTeam[id] || 0), 0)
 
-  const pool = filter === 'idle' ? idle : filter === 'busy' ? busy : rows
+  // 그룹은 안에 한 명이라도 해당하면 남깁니다 — 13명 중 9명이 비어 있으면
+  // '대기 중'에 보여야 하고, 4명이 나가 있으면 '대응 중'에도 보여야 합니다.
+  // 그래서 그룹 한 줄이 두 필터에 모두 나올 수 있습니다. 맞는 동작입니다.
+  const pool = rows.filter((r) => {
+    if (filter === 'all') return true
+    if (r.isGroup) return filter === 'idle' ? r.idleN > 0 : r.busyN > 0
+    return filter === 'idle' ? r.busy.length === 0 : r.busy.length > 0
+  })
   const shown = [...pool].sort((a, b) =>
     sort === 'calls'
       ? b.openCalls - a.openCalls || a.sortKey - b.sortKey
@@ -148,7 +192,7 @@ export default function CoachStatusTab({
   const TABS = [
     { id: 'idle', label: '대기 중', count: idle.length, tone: 'idle' },
     { id: 'busy', label: '대응 중', count: busy.length, tone: 'busy' },
-    { id: 'all', label: '전체', count: rows.length, tone: 'all' },
+    { id: 'all', label: '전체', count: people.length, tone: 'all' },
   ]
 
   return (
@@ -238,7 +282,7 @@ export default function CoachStatusTab({
       </div>
 
       <div className="mate-list">
-        {rows.length === 0 ? (
+        {people.length === 0 ? (
           <p className="empty-text">아직 입장한 마스터 메이트가 없습니다.</p>
         ) : shown.length === 0 ? (
           <p className="empty-text">
@@ -249,18 +293,27 @@ export default function CoachStatusTab({
         ) : (
           shown.map((m) => {
             // 내 기기가 그 사람의 기기 목록에 있으면 '나'
-            const isMe = m.ids.includes(coach.id) || m.coach.name.startsWith(coach.name)
+            const isMe = m.ids.includes(coach.id) || (!m.isGroup && m.coach.name.startsWith(coach.name))
+            // 그룹은 한 명이라도 나가 있으면 붉게 — 다 비어 있을 때만 초록입니다
             const isBusy = m.busy.length > 0
             return (
-              <div key={m.coach.id} className={`mate-row${isBusy ? ' busy' : ' idle'}`}>
+              <div
+                key={m.coach.id}
+                className={`mate-row${isBusy ? ' busy' : ' idle'}${m.isGroup ? ' group' : ''}`}
+              >
                 <span className="mate-avatar" aria-hidden="true">{m.initial}</span>
                 <span className="mate-body">
                   <span className="mate-line">
                     <b className="mate-name">{m.coach.name}</b>
+                    {m.isGroup && <span className="mate-count">{m.total}명</span>}
                     {isMe && <span className="mate-me">나</span>}
                   </span>
                   <span className="mate-range">
-                    {m.range ? `팀 ${m.range}` : m.roleLabel || '담당 미배정'}
+                    {m.isGroup
+                      ? `팀 ${m.range} · 대기 ${m.idleN} · 대응 ${m.busyN}`
+                      : m.range
+                        ? `팀 ${m.range}`
+                        : m.roleLabel || '담당 미배정'}
                   </span>
                 </span>
                 {/* '대기'는 이 화면에서 사람이 쉬고 있다는 뜻으로만 씁니다.
@@ -275,7 +328,10 @@ export default function CoachStatusTab({
                   {isBusy && (
                     <span className="mate-at">
                       <Icon name="pin" size={13} />
-                      팀 {m.busy.map((x) => x.teamId).join(', ')}
+                      {/* 그룹은 여러 명이 흩어져 있어 팀 번호를 전부 적으면
+                          줄이 넘칩니다. 두 개까지만 적고 나머지는 셉니다. */}
+                      팀 {m.busy.slice(0, 2).map((x) => x.teamId).join(', ')}
+                      {m.busy.length > 2 ? ` 외 ${m.busy.length - 2}` : ''}
                     </span>
                   )}
                 </span>
