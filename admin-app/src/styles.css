@@ -1071,6 +1071,22 @@ body {
   background: var(--tint-sunken); color: var(--sub); font-size: 13.5px; font-weight: 600;
 }
 .dock-btn.ghost:hover { border-color: var(--po-border-strong); color: var(--text); }
+/* 하단 바의 끼니 고르기 — 두 칸이 남는 폭을 반씩 나눠 씁니다.
+   ☰ 가 있는 화면(총관리자)에서도 두 칸이 들어가도록 글자를 줄입니다. */
+.dock-meals { display: flex; gap: 8px; min-width: 0; }
+.dock-meal {
+  flex: 1; min-width: 0; height: 56px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 16px; background: var(--tint-sunken);
+  font: inherit; font-size: 13px; font-weight: 700; color: var(--sub);
+  cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dock-meal:hover { border-color: var(--po-border-strong); color: var(--text); }
+.dock-meal.on {
+  border: 1.5px solid var(--primary); background: var(--violet-soft);
+  color: var(--primary-dark);
+}
+@media (max-width: 359px) { .dock-meal { font-size: 12px; padding: 0 6px; } }
+
 .dock-status {
   display: flex; align-items: center; gap: 7px; height: 56px; padding: 0 12px;
   border: 1px solid var(--line); border-radius: 16px; background: var(--tint-sunken);

@@ -674,6 +674,7 @@ export default function App() {
               mealFilter={mealFilter}
               onToggleSoldout={toggleSoldout}
               onToggleDelivered={toggleDelivered}
+              onSelectMeal={setMealFilter}
               {...screenProps}
             />
           ) : tab === 'coaches' ? (

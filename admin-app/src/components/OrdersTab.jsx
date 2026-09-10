@@ -112,6 +112,7 @@ export default function OrdersTab({
   mealFilter,
   onToggleSoldout,
   onToggleDelivered,
+  onSelectMeal,
   onOpenMenu,
   menuAlert,
   menuOpen,
@@ -799,9 +800,21 @@ export default function OrdersTab({
           없었습니다. 넓은 화면에서는 왼쪽 사이드바가 그 일을 합니다. */}
       {!wide && (
         <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen} showMenu={showMenu}>
-          <div className="dock-status">
-            <Icon name="clipboard" size={17} />
-            <span>{MEAL_BY_ID[mealFilter]?.label || '끼니를 고르세요'}</span>
+          {/* 끼니 고르기는 이 화면에서 가장 자주 쓰는 조작입니다. 예전에는
+              메뉴 안 하위 항목에만 있었는데, 화면이 하나뿐인 식음 운영에게는
+              메뉴가 없어 바꿀 방법이 사라졌습니다. 바로 여기 둡니다. */}
+          <div className="dock-meals">
+            {MEALS.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={`dock-meal${mealFilter === m.id ? ' on' : ''}`}
+                onClick={() => onSelectMeal?.(m.id)}
+                aria-pressed={mealFilter === m.id}
+              >
+                {m.label}
+              </button>
+            ))}
           </div>
         </AdminDock>
       )}
