@@ -8,6 +8,7 @@ import {
   MENU_BY_ID,
   crewLabel,
   crewFor,
+  adminTabsFor,
 } from './config.js'
 import {
   storageGet,
@@ -38,14 +39,15 @@ import CallsTab from './components/CallsTab.jsx'
 import CoachStatusTab from './components/CoachStatusTab.jsx'
 import CoachProfileSheet from './components/CoachProfileSheet.jsx'
 import KpiDetailSheet from './components/KpiDetailSheet.jsx'
+import Icon from './components/Icon.jsx'
 
 const MY_COACH_KEY = 'torder-coach' // 이 기기의 마스터 메이트 정보(로컬)
 
 // 마스터 메이트가 가장 자주 쓰는 화면이 위로 오도록. 첫 화면도 '호출 알림'.
 const TAB_DEFS = [
-  { id: 'calls', icon: '🔔', label: '호출 알림' },
-  { id: 'coaches', icon: '🧑‍🏫', label: '마스터 메이트 현황' },
-  { id: 'orders', icon: '📋', label: '주문 현황' },
+  { id: 'calls', icon: 'bell', label: '호출 알림' },
+  { id: 'coaches', icon: 'users', label: '마스터 메이트 현황' },
+  { id: 'orders', icon: 'clipboard', label: '주문 현황' },
 ]
 
 // 배부 완료 상태 키 (팀별 분리 — 여러 러너가 동시에 체크해도 충돌 최소화)
@@ -125,7 +127,7 @@ export default function App() {
   // 명단 항목 자체를 고르게 합니다 — 오타로 담당 팀이 안 붙는 것도 막습니다.
   const [pickedCrew, setPickedCrew] = useState(null)
 
-  const [tab, setTab] = useState('calls') // 입장 직후 첫 화면
+  const [wantTab, setWantTab] = useState('calls') // 눌러서 고른 화면
   // 주문 현황의 식사 선택 — 좌측 메뉴의 하위 항목으로 노출되므로 여기서 관리
   const [mealFilter, setMealFilter] = useState(getDefaultMealId)
   const [menuOpen, setMenuOpen] = useState(false) // 모바일 좌상단 메뉴 팝업
@@ -176,6 +178,9 @@ export default function App() {
     darkStart > darkEnd ? hour >= darkStart || hour < darkEnd : hour >= darkStart && hour < darkEnd
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
+    // 디자인 토큰(plai-order-tokens.css)은 data-po-theme 로 낮/밤을 가립니다.
+    // OS 설정이 아니라 이 앱의 시각 판단을 따르게 하려고 함께 세웁니다.
+    document.documentElement.dataset.poTheme = isDark ? 'dark' : 'light'
   }, [isDark])
 
   const refresh = useCallback(async () => {
@@ -470,9 +475,27 @@ export default function App() {
     : 0
 
 
+  // 역할에 따라 보이는 화면이 다릅니다 (config.adminTabsFor).
+  // 고른 값을 그대로 쓰지 않고 매번 걸러냅니다 — 못 보는 화면은 값이
+  // 남아 있어도 열리지 않아야 하고, 역할이 바뀌어도 빈 화면이 되지
+  // 않아야 합니다.
+  const myTabIds = adminTabsFor(crewFor(coach))
+  const myTabs = TAB_DEFS.filter((t) => myTabIds.includes(t.id))
+  const tab = myTabIds.includes(wantTab) ? wantTab : myTabIds[0]
   const activeTab = TAB_DEFS.find((t) => t.id === tab)
+  // 화면마다 아래 고정 바를 그리므로, 메뉴 여는 방법을 함께 넘깁니다.
+  // 지금 보고 있지 않은 화면에 볼 것이 생겼으면 ☰ 에 점을 찍습니다 —
+  // 메뉴를 열어야만 알 수 있으면 알림이 아닙니다.
+  const screenProps = {
+    onOpenMenu: () => setMenuOpen((o) => !o),
+    menuOpen,
+    menuAlert: tab !== 'calls' && waitingCount > 0,
+    syncAt: scan?.at ? new Date(scan.at) : null,
+    onRefresh: refresh,
+    refreshing,
+  }
   const selectTab = (id) => {
-    setTab(id)
+    setWantTab(id)
     setMenuOpen(false)
   }
 
@@ -480,18 +503,9 @@ export default function App() {
     <div className="admin">
       <aside className="sidebar">
         <div className="brand-row">
-          <button
-            className="menu-toggle"
-            onClick={() => setMenuOpen((o) => !o)}
-            aria-label="메뉴 열기"
-            aria-expanded={menuOpen}
-          >
-            ☰
-          </button>
           <div className="brand">
-            <span className="brand-mark" aria-hidden="true">🖥️</span>
             <span className="brand-text">
-              관리자 <b>페이지</b>
+              플라오더 <b>운영</b>
             </span>
           </div>
           {/* 좁은 화면에서는 사이드바 하단(.side-foot)이 숨겨지므로 이 줄의
@@ -502,28 +516,23 @@ export default function App() {
             aria-haspopup="dialog"
             aria-label="내 프로필 보기"
           >
-            🧑‍🏫 {crewLabel(crewFor(coach)) || coach.name}
+            <span className="side-coach-avatar" aria-hidden="true">
+              {(crewLabel(crewFor(coach)) || coach.name || '?').trim().charAt(0)}
+            </span>
+            <span className="side-coach-name">{crewLabel(crewFor(coach)) || coach.name}</span>
           </button>
         </div>
         <nav className={`side-nav${menuOpen ? ' open' : ''}`}>
           <div className="drawer-head">
-            <div className="brand">
-              <span className="brand-mark" aria-hidden="true">🖥️</span>
-              <span className="brand-text">
-                관리자 <b>페이지</b>
-              </span>
-            </div>
-            <button className="drawer-close" onClick={() => setMenuOpen(false)} aria-label="메뉴 닫기">
-              ✕
-            </button>
+            <span className="sheet-grip" aria-hidden="true" />
           </div>
-          {TAB_DEFS.map((td) => (
+          {myTabs.map((td) => (
             <div key={td.id} className="nav-group">
               <button
                 className={`nav-item${tab === td.id ? ' active' : ''}`}
                 onClick={() => selectTab(td.id)}
               >
-                <span className="nav-icon" aria-hidden="true">{td.icon}</span>
+                <Icon name={td.icon} size={20} className="nav-icon" />
                 <span className="nav-label">{td.label}</span>
                 {td.id === 'calls' && waitingCount > 0 && (
                   <span className="nav-badge">{waitingCount}</span>
@@ -548,62 +557,75 @@ export default function App() {
               )}
             </div>
           ))}
+          {/* 항목이 두 개뿐인 이유를 밝혀둡니다 — 빠진 것처럼 보이지 않게 */}
+          {!myTabIds.includes('orders') && (
+            <p className="nav-note">주문 현황은 식음 운영 담당자 계정에만 표시됩니다.</p>
+          )}
+          {/* 설정은 메뉴 안이 제자리입니다. 폰에서는 상단바가 없어,
+              여기 없으면 알림음을 켤 방법이 사라집니다. */}
+          <label className="nav-setting">
+            <input
+              type="checkbox"
+              checked={soundOn}
+              onChange={(e) => {
+                initAudio()
+                setSoundOn(e.target.checked)
+              }}
+            />
+            새 호출 알림음
+          </label>
+          <div className="side-foot">
+            {/* 이름을 누르면 담당 팀 범위·알림 연결 상태를 확인하는 시트가 열립니다 */}
+            <button
+              className="side-coach"
+              onClick={() => setShowProfile(true)}
+              aria-haspopup="dialog"
+              aria-label="내 프로필 보기"
+            >
+              <span className="side-coach-avatar" aria-hidden="true">
+                {(crewLabel(crewFor(coach)) || coach.name || '?').trim().charAt(0)}
+              </span>
+              <span className="side-coach-name">{crewLabel(crewFor(coach)) || coach.name}</span>
+              <Icon name="chevron" size={16} className="side-coach-chevron" />
+            </button>
+            <img className="side-foot-logo" src={logo52g} alt="52g" />
+          </div>
         </nav>
         {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
-        <div className="side-foot">
-          {/* 이름을 누르면 담당 팀 범위·알림 연결 상태를 확인하는 시트가 열립니다 */}
-          <button
-            className="side-coach"
-            onClick={() => setShowProfile(true)}
-            aria-haspopup="dialog"
-            aria-label="내 프로필 보기"
-          >
-            🧑‍🏫 {crewLabel(crewFor(coach)) || coach.name}
-            <span className="side-coach-chevron" aria-hidden="true">›</span>
-          </button>
-          <img className="side-foot-logo" src={logo52g} alt="52g" />
-        </div>
       </aside>
 
       <div className="main">
-        <header className="topbar">
-          <div className="topbar-title">
-            <span className="topbar-icon" aria-hidden="true">{activeTab?.icon}</span>
-            <h1>{activeTab?.label}</h1>
-          </div>
-          <div className="topbar-actions">
-            <label className="sound-toggle">
-              <input
-                type="checkbox"
-                checked={soundOn}
-                onChange={(e) => {
-                  initAudio()
-                  setSoundOn(e.target.checked)
-                }}
-              />
-              알림음
-            </label>
-            {scan && (
-              <span className="sync-time">
-                <span className="narrow-hide">동기화 </span>
-                {/* 초까지 보여줍니다. 3초마다 저절로 바뀌므로, 누르지 않아도
-                    화면이 살아 있다는 것이 이 숫자로 드러납니다. */}
-                {fmtTimeWithSec(new Date(scan.at))}
-              </span>
-            )}
-            <button
-              className={`btn-ghost sync-refresh${refreshing ? ' spinning' : ''}`}
-              onClick={refresh}
-              disabled={refreshing}
-              aria-label="새로고침"
-            >
-              <span className="sync-refresh-icon" aria-hidden="true">
-                ⟳
-              </span>
-              <span className="narrow-hide"> 새로고침</span>
-            </button>
-          </div>
-        </header>
+        {/* 상단바는 주문 화면에만 남습니다. 호출·메이트 화면은 제목과
+            동기화 시각·새로고침을 화면 안(.screen-head)에 직접 두어,
+            상단바를 함께 그리면 같은 제목이 두 번 보입니다. */}
+        {tab === 'orders' && (
+          <header className="topbar">
+            <div className="topbar-title">
+              <h1>{activeTab?.label}</h1>
+            </div>
+            <div className="topbar-actions">
+              {scan && (
+                <span className="sync-time">
+                  <span className="narrow-hide">동기화 </span>
+                  {/* 초까지 보여줍니다. 3초마다 저절로 바뀌므로, 누르지 않아도
+                      화면이 살아 있다는 것이 이 숫자로 드러납니다. */}
+                  {fmtTimeWithSec(new Date(scan.at))}
+                </span>
+              )}
+              <button
+                className={`btn-ghost sync-refresh${refreshing ? ' spinning' : ''}`}
+                onClick={refresh}
+                disabled={refreshing}
+                aria-label="새로고침"
+              >
+                <span className="sync-refresh-icon" aria-hidden="true">
+                  ⟳
+                </span>
+                <span className="narrow-hide"> 새로고침</span>
+              </button>
+            </div>
+          </header>
+        )}
 
         {syncError && (
           <div className="sync-error" role="status">
@@ -628,11 +650,17 @@ export default function App() {
               mealFilter={mealFilter}
               onToggleSoldout={toggleSoldout}
               onToggleDelivered={toggleDelivered}
+              {...screenProps}
             />
           ) : tab === 'coaches' ? (
-            <CoachStatusTab scan={scan} coach={coach} />
+            <CoachStatusTab scan={scan} coach={coach} {...screenProps} />
           ) : (
-            <CallsTab scan={scan} coach={coach} onUpdateStatus={updateCallStatus} />
+            <CallsTab
+              scan={scan}
+              coach={coach}
+              onUpdateStatus={updateCallStatus}
+              {...screenProps}
+            />
           )}
         </main>
       </div>

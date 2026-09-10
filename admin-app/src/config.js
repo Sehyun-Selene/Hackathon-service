@@ -608,6 +608,18 @@ export function resolveCrewId(coach) {
   if (!crewNameIsUnique(coach.name)) return ""
   return ADMIN_CREW.find((c) => c.name === coach.name)?.id || ""
 }
+// 이 사람이 관리자 앱에서 볼 화면. 역할이 하는 일이 다르면 볼 것도 다릅니다.
+//   식음 운영  → 주문 현황만. 호출은 이분이 가는 일이 아닙니다.
+//   마스터 메이트 → 호출 알림 + 메이트 현황. 주문·배부·품절은 남의 일이라,
+//                 화면에 있으면 급한 호출을 찾는 데 방해만 됩니다.
+//   총관리자   → 전부. 미주문 팀 재촉이 주문 쪽에 있고, 누가 빠져도
+//                대신 메워야 하는 자리라 가릴 것이 없습니다.
+export function adminTabsFor(member) {
+  if (member?.callManager) return ['calls', 'coaches', 'orders']
+  if (member?.orderManager) return ['orders']
+  return ['calls', 'coaches']
+}
+
 export function crewFor(coach) {
   return crewById(resolveCrewId(coach))
 }

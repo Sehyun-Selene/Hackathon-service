@@ -4,13 +4,20 @@
     {
       "name": "integration-preview",
       "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
-      "runtimeArgs": ["preview-server.js"],
+      "runtimeArgs": [
+        "preview-server.js"
+      ],
       "port": 4173
     },
     {
       "name": "participant-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "participant-app", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "participant-app",
+        "run",
+        "dev"
+      ],
       "port": 5173
     },
     {
@@ -30,6 +37,21 @@
       ],
       "port": 5174,
       "autoPort": false
+    },
+    {
+      "name": "admin-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "admin-app",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5175",
+        "--strictPort"
+      ],
+      "port": 5175
     }
   ]
 }
