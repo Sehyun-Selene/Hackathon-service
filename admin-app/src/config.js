@@ -317,7 +317,7 @@ export const TEAMS = {
   'G-45': { name: "정구봉팀4", size: 2 },
   'G-46': { name: "정구봉팀5", size: 2 },
   // 필드리그 팀입니다 — 자리만 개발자리그 구역입니다 (TEAM_LEAGUE_OVERRIDES)
-  'G-47': { name: "", company: "현대모비스", size: 3 },
+  'G-47': { name: "WIATHON", company: "현대위아", size: 3 },
 }
 
 export const LEAGUE_BY_PREFIX = Object.fromEntries(LEAGUES.map((l) => [l.prefix, l]))
