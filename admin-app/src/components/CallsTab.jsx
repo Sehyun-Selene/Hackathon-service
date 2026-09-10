@@ -55,7 +55,9 @@ export default function CallsTab({
   // 그대로 늘리면 목록 한 줄이 1000px가 되고 아래 절반이 빕니다.
   const wide = useMediaQuery('(min-width: 900px)')
   const [filter, setFilter] = useState('all')
-  const [selectedId, setSelectedId] = useState(null)
+  // undefined = 아직 아무것도 고르지 않음(내가 잡은 호출이 자동으로 잡힘)
+  // null      = 사용자가 직접 접었음
+  const [selectedId, setSelectedId] = useState(undefined)
 
   // "내 담당"은 이름이 아니라 배정으로 가립니다. 이름이 겹치는 분들이
   // 있고(이상윤 두 분), 리테일 조처럼 한 구간을 여럿이 함께 맡으면
@@ -100,14 +102,18 @@ export default function CallsTab({
   })
 
   // 내가 잡은 호출은 자동으로 골라 둡니다 — 완료를 누르러 돌아왔을 때
-  // 목록에서 다시 찾게 하지 않습니다.
+  // 목록에서 다시 찾게 하지 않습니다. 다만 직접 접었으면(null) 그 뜻을
+  // 존중합니다 — 안 그러면 접자마자 도로 펼쳐집니다.
   const myInProgress = active.find((c) => c.status === 'in_progress' && isHandledByMe(c, coach))
+  const auto = selectedId === undefined
   const selected =
-    shown.find((c) => c.id === selectedId) || myInProgress || null
+    (auto ? myInProgress : shown.find((c) => c.id === selectedId)) || null
 
   // 고른 호출이 목록에서 사라지면(다른 메이트가 완료 처리) 선택을 놓습니다.
   useEffect(() => {
-    if (selectedId && !active.some((c) => c.id === selectedId)) setSelectedId(null)
+    // 다시 자동(undefined)으로 돌려놓습니다 — null 로 두면 내가 새로 잡은
+    // 호출이 있어도 아래 바가 비어 있습니다.
+    if (selectedId && !active.some((c) => c.id === selectedId)) setSelectedId(undefined)
   }, [selectedId, active])
 
   const nowMs = Date.now()
@@ -189,7 +195,7 @@ export default function CallsTab({
                 <button
                   type="button"
                   className={`call-row${isSel ? ' on' : ''}${urgent ? ' urgent' : ''}${busy ? ' busy' : ''}`}
-                  onClick={() => setSelectedId(c.id)}
+                  onClick={() => setSelectedId(isSel ? null : c.id)}
                   aria-pressed={isSel}
                   aria-expanded={!wide ? isSel : undefined}
                 >
@@ -338,11 +344,13 @@ export default function CallsTab({
       {/* 노트북에서는 처리 버튼이 오른쪽 상세 칸에 있으므로 아래 바가 없습니다.
           메뉴도 왼쪽 사이드바에 늘 보이고요. */}
       {!wide && (
-      <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen} showMenu={showMenu}>
-        {!selected ? (
-          <DockHint>호출을 선택하면 여기서 처리합니다</DockHint>
-        ) : (
-          <div className="dock-action">
+      <AdminDock
+        onOpenMenu={onOpenMenu}
+        menuAlert={menuAlert}
+        menuOpen={menuOpen}
+        showMenu={showMenu}
+        lead={
+          selected ? (
             <div className="dock-target">
               <b>팀 {selected.team}</b>
               <span>
@@ -351,6 +359,12 @@ export default function CallsTab({
                   : `선택됨 · ${agoText(nowMs - selected.createdAt)} 경과`}
               </span>
             </div>
+          ) : null
+        }
+      >
+        {!selected ? (
+          <DockHint>호출을 선택하면 여기서 처리합니다</DockHint>
+        ) : (
             <div className="dock-buttons">
               {selected.status === 'waiting' ? (
                 <button
@@ -390,7 +404,6 @@ export default function CallsTab({
                 </DockHint>
               )}
             </div>
-          </div>
         )}
       </AdminDock>
       )}

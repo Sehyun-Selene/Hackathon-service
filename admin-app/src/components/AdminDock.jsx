@@ -21,25 +21,32 @@ export default function AdminDock({
   menuOpen = false,
   // 갈 수 있는 화면이 하나뿐이면 메뉴 자체가 필요 없습니다 (식음 운영).
   showMenu = true,
+  // 버튼 줄 위에 폭을 다 쓰는 한 줄. 지금 무엇을 대상으로 누르는지 알려줍니다.
+  // 이걸 ☰ 와 같은 줄에 넣으면 슬롯만 두 줄이 되어 버튼이 ☰ 보다 아래로
+  // 내려갑니다 — 같은 줄에 있어야 할 것들이 어긋나 보입니다.
+  lead = null,
   children,
 }) {
   return (
     <div className="dock">
-      {showMenu && (
-        <button
-          type="button"
-          className={`dock-menu${menuOpen ? ' on' : ''}`}
-          onClick={onOpenMenu}
-          aria-expanded={menuOpen}
-          aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
-        >
-          <Icon name={menuOpen ? 'close' : 'menu'} size={20} />
-          <span className="dock-menu-label">{menuOpen ? '닫기' : '메뉴'}</span>
-          {/* 다른 화면에 볼 것이 생겼다는 표시 — 메뉴를 열어야 알 수 있으므로 */}
-          {menuAlert && !menuOpen && <span className="dock-dot" aria-hidden="true" />}
-        </button>
-      )}
-      <div className="dock-slot">{children}</div>
+      {lead}
+      <div className="dock-row">
+        {showMenu && (
+          <button
+            type="button"
+            className={`dock-menu${menuOpen ? ' on' : ''}`}
+            onClick={onOpenMenu}
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
+          >
+            <Icon name={menuOpen ? 'close' : 'menu'} size={20} />
+            <span className="dock-menu-label">{menuOpen ? '닫기' : '메뉴'}</span>
+            {/* 다른 화면에 볼 것이 생겼다는 표시 — 메뉴를 열어야 알 수 있으므로 */}
+            {menuAlert && !menuOpen && <span className="dock-dot" aria-hidden="true" />}
+          </button>
+        )}
+        <div className="dock-slot">{children}</div>
+      </div>
     </div>
   )
 }
