@@ -270,11 +270,11 @@ export const TEAMS = {
   'E-200': { name: "오리온 1팀", company: "오리온", size: 4 },
   'E-201': { name: "오잉메리호", company: "오리온", size: 4 },
   'E-202': { name: "오리온 3팀", company: "오리온", size: 4 },
-  'E-203': { name: "", company: "한국전력공사", size: 4 },
+  'E-203': { name: "", company: "한국전력공사", size: 3 },
   'E-204': { name: "", company: "한국표준과학연구원", size: 2 },
   'E-205': { name: "", company: "한국경제신문", size: 4 },
   'E-206': { name: "", company: "한국동서발전", size: 4 },
-  'E-207': { name: "", company: "삼양인터내셔날", size: 4 },
+  'E-207': { name: "", company: "삼양인터내셔날", size: 3 },
   'E-208': { name: "", company: "삼양통상", size: 3 },
 
   'G-01': { name: "JDD", size: 3 },
