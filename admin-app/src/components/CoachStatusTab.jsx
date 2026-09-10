@@ -178,7 +178,9 @@ export default function CoachStatusTab({
       <div className="stat-card">
         <div className="stat-row">
           <span className="stat">
-            <span className="stat-label">아직 처리하지 않은 호출</span>
+            {/* '처리하지 않은'이 아니라 '처리되지 않은' — 내 담당만이 아니라
+                전체 팀의 호출을 센 숫자라, 누가 안 했다는 말이 아닙니다. */}
+            <span className="stat-label">아직 처리되지 않은 호출</span>
             <span className="stat-value">
               {totalOpen}
               <small>건</small>
