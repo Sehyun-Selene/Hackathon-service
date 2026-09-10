@@ -55,12 +55,15 @@ export default function CoachStatusTab({
     return map
   }, [scan.calls])
 
-  // 담당 구간에 들어온 호출 건수. 부하가 어디에 쏠렸는지 보려는 숫자라,
-  // 처리 여부와 무관하게 그 구간의 팀들이 부른 횟수를 셉니다.
-  const callsByTeam = useMemo(() => {
+  // 담당 구간에 "지금" 밀려 있는 호출 수.
+  //
+  // 누적(완료 포함)이 아니라 대기 중인 것만 셉니다. 이 화면에서 내리는
+  // 결정은 "지금 손이 빈 사람을 어디로 보낼까" 하나뿐이라, 끝난 일은 그
+  // 판단을 돕지 않습니다. 누가 얼마나 처리했는지는 호출 알림 탭에 있습니다.
+  const waitingByTeam = useMemo(() => {
     const map = {}
     Object.entries(scan.calls).forEach(([teamId, data]) => {
-      map[teamId] = (data.calls || []).length
+      map[teamId] = (data.calls || []).filter((c) => c.status === 'waiting').length
     })
     return map
   }, [scan.calls])
@@ -90,9 +93,9 @@ export default function CoachStatusTab({
         coach: { id: person.ids[0], name: label },
         ids: person.ids,
         // 총관리자는 담당 구간이 없는 대신 전체를 봅니다 — 전체 합계를 씁니다
-        calls: assigned?.callManager
-          ? Object.values(callsByTeam).reduce((n, v) => n + v, 0)
-          : teams.reduce((n, id) => n + (callsByTeam[id] || 0), 0),
+        waiting: assigned?.callManager
+          ? Object.values(waitingByTeam).reduce((n, v) => n + v, 0)
+          : teams.reduce((n, id) => n + (waitingByTeam[id] || 0), 0),
         busy: [
           ...(busyByKey['name:' + person.name] || []),
           ...person.ids.flatMap((id) => busyByKey['id:' + id] || []),
@@ -104,7 +107,7 @@ export default function CoachStatusTab({
         sortKey: teams.length ? Math.min(...teams.map(teamSortKey)) : Number.MAX_SAFE_INTEGER,
       }
     })
-  }, [scan.coaches, busyByKey, callsByTeam])
+  }, [scan.coaches, busyByKey, waitingByTeam])
 
   const idle = rows.filter((r) => r.busy.length === 0)
   const busy = rows.filter((r) => r.busy.length > 0)
@@ -112,15 +115,15 @@ export default function CoachStatusTab({
   const myAssignment = crewFor(coach)
   const myTeams = myAssignment?.teamNumbers || []
   const myRange = formatTeamRange(myTeams)
-  const totalCalls = Object.values(callsByTeam).reduce((n, v) => n + v, 0)
-  const myCalls = myAssignment?.callManager
-    ? totalCalls
-    : myTeams.reduce((n, id) => n + (callsByTeam[id] || 0), 0)
+  const totalWaiting = Object.values(waitingByTeam).reduce((n, v) => n + v, 0)
+  const myWaiting = myAssignment?.callManager
+    ? totalWaiting
+    : myTeams.reduce((n, id) => n + (waitingByTeam[id] || 0), 0)
 
   const pool = filter === 'idle' ? idle : filter === 'busy' ? busy : rows
   const shown = [...pool].sort((a, b) =>
-    sort === 'calls'
-      ? b.calls - a.calls || a.sortKey - b.sortKey
+    sort === 'waiting'
+      ? b.waiting - a.waiting || a.sortKey - b.sortKey
       : a.sortKey - b.sortKey || a.coach.name.localeCompare(b.coach.name),
   )
 
@@ -159,9 +162,9 @@ export default function CoachStatusTab({
       <div className="stat-card">
         <div className="stat-row">
           <span className="stat">
-            <span className="stat-label">전체 팀 누적 호출</span>
+            <span className="stat-label">지금 대기 중인 호출</span>
             <span className="stat-value">
-              {totalCalls}
+              {totalWaiting}
               <small>건</small>
             </span>
           </span>
@@ -171,7 +174,7 @@ export default function CoachStatusTab({
               내 담당{myRange ? ` (${myRange})` : myAssignment?.callManager ? ' (전체)' : ''}
             </span>
             <span className="stat-value accent">
-              {myCalls}
+              {myWaiting}
               <small>건</small>
             </span>
           </span>
@@ -187,11 +190,11 @@ export default function CoachStatusTab({
           </button>
           <button
             type="button"
-            className={`filter-chip${sort === 'calls' ? ' on' : ''}`}
-            onClick={() => setSort('calls')}
-            aria-pressed={sort === 'calls'}
+            className={`filter-chip${sort === 'waiting' ? ' on' : ''}`}
+            onClick={() => setSort('waiting')}
+            aria-pressed={sort === 'waiting'}
           >
-            호출 많은 순
+            대기 많은 순
           </button>
         </div>
       </div>
@@ -238,18 +241,20 @@ export default function CoachStatusTab({
                     {m.range ? `팀 ${m.range}` : m.roleLabel || '담당 미배정'}
                   </span>
                 </span>
+                {/* 여기서 '대기'가 두 뜻으로 쓰이던 자리입니다 — 숫자는 그
+                    구간에 밀린 호출, 아래 글자는 그 사람이 비어 있다는 뜻.
+                    말이 겹치면 새벽에 잘못 읽습니다. 숫자에만 '대기'를
+                    남기고, 사람 상태는 아바타 색과 위치 표시로 말합니다. */}
                 <span className="mate-right">
-                  <span className="mate-calls">
-                    {m.calls}
-                    <small>건</small>
+                  <span className={`mate-calls${m.waiting ? ' hot' : ''}`}>
+                    {m.waiting}
+                    <small>건 대기</small>
                   </span>
-                  {isBusy ? (
+                  {isBusy && (
                     <span className="mate-at">
                       <Icon name="pin" size={13} />
                       팀 {m.busy.map((x) => x.teamId).join(', ')}
                     </span>
-                  ) : (
-                    <span className="mate-idle">대기</span>
                   )}
                 </span>
               </div>

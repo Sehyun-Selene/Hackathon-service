@@ -1152,7 +1152,8 @@ body {
   font-size: 14px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
 }
 .mate-calls small { font-size: 10px; font-weight: 700; color: var(--sub); margin-left: 1px; }
-.mate-idle { font-size: 10px; font-weight: 700; color: var(--green); }
+/* 밀린 호출이 있으면 숫자를 붉게 — 이 화면에서 눈이 먼저 가야 할 곳입니다 */
+.mate-calls.hot { color: var(--po-state-error); }
 .mate-at {
   display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px;
   border-radius: 7px; background: var(--tint-error); color: var(--po-state-error);
