@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import {
   CALL_LIMIT_PER_TEAM,
   ALL_TEAM_IDS,
@@ -185,27 +185,58 @@ export default function CallsTab({
             const isSel = selected?.id === c.id
             const busy = c.status === 'in_progress'
             return (
-              <button
-                key={c.id}
-                type="button"
-                className={`call-row${isSel ? ' on' : ''}${urgent ? ' urgent' : ''}${busy ? ' busy' : ''}`}
-                onClick={() => setSelectedId(c.id)}
-                aria-pressed={isSel}
-              >
-                <span className="call-avatar">{shortTeam(c.team)}</span>
-                <span className="call-body">
-                  <span className="call-line">
-                    <b className="call-team">팀 {c.team}</b>
-                    <span className="call-ago">
-                      {busy
-                        ? `처리중${isHandledByMe(c, coach) ? ' · 나' : c.handledBy ? ` · ${c.handledBy}` : ''}`
-                        : `${agoText(waited)} 경과`}
+              <Fragment key={c.id}>
+                <button
+                  type="button"
+                  className={`call-row${isSel ? ' on' : ''}${urgent ? ' urgent' : ''}${busy ? ' busy' : ''}`}
+                  onClick={() => setSelectedId(c.id)}
+                  aria-pressed={isSel}
+                  aria-expanded={!wide ? isSel : undefined}
+                >
+                  <span className="call-avatar">{shortTeam(c.team)}</span>
+                  <span className="call-body">
+                    <span className="call-line">
+                      <b className="call-team">팀 {c.team}</b>
+                      {c.mine && <span className="call-mine">내 담당</span>}
+                      <span className="call-ago">
+                        {busy
+                          ? `처리중${isHandledByMe(c, coach) ? ' · 나' : c.handledBy ? ` · ${c.handledBy}` : ''}`
+                          : `${agoText(waited)} 경과`}
+                      </span>
                     </span>
+                    <span className="call-reason-line">{c.reason || '사유 미작성'}</span>
                   </span>
-                  <span className="call-reason-line">{c.reason || '사유 미작성'}</span>
-                </span>
-                <Icon name="chevron" size={18} className="call-go" />
-              </button>
+                  <Icon name="chevron" size={18} className="call-go" />
+                </button>
+                {/* 폰에서는 고른 호출을 여기서 펼칩니다. 노트북은 오른쪽
+                    상세 칸이 같은 일을 하지만, 폰에는 그 자리가 없습니다.
+                    목록의 사유는 한 줄로 잘리는데, 그게 메이트가 무엇을 들고
+                    갈지 정하는 유일한 단서라 어딘가에서는 끝까지 읽혀야
+                    합니다. 담당·접수 시각도 예전 카드에 있던 값입니다. */}
+                {!wide && isSel && (
+                  <div className="call-expand">
+                    <dl className="call-expand-meta">
+                      <div>
+                        <dt>담당</dt>
+                        <dd>{c.assignedLabel}</dd>
+                      </div>
+                      <div>
+                        <dt>접수</dt>
+                        <dd>{fmtTimeOnly(new Date(c.createdAt))}</dd>
+                      </div>
+                      {teamLabel(c.team) && (
+                        <div>
+                          <dt>팀명</dt>
+                          <dd>{teamLabel(c.team)}</dd>
+                        </div>
+                      )}
+                    </dl>
+                    <p className={`call-expand-reason${c.reason ? '' : ' empty'}`}>
+                      {c.reason || '사유가 작성되지 않았습니다'}
+                    </p>
+                  </div>
+                )}
+              </Fragment>
             )
           })
         )}
