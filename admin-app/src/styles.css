@@ -1279,19 +1279,106 @@ body {
    1440px에서 목록 한 줄이 1150px가 되면 46px 아바타 옆에 사유 한 줄만
    덩그러니 남고, 눈이 팀 번호에서 상태까지 화면 절반을 건너가야 합니다.
    읽기 좋은 폭으로 묶고, 아래 동작 바도 같은 기둥에 맞춥니다. */
+
+/* =====================================================================
+   노트북 전용 배치 (>= 900px)
+
+   폰 화면을 늘린 것이 아니라 다른 배치입니다. 폰에서는 화면이 하나뿐이라
+   "고르고 → 아래 바에서 처리"가 맞지만, 노트북에서는 폭이 남습니다.
+   목록 옆에 상세를 펼쳐 사유를 끝까지 읽고 그 자리에서 처리합니다.
+   아래 고정 바는 사라집니다 — 메뉴는 왼쪽 사이드바에 늘 보이고,
+   처리 버튼은 상세 칸에 있습니다.
+   ===================================================================== */
 @media (min-width: 900px) {
-  .screen { max-width: 880px; }
-  .dock { left: 232px; }
-  .dock > * { max-width: 880px; }
-  .dock-slot { max-width: 880px; }
-  /* 동작 바를 본문 기둥 위에 겹쳐 둡니다 — 화면 끝까지 늘어난 바는
-     목록과 다른 물건처럼 보입니다 */
-  .dock {
-    padding-left: 28px; padding-right: 28px;
-    justify-content: flex-start;
+  /* 폰용 폭 제한을 풉니다 — 여기서는 폭을 실제로 씁니다 */
+  .screen { max-width: none; padding-bottom: 24px; }
+  .dock { display: none; }
+
+  .screen-body.split {
+    display: grid; grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
+    gap: 16px; align-items: start;
   }
-  .dock-slot { flex: 0 1 880px; }
-  /* 처리 버튼이 880px까지 늘어날 이유는 없습니다 — 손이 가는 크기로 */
-  .dock-btn.primary, .dock-btn.done { flex: 0 1 260px; }
-  .dock-hint { justify-content: flex-start; padding-left: 18px; }
+  .screen-body.split .call-list { min-width: 0; }
+
+  /* 오른쪽 상세 — 목록을 따라 스크롤하지 않고 제자리에 붙어 있습니다 */
+  .detail {
+    position: sticky; top: 16px;
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px;
+    background: var(--card); box-shadow: var(--po-card-shadow);
+  }
+  .detail-empty {
+    align-items: center; justify-content: center; text-align: center;
+    min-height: 240px; gap: 8px; border-style: dashed; box-shadow: none;
+    background: var(--tint-sunken); color: var(--po-text-muted);
+  }
+  .detail-empty p { font-size: 14.5px; font-weight: 700; color: var(--sub); }
+  .detail-empty span { font-size: 12.5px; color: var(--po-text-muted); }
+
+  .detail-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .detail-team { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+  .detail-team b {
+    font-size: 24px; font-weight: 800; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .detail-team-name {
+    font-size: 13px; font-weight: 600; color: var(--sub);
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .detail-state {
+    flex: none; height: 28px; padding: 0 11px; border-radius: 9px;
+    background: var(--tint-error); color: var(--po-state-error);
+    font-size: 12px; font-weight: 800; line-height: 28px; white-space: nowrap;
+  }
+  .detail-state.busy { background: var(--tint-warn); color: var(--po-accent-ink); }
+
+  .detail-meta {
+    display: flex; flex-wrap: wrap; gap: 8px 22px;
+    padding: 12px 14px; border-radius: 12px; background: var(--tint-sunken);
+  }
+  .detail-meta > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .detail-meta dt { font-size: 10.5px; font-weight: 700; color: var(--sub); }
+  .detail-meta dd {
+    font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  /* 목록에서 한 줄로 잘리던 사유를 여기서는 끝까지 읽습니다 */
+  .detail-reason {
+    padding: 14px 16px; border-left: 2px solid var(--po-border-strong);
+    border-radius: 0 10px 10px 0; background: var(--tint-sunken);
+    font-size: 14.5px; line-height: 1.6; color: var(--text);
+    overflow-wrap: anywhere; text-wrap: pretty;
+  }
+  .detail-reason.empty { color: var(--po-text-muted); font-style: normal; }
+
+  .detail-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+  .detail-actions .dock-btn.primary,
+  .detail-actions .dock-btn.done { flex: 1 1 200px; }
+  .detail-note {
+    flex: 1; min-height: 56px; display: flex; align-items: center;
+    font-size: 13px; font-weight: 600; color: var(--sub);
+  }
+
+  /* 메이트 현황 — 요약과 필터를 한 줄에, 목록은 여러 칸으로.
+     50명 남짓이 한 줄짜리 목록으로 쌓이면 노트북에서 계속 스크롤해야
+     "지금 비어 있는 사람"에 닿습니다. */
+  .stat-strip.wide {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+    gap: 12px; align-items: stretch;
+  }
+  .stat-strip.wide .tile-row { flex-direction: row; }
+  .stat-strip.wide .tile { height: auto; }
+  .mate-list {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+  }
+  .mate-list > .empty-text { grid-column: 1 / -1; }
+}
+
+/* 넓은 노트북 — 메이트 목록을 세 칸으로 */
+@media (min-width: 1360px) {
+  .mate-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

@@ -14,6 +14,8 @@ import { fmtTimeOnly } from '../lib/time.js'
 import { isHandledByMe } from '../lib/storage.js'
 import Icon from './Icon.jsx'
 import AdminDock, { DockHint } from './AdminDock.jsx'
+import CallDetail from './CallDetail.jsx'
+import { useMediaQuery } from '../lib/useMediaQuery.js'
 
 // 오래 기다린 호출을 붉게 칠하는 기준. 3분이 넘어가면 참가자는 "안 오나?"
 // 하고 다시 부를지 고민하기 시작합니다.
@@ -48,6 +50,9 @@ export default function CallsTab({
 }) {
   // 'all' | 'mine' | 'unassigned' — 예전에는 체크박스 두 개였는데, 서로
   // 겹칠 수 있어 "내 담당이면서 미배정"이라는 빈 목록이 나왔습니다.
+  // 노트북에서는 목록 옆에 상세 칸을 펼칩니다. 폰의 "고르고 → 아래 바"를
+  // 그대로 늘리면 목록 한 줄이 1000px가 되고 아래 절반이 빕니다.
+  const wide = useMediaQuery('(min-width: 900px)')
   const [filter, setFilter] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
 
@@ -160,6 +165,7 @@ export default function CallsTab({
         {waitingCount > 0 && <span className="waiting-chip">대기 {waitingCount}</span>}
       </div>
 
+      <div className={`screen-body${wide ? ' split' : ''}`}>
       <div className="call-list">
         {shown.length === 0 ? (
           <p className="empty-text">
@@ -283,6 +289,21 @@ export default function CallsTab({
         )}
       </div>
 
+      {wide && (
+        <CallDetail
+          call={selected}
+          coach={coach}
+          canControl={selected ? canControl(selected) : false}
+          onUpdateStatus={onUpdateStatus}
+          agoText={agoText}
+          nowMs={nowMs}
+        />
+      )}
+      </div>
+
+      {/* 노트북에서는 처리 버튼이 오른쪽 상세 칸에 있으므로 아래 바가 없습니다.
+          메뉴도 왼쪽 사이드바에 늘 보이고요. */}
+      {!wide && (
       <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen}>
         {!selected ? (
           <DockHint>호출을 선택하면 여기서 처리합니다</DockHint>
@@ -338,6 +359,7 @@ export default function CallsTab({
           </div>
         )}
       </AdminDock>
+      )}
     </div>
   )
 }

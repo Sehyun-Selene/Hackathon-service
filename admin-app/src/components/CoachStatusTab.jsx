@@ -10,6 +10,7 @@ import {
 import { fmtTimeOnly } from '../lib/time.js'
 import Icon from './Icon.jsx'
 import AdminDock from './AdminDock.jsx'
+import { useMediaQuery } from '../lib/useMediaQuery.js'
 
 // 마스터 메이트 현황 (PRD 요청 #5): 위치 지도 대신, 마스터 메이트 개인별 리스트를 한눈에.
 // 목적: 특정 마스터 메이트가 바쁘면(대응 중이면) 다른 마스터 메이트가 그 담당 팀
@@ -28,6 +29,7 @@ export default function CoachStatusTab({
   onRefresh,
   refreshing,
 }) {
+  const wide = useMediaQuery('(min-width: 900px)')
   const [filter, setFilter] = useState('idle') // idle | busy | all
   // 'range' = 담당 구간순(기본) / 'calls' = 호출 많은 순.
   // 부하가 한쪽으로 쏠렸는지는 구간 순서로는 보이지 않습니다.
@@ -153,6 +155,7 @@ export default function CoachStatusTab({
         </button>
       </header>
 
+      <div className={`stat-strip${wide ? ' wide' : ''}`}>
       <div className="stat-card">
         <div className="stat-row">
           <span className="stat">
@@ -207,6 +210,7 @@ export default function CoachStatusTab({
           </button>
         ))}
       </div>
+      </div>
 
       <div className="mate-list">
         {rows.length === 0 ? (
@@ -254,12 +258,16 @@ export default function CoachStatusTab({
         )}
       </div>
 
-      <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen}>
-        <div className="dock-status">
-          <Icon name="clock" size={17} />
-          <span>{syncAt ? `${fmtTimeOnly(syncAt)} 갱신` : '갱신 대기'}</span>
-        </div>
-      </AdminDock>
+      {/* 노트북에는 아래 바를 두지 않습니다 — 메뉴가 왼쪽에 늘 보이고,
+          갱신 시각은 화면 머리의 새로고침 옆에 이미 있습니다. */}
+      {!wide && (
+        <AdminDock onOpenMenu={onOpenMenu} menuAlert={menuAlert} menuOpen={menuOpen}>
+          <div className="dock-status">
+            <Icon name="clock" size={17} />
+            <span>{syncAt ? `${fmtTimeOnly(syncAt)} 갱신` : '갱신 대기'}</span>
+          </div>
+        </AdminDock>
+      )}
     </div>
   )
 }
