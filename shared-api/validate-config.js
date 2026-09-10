@@ -84,8 +84,14 @@ async function main() {
         return
       }
       const previous = owners.get(teamId)
-      if (previous) errors.push(`팀 ${teamId}: ${previous}·${label}에게 중복 배정되었습니다.`)
-      else owners.set(teamId, label)
+      // 그룹 배정(COACH_GROUPS — 리테일 조)은 여럿이 같은 구간을 맡는 것이
+      // 정상입니다. 겹침이 문제인 건 서로 다른 담당끼리 겹칠 때뿐입니다.
+      const sameGroup = previous && coach.groupId && previous.groupId === coach.groupId
+      if (previous && !sameGroup) {
+        errors.push(`팀 ${teamId}: ${previous.label}·${label}에게 중복 배정되었습니다.`)
+      } else if (!previous) {
+        owners.set(teamId, { label, groupId: coach.groupId || null })
+      }
     })
   })
 
@@ -108,7 +114,7 @@ async function main() {
   }
 
   console.log(
-    `설정 검사 통과: 명단 ${active.length}명 · 호출 대상 ${callable.size}팀 전부 단일 배정 · ` +
+    `설정 검사 통과: 명단 ${active.length}명 · 호출 대상 ${callable.size}팀 빠짐없이 배정 · ` +
       `총관리자 ${managers[0].name}`,
   )
 }

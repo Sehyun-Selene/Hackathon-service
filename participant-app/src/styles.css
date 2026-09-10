@@ -875,9 +875,13 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* 주문 마감/대기 안내 */
+/* 주문 마감/대기 안내
+   높이를 못박아 둡니다. 이 상자 아래의 공지사항이 호출 화면의 '호출 전에 꼭
+   읽어보세요'와 같은 줄에서 시작해야, 탭을 오갈 때 같은 화면으로 읽힙니다.
+   (재보고 맞춘 값 — 390px 기준 두 안내의 시작점 차이가 56px이었습니다) */
 .closed-box {
-  display: flex; flex-direction: column; align-items: center; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; min-height: 285px;
   padding: 34px 20px; border: 1px dashed var(--po-border); border-radius: var(--po-radius-card);
 }
 .closed-emoji { font-size: 38px; line-height: 1; margin-bottom: 12px; }

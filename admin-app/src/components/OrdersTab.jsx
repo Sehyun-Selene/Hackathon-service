@@ -7,6 +7,7 @@ import {
   LEAGUES,
   DELIVERY_TEAM_RANGE_SIZE,
   getAssignedCoachForTeam,
+  coachGroupForTeam,
   personDiet,
   TEAM_IDS_BY_LEAGUE,
 } from '../config.js'
@@ -96,6 +97,13 @@ function TeamRowList({ rows, mealFilter, singleMeal, isDelivered, onToggleDelive
 // 팀 번호 검색, 알레르기 현황, 배부 체크(끼니별), 인쇄용 체크리스트.
 // 식사 선택(DAY 1 야식 / DAY 2 아침)은 좌측 메뉴의 하위 항목으로 옮겨졌으므로
 // mealFilter는 App에서 관리하고 prop으로 받습니다.
+// 목록 옆에 붙는 짧은 담당 표기. 리테일 조처럼 여럿이 한 구간을 맡는
+// 곳에서는 구성원 한 명의 이름을 적으면 거짓이 되므로 그룹 이름을 씁니다.
+function assignedShortName(teamId) {
+  const group = coachGroupForTeam(teamId)
+  if (group) return group.label
+  return getAssignedCoachForTeam(teamId)?.name
+}
 export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleDelivered }) {
   const [showSoldoutPanel, setShowSoldoutPanel] = useState(false)
   const [showAllergyPanel, setShowAllergyPanel] = useState(false)
@@ -163,7 +171,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
           ? {
               teamId,
               items,
-              assignedName: getAssignedCoachForTeam(teamId)?.name,
+              assignedName: assignedShortName(teamId),
               memberCount: scan.teams[teamId]?.memberCount,
             }
           : null
@@ -259,7 +267,7 @@ export default function OrdersTab({ scan, mealFilter, onToggleSoldout, onToggleD
       })
       teamsWith.push({
         teamId,
-        assignedName: getAssignedCoachForTeam(teamId)?.name,
+        assignedName: assignedShortName(teamId),
         groups: Object.entries(groupCounts).map(([allergies, count]) => ({ allergies, count })),
       })
     })

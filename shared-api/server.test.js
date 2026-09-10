@@ -124,7 +124,7 @@ test('범위를 벗어나거나 정규화되지 않은 팀 번호를 거절한�
   assert.equal((await post('/api/roster-add', { teamId: '1' })).status, 400)
   assert.equal((await post('/api/roster-add', { teamId: 'E-1' })).status, 400)
   assert.equal((await post('/api/roster-add', { teamId: 'E-209' })).status, 400)
-  assert.equal((await post('/api/roster-add', { teamId: 'G-32' })).status, 400)
+  assert.equal((await post('/api/roster-add', { teamId: 'G-48' })).status, 400)
   // 실제로 쓰는 번호는 받습니다 — E-105(개발자리그에서 옮겨온 자리),
   // E-106(배정표에서 뒤늦게 나온 팀), E-200·E-208(외부사 자리).
   // 서버는 접두어별 상한만 알고 중간 빈자리(G-05, E-107~199)는 모릅니다.
@@ -133,6 +133,8 @@ test('범위를 벗어나거나 정규화되지 않은 팀 번호를 거절한�
   assert.equal((await post('/api/roster-add', { teamId: 'E-106' })).status, 200)
   assert.equal((await post('/api/roster-add', { teamId: 'E-200' })).status, 200)
   assert.equal((await post('/api/roster-add', { teamId: 'E-208' })).status, 200)
+  // G-47(현대모비스)은 필드리그인데 자리가 개발자리그 구역이라 번호가 G-입니다.
+  assert.equal((await post('/api/roster-add', { teamId: 'G-47' })).status, 200)
   assert.equal((await post('/api/roster-add', { teamId: 'X-01' })).status, 400)
 })
 
@@ -272,4 +274,20 @@ test('참가자 앱이 보내는 모양(끼니 → 항목 배열)을 그대로 �
   })
   assert.equal(r2.status, 200)
   assert.equal(r2.body.sold['md-b'], 3)
+})
+
+test('그룹 배정 호출은 담당 전원을 멘션한다', () => {
+  // 리테일 조처럼 한 구간을 여럿이 맡으면 한 명만 부를 수 없습니다 —
+  // 그 사람이 자리를 비우면 아무도 모르기 때문입니다.
+  const text = slack._text.newCallText({
+    team: 'E-50',
+    reason: '막혔어요',
+    assignedName: '리테일 마스터 메이트',
+    assignedSlackIds: ['U111', 'U222', 'U333'],
+  })
+  assert.ok(text.includes('<@U111> <@U222> <@U333>'))
+  assert.ok(text.includes('리테일 마스터 메이트'))
+  // 담당이 한 명뿐인 예전 모양도 그대로 동작해야 합니다
+  const one = slack._text.newCallText({ team: 'E-01', assignedSlackId: 'U999', assignedName: '김원희' })
+  assert.ok(one.includes('<@U999> (김원희)'))
 })

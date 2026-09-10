@@ -70,7 +70,8 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || ''
 // 팀 번호는 자리배치의 테이블 번호를 그대로 씁니다 — 'E-45'(필드) / 'G-12'(개발).
 // 접두어가 없으면 두 리그의 같은 숫자가 한 팀으로 섞입니다.
 // 앱 config.LEAGUES와 같은 값이어야 하며, 바꿀 때는 환경변수로 함께 조정하세요.
-//   예) TEAM_LEAGUES="E:208,G:31"  (외부사 자리가 E-200번대라 상한이 208)
+//   예) TEAM_LEAGUES="E:208,G:47"  (외부사 자리가 E-200번대라 상한이 208,
+//       G는 개발자리그 구역에 앉은 필드리그 팀 G-47까지 있어 47)
 // 메뉴별 준비 수량. 전 팀 주문 합계가 이 수에 닿으면 그 메뉴는 닫힙니다.
 // 앱 config의 MENUS[].stock과 같은 값이어야 합니다 — 앱은 화면을 닫는 쪽,
 // 서버는 실제로 초과 저장을 막는 쪽입니다. 두 폰이 같은 순간에 마지막 한
@@ -88,7 +89,7 @@ const MENU_STOCK = Object.fromEntries(
     .filter(([id, n]) => id && Number.isFinite(n) && n > 0),
 )
 
-const TEAM_LEAGUES = (process.env.TEAM_LEAGUES || 'E:208,G:31')
+const TEAM_LEAGUES = (process.env.TEAM_LEAGUES || 'E:208,G:47')
   .split(',')
   .map((part) => {
     const [prefix, count] = part.split(':')
@@ -275,6 +276,29 @@ function stockState(skipTeamId) {
     remaining[menuId] = Math.max(0, cap - (sold[menuId] || 0))
   }
   return { stock: MENU_STOCK, sold, remaining }
+}
+
+// 슬랙 멤버 ID 한 개. 형식이 아니면 빈 문자열 — 멘션이 깨진 글자로
+// 남는 것보다 이름만 나오는 편이 읽힙니다.
+function validSlackId(value) {
+  const id = String(value || '')
+  return /^[UW][A-Z0-9]+$/.test(id) ? id : ''
+}
+
+// 담당자 슬랙 ID 목록. 그룹 배정이면 여럿, 아니면 한 명(또는 없음).
+// 중복을 걸러내고 개수를 제한합니다 — 앱이 보내는 값이라 그대로 믿지 않습니다.
+const MAX_MENTIONS = 20
+function normalizeSlackIds(call) {
+  const raw = Array.isArray(call.assignedSlackIds)
+    ? call.assignedSlackIds
+    : [call.assignedSlackId]
+  const out = []
+  for (const value of raw) {
+    const id = validSlackId(value)
+    if (id && !out.includes(id)) out.push(id)
+    if (out.length >= MAX_MENTIONS) break
+  }
+  return out
 }
 
 function validTeamId(teamId) {
@@ -704,9 +728,10 @@ const server = http.createServer(async (req, res) => {
         id: call.id,
         reason,
         assignedName: String(call.assignedName || '').slice(0, 40),
-        assignedSlackId: /^[UW][A-Z0-9]+$/.test(String(call.assignedSlackId || ''))
-          ? String(call.assignedSlackId)
-          : '',
+        assignedSlackId: validSlackId(call.assignedSlackId),
+        // 한 구간을 여럿이 맡는 그룹 배정(리테일 조)에서는 전원을 부릅니다.
+        // 앱이 목록을 실어 보내면 그대로 쓰고, 없으면 한 명짜리로 봅니다.
+        assignedSlackIds: normalizeSlackIds(call),
         status: 'waiting',
         createdAt: Date.now(),
       }

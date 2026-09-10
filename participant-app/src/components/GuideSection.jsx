@@ -32,7 +32,7 @@ export default function GuideSection({ showCall = true }) {
         <span className="guide-block-icon" aria-hidden="true">🥗</span>
         <div className="guide-block-text">
           <b>알레르기</b>
-          <p>메뉴에 포함된 알레르기 유발 물질 중 해당 사항이 있다면 하단에 표기해주세요.</p>
+          <p>메뉴에 포함된 알레르기 유발 물질 중 해당 사항이 있다면 다음 페이지에서 표기해주세요.</p>
         </div>
       </div>
     </div>

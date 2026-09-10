@@ -5,6 +5,7 @@ import {
   ALL_TEAM_IDS,
   groupByLeague,
   getAssignedCoachForTeam,
+  isCoachForTeam,
   crewFor,
   assignedCoachLabel,
   teamLabel,
@@ -39,19 +40,25 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
   const assignedNameOf = (teamId) => getAssignedCoachForTeam(teamId)?.name || ''
   const assignedLabelOf = (teamId) => assignedCoachLabel(teamId) || '미배정'
 
+  // "내 담당"은 이름이 아니라 배정으로 가립니다. 이름이 겹치는 분들이
+  // 있고(이상윤 두 분), 리테일 조처럼 한 구간을 여럿이 함께 맡으면
+  // 이름 비교로는 첫 번째 사람만 담당이 됩니다.
+  const myAssignment = crewFor(coach)
+
   const all = Object.entries(scan.calls).flatMap(([teamId, data]) =>
     (data.calls || []).map((c) => ({
       ...c,
       team: teamId,
       assignedName: assignedNameOf(teamId),
       assignedLabel: assignedLabelOf(teamId),
+      mine: isCoachForTeam(myAssignment, teamId),
     })),
   )
   let active = all.filter((c) => c.status !== 'done')
   // 내 담당 호출을 먼저 정렬 → 그다음 오래된 순
   active.sort((a, b) => {
-    const am = a.assignedName === coach.name ? 0 : 1
-    const bm = b.assignedName === coach.name ? 0 : 1
+    const am = a.mine ? 0 : 1
+    const bm = b.mine ? 0 : 1
     if (am !== bm) return am - bm
     return a.createdAt - b.createdAt
   })
@@ -62,7 +69,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
     .sort((a, b) => b.doneAt - a.doneAt)
 
   const shown = active.filter((c) => {
-    if (onlyMine && c.assignedName !== coach.name) return false
+    if (onlyMine && !c.mine) return false
     if (onlyUnassigned && c.assignedName) return false
     return true
   })
@@ -70,7 +77,6 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
   // 호출 횟수는 내 담당 팀만 봅니다. 남의 담당 팀 잔여 횟수는 내가 판단할
   // 일이 아니고, 메이트에게 다른 팀 정보가 필요한 곳은 '진행 중인 호출'뿐입니다.
   // 전체를 보는 건 총관리자(callManager)뿐입니다.
-  const myAssignment = crewFor(coach)
   const myTeams = myAssignment?.teamNumbers || []
   const showAllTeams = !!myAssignment?.callManager
   // 팀 번호는 'E-45' 같은 문자열입니다. 리그가 다르면 같은 숫자라도 다른 팀이라
@@ -125,7 +131,7 @@ export default function CallsTab({ scan, coach, onUpdateStatus }) {
         ) : (
           <div className="call-list">
             {shown.map((c) => {
-              const mine = c.assignedName === coach.name
+              const mine = c.mine
               const canControl = isHandledByMe(c, coach) || !!myAssignment?.callManager
               return (
                 <div key={c.id} className={`call-card ${c.status}${mine ? ' mine-company' : ''}`}>

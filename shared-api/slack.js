@@ -101,9 +101,16 @@ async function post(text) {
 // 읽을 수 없는 알림이 됩니다. 이름을 붙여두면 최악의 경우에도 사람은 알아봅니다.
 function mateLabel(call) {
   const name = call.assignedName ? escapeMrkdwn(call.assignedName) : ''
-  if (call.assignedSlackId) {
-    return name ? `<@${call.assignedSlackId}> (${name})` : `<@${call.assignedSlackId}>`
-  }
+  // 그룹 배정(리테일 조)은 담당이 여럿입니다. 한 명만 부르면 그 사람이
+  // 자리를 비웠을 때 아무도 모릅니다 — 전원을 부르고 먼저 본 사람이 갑니다.
+  const ids =
+    Array.isArray(call.assignedSlackIds) && call.assignedSlackIds.length
+      ? call.assignedSlackIds
+      : call.assignedSlackId
+        ? [call.assignedSlackId]
+        : []
+  const mentions = ids.map((id) => `<@${id}>`).join(' ')
+  if (mentions) return name ? `${mentions} (${name})` : mentions
   if (name) return `${name} 메이트`
   return null
 }

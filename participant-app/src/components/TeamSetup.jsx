@@ -7,7 +7,7 @@ import {
   MAX_MEMBER_COUNT,
   MEALS,
   MENUS,
-  leagueOf,
+  tableLeagueOf,
   personDiet,
   teamLabel,
   leagueNumberHint,
@@ -68,8 +68,11 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
   const [step, setStep] = useState(initial?.teamId ? 'form' : 'guide')
   // 테이블 번호는 리그 접두어까지가 한 팀입니다(E-45 / G-12).
   // 리그를 먼저 고르면 입력칸 앞에 접두어가 붙고 숫자만 입력하면 됩니다.
+  // 여기서 고르는 것은 소속이 아니라 "테이블 번호 앞 글자"입니다. 그래서
+  // 소속이 아니라 접두어로 되돌립니다 — G-47(현대모비스)은 필드리그지만
+  // 자리가 G 구역이라, 소속으로 되돌리면 E- 칸이 열려 번호가 어긋납니다.
   const [league, setLeague] = useState(
-    () => leagueOf(initial?.teamId)?.id || LEAGUES[0].id,
+    () => tableLeagueOf(initial?.teamId)?.id || LEAGUES[0].id,
   )
   const [teamNo, setTeamNo] = useState(
     initial?.teamId ? String(parseInt(String(initial.teamId).slice(2), 10)) : '',
@@ -124,9 +127,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     // 자리배치표에 없는 번호면 여기서 끝냅니다. 등록 여부를 먼저 물으면
     // 남아 있던 옛 기록 때문에 '이미 등록된 팀'이라는 엉뚱한 안내가 뜹니다.
     if (!TEAMS[id]) {
-      return setError(
-        leagueDef.label + '에 ' + id + ' 테이블이 없습니다. 리그와 번호를 확인해 주세요.',
-      )
+      return setError(id + ' 테이블은 없는 번호입니다. 테이블에 붙은 번호를 다시 확인해 주세요.')
     }
     setError('')
     if (!existingLookup) return
@@ -149,7 +150,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     if (!TEAMS[teamId]) {
       setExistingInfo(null)
       return setError(
-        leagueDef.label + '에 ' + teamId + ' 테이블이 없습니다. 리그와 번호를 확인해 주세요.',
+        teamId + ' 테이블은 없는 번호입니다. 테이블에 붙은 번호를 다시 확인해 주세요.',
       )
     }
 
@@ -262,8 +263,13 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
 
       <section className="card setup-form">
         <div className="setup-field">
-          <label className="setup-label">리그</label>
-          {/* 필드리그 E-45, 개발자리그 G-12 — 접두어가 다르면 다른 팀입니다 */}
+          <label className="setup-label">테이블 번호 앞 글자</label>
+          {/* 리그 이름으로 묻지 않습니다. 참가자가 가진 단서는 테이블에
+              붙은 번호뿐이고, 자리와 소속이 어긋나는 팀이 있기 때문입니다
+              — G-47은 필드리그인데 자리가 G 구역이라, "리그를 고르세요"
+              라고 물으면 어느 쪽을 눌러야 하는지 알 수 없습니다.
+              번호를 그대로 고르게 하고, 소속은 앱이 번호에서 알아냅니다
+              (config.TEAM_LEAGUE_OVERRIDES). */}
           <div className="league-tabs">
             {LEAGUES.map((l) => (
               <button
@@ -280,8 +286,8 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
                   state={league === l.id ? 'active' : 'idle'}
                   size={26}
                 />
-                <span className="league-tab-name">{l.label}</span>
-                <span className="league-tab-code">{l.prefix}-</span>
+                <span className="league-tab-name">{l.prefix}-</span>
+                <span className="league-tab-code">{leagueNumberHint(l.id)}번</span>
               </button>
             ))}
           </div>
@@ -302,7 +308,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
               inputMode="numeric"
               min="1"
               max={leagueDef.count}
-              placeholder={leagueNumberHint(leagueDef.id)}
+              placeholder="번호"
               value={teamNo}
               onChange={(e) => {
                 setTeamNo(e.target.value)
