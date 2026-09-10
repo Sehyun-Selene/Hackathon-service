@@ -1081,6 +1081,12 @@ body {
 /* =====================================================================
    마스터 메이트 현황
    ===================================================================== */
+/* 요약 카드 + 필터 타일 묶음.
+   폰에서는 위아래로 쌓입니다. 이 규칙이 없으면 묶음 안쪽에 간격이 없어
+   카드 테두리와 타일 테두리가 맞붙어 겹쳐 보입니다 —
+   바깥 .screen 의 gap 은 묶음과 형제 사이에만 걸립니다. */
+.stat-strip { display: flex; flex-direction: column; gap: 12px; }
+
 .stat-card {
   display: flex; flex-direction: column; gap: 10px;
   padding: 12px 13px; border: 1px solid var(--line); border-radius: 15px;

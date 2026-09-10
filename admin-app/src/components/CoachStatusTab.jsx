@@ -85,28 +85,35 @@ export default function CoachStatusTab({
       entry.ids.push(c.id)
       byName.set(key, entry)
     })
-    return [...byName.values()].map((person) => {
-      const assigned = crewFor(person)
-      const teams = assigned?.teamNumbers || []
-      const label = crewLabel(assigned) || person.name
-      return {
-        coach: { id: person.ids[0], name: label },
-        ids: person.ids,
-        // 총관리자는 담당 구간이 없는 대신 전체를 봅니다 — 전체 합계를 씁니다
-        waiting: assigned?.callManager
-          ? Object.values(waitingByTeam).reduce((n, v) => n + v, 0)
-          : teams.reduce((n, id) => n + (waitingByTeam[id] || 0), 0),
-        busy: [
-          ...(busyByKey['name:' + person.name] || []),
-          ...person.ids.flatMap((id) => busyByKey['id:' + id] || []),
-        ],
-        range: formatTeamRange(teams),
-        // 담당 구간이 없는 게 정상인 역할(총관리자·식음 운영)은 구분해 표시
-        roleLabel: crewRoleLabel(assigned),
-        initial: (label || '?').trim().charAt(0),
-        sortKey: teams.length ? Math.min(...teams.map(teamSortKey)) : Number.MAX_SAFE_INTEGER,
-      }
-    })
+    return [...byName.values()]
+      // 호출을 받고 뛰는 사람만 셉니다. 총관리자와 식음 운영은 이 앱을
+      // 쓰지만 호출 알림을 받고 팀으로 출동하지는 않습니다 — 목록에 섞이면
+      // "지금 부를 수 있는 사람" 수가 실제보다 부풀고, 대기 많은 순 맨 위에
+      // 갈 수 없는 사람이 올라옵니다.
+      .filter((person) => {
+        const c = crewFor(person)
+        return !c?.callManager && !c?.orderManager
+      })
+      .map((person) => {
+        const assigned = crewFor(person)
+        const teams = assigned?.teamNumbers || []
+        const label = crewLabel(assigned) || person.name
+        return {
+          coach: { id: person.ids[0], name: label },
+          ids: person.ids,
+          waiting: teams.reduce((n, id) => n + (waitingByTeam[id] || 0), 0),
+          busy: [
+            ...(busyByKey['name:' + person.name] || []),
+            ...person.ids.flatMap((id) => busyByKey['id:' + id] || []),
+          ],
+          range: formatTeamRange(teams),
+          // 아직 담당 구간을 못 받은 분도 목록에는 남깁니다 — 손이 비어 있는
+          // 사람이라, 다른 구간을 메우러 갈 수 있습니다
+          roleLabel: crewRoleLabel(assigned),
+          initial: (label || '?').trim().charAt(0),
+          sortKey: teams.length ? Math.min(...teams.map(teamSortKey)) : Number.MAX_SAFE_INTEGER,
+        }
+      })
   }, [scan.coaches, busyByKey, waitingByTeam])
 
   const idle = rows.filter((r) => r.busy.length === 0)
