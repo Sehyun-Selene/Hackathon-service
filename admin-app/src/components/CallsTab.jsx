@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import {
   CALL_LIMIT_PER_TEAM,
   ALL_TEAM_IDS,
-  groupByLeague,
+  groupBySeat,
   getAssignedCoachForTeam,
   isCoachForTeam,
   crewFor,
@@ -126,7 +126,7 @@ export default function CallsTab({
   const myTeams = myAssignment?.teamNumbers || []
   // 호출 횟수는 내 담당 팀만 봅니다. 남의 담당 팀 잔여 횟수는 내가 판단할
   // 일이 아니고, 전체를 보는 건 총관리자뿐입니다.
-  const countGroups = groupByLeague(
+  const countGroups = groupBySeat(
     (showAllTeams ? ALL_TEAM_IDS : myTeams).filter(leagueAllowsCall),
   )
   // 식음 운영처럼 담당 구간이 아예 없는 역할에는 이 패널이 늘 비어 있습니다.
@@ -321,7 +321,7 @@ export default function CallsTab({
                   <div key={league.id} className="league-block">
                     {countGroups.length > 1 && (
                       <div className="league-block-head">
-                        {league.label} <span>{league.prefix}-</span>
+                        <span>{league.prefix}-</span>
                       </div>
                     )}
                     <div className="check-grid">

@@ -1014,6 +1014,21 @@ export function groupByLeague(teamIds) {
   })).filter((g) => g.ids.length > 0)
 }
 
+// 번호 격자용 — 소속이 아니라 '번호판'(접두어)으로 나눕니다.
+//
+// 격자는 사람이 자기 테이블 번호를 눈으로 찾는 자리입니다. 소속으로
+// 나누면 G-47(=G 자리에 앉은 필드리그 팀)이 필드리그 칸에 들어가고,
+// 칸에는 숫자만 찍히므로 E-47 과 나란히 '47'이 두 개 놓입니다.
+// 어느 쪽이 우리 팀인지 격자만 보고는 알 수 없습니다.
+export function groupBySeat(teamIds) {
+  return LEAGUES.map((league) => ({
+    league,
+    ids: (teamIds || [])
+      .filter((id) => String(id).charAt(0) === league.prefix)
+      .sort((a, b) => parseInt(String(a).slice(2), 10) - parseInt(String(b).slice(2), 10)),
+  })).filter((g) => g.ids.length > 0)
+}
+
 // 담당 팀 번호를 "E-01~E-25" 처럼 압축합니다.
 // 리그가 섞이면 " · "로 나눠 씁니다 (E-01~E-20 · G-01~G-05).
 export function formatTeamRange(teamIds) {

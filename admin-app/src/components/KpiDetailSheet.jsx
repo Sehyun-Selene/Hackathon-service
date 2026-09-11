@@ -104,12 +104,17 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
     const mine = new Set(myTeams)
     const targetTeams = ALL_TEAM_IDS.filter((id) => !onlyMine || mine.has(id))
     // 팀 번호가 'E-45'라 격자는 리그별로 나눠 그립니다 (숫자만 칸에 표시)
-    const cells = targetTeams.map((id) => ({
-      key: id,
-      label: id.slice(2),
-      league: id.charAt(0),
-      done: isOrders ? ordered.has(id) : registered.has(id),
-    }))
+    const cells = targetTeams
+      .map((id) => ({
+        key: id,
+        label: id.slice(2),
+        league: id.charAt(0),
+        done: isOrders ? ordered.has(id) : registered.has(id),
+      }))
+      // 번호판 순서대로. ALL_TEAM_IDS 는 소속(리그) 순서라, 그대로 쓰면
+      // G 자리에 앉은 필드리그 팀(G-47)이 G 칸 맨 앞에 와서 47, 01, 02… 로
+      // 시작합니다. 격자에서 번호를 찾는 사람에게는 순서가 곧 좌표입니다.
+      .sort((a, b) => parseInt(a.label, 10) - parseInt(b.label, 10))
     const missing = cells.filter((c) => !c.done).map((c) => c.key)
     return {
       mode: 'team-grid',
@@ -319,8 +324,11 @@ export default function KpiDetailSheet({ kind, scan, coach, mealFilter, onToast,
               if (!칸.length) return null
               return (
                 <div key={league.id} className="league-block">
+                  {/* 리그 이름은 쓰지 않습니다. 이 격자는 소속이 아니라
+                      테이블 번호로 나뉘어 있어서, '개발자리그'라고 적으면
+                      G 자리에 앉은 필드리그 팀(G-47)에게는 틀린 제목이 됩니다. */}
                   <div className="league-block-head">
-                    {league.label} <span>{league.prefix}-</span>
+                    <span>{league.prefix}-</span>
                   </div>
                   <div className="check-grid">
                     {칸.map((c) => (

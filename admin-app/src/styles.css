@@ -285,7 +285,7 @@ body {
   background: var(--po-toast-bg); color: var(--po-toast-ink);
   /* 다크에서는 그림자가 보이지 않아, 테두리로 페이지와 층을 나눕니다 */
   border: 1px solid var(--po-border-strong);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28); font-size: 13.5px; font-weight: 700;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28); font-size: 14px; font-weight: 700;
 }
 .undo-toast span { min-width: 0; }
 .undo-toast button {
