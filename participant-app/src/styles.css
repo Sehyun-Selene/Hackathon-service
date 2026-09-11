@@ -115,6 +115,13 @@ body {
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 16px; padding-bottom: 20px;
 }
+/* 들어온 뒤 화면들의 좌상단 워드마크. 팀 등록 화면의 .header-brand 와
+   같은 크기·색이라 화면을 옮겨도 같은 자리에 같은 글자가 있습니다. */
+.app-brand {
+  font-size: 11px; line-height: 16px; font-weight: 800; letter-spacing: 0.14em;
+  color: var(--po-accent-ink); margin-bottom: 8px;
+}
+
 .header-brand {
   font-size: 11px; line-height: 16px; font-weight: 800; letter-spacing: 0.14em;
   color: var(--po-accent-ink);
