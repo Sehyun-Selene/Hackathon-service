@@ -5,10 +5,16 @@
 //  않아도 담당 메이트 폰에 알림이 도착하게 하는 것이 목적입니다.
 //
 //  ── 알림 단계 ──────────────────────────────────────────────────
-//    호출 즉시    담당 메이트만 멘션 (그 사람 폰만 울림)
-//    N분 미처리   @channel 로 채널 공개 (여유 있는 메이트가 주워감)
-//    M분 미처리   운영 총괄에게 묶음 알림, 이후 반복 간격마다 갱신
+//    호출 즉시    담당 메이트만 멘션 (그 사람 폰만 울림)  ← 기본값은 이것뿐
+//    N분 미처리   @channel 로 채널 공개 (기본 꺼짐)
+//    M분 미처리   운영 총괄에게 묶음 알림 (기본 꺼짐)
 //    처리 시작·완료는 보내지 않습니다 (관리자 화면에서 확인).
+//
+//  뒤의 두 단계가 기본으로 꺼져 있는 이유: 이 채널은 알림만 받는 방이 아니라
+//  대화도 하는 방입니다. 담당자를 지목하지 않는 알림이 쌓이면 대화를 밀어내고,
+//  @channel 은 지금 호출과 무관한 사람의 폰까지 울립니다. 놓친 호출은 관리자
+//  화면에 미처리로 그대로 남아 있어 거기서 확인합니다 — 어차피 처리하려면
+//  그 화면으로 와야 합니다. 필요해지면 아래 환경변수에 분(分)을 넣어 켭니다.
 //
 //  ※ Incoming Webhook은 보낸 메시지의 식별자를 돌려주지 않아 스레드
 //    답글·이모지 반응·버튼을 쓸 수 없습니다. 그건 봇 토큰이 필요한
@@ -17,10 +23,11 @@
 //  환경변수 (모두 없으면 알림 기능 자체가 꺼진 상태로 서버가 동작):
 //    SLACK_WEBHOOK_URL     슬랙에서 발급받은 Incoming Webhook 주소
 //    SLACK_LEAD_USER_ID    운영 총괄의 슬랙 멤버 ID (예: U01ABCDEF)
-//    ALERT_UNCLAIMED_MIN   채널 공개 전환 시간(분). 기본 15
-//    ALERT_LEAD_MIN        운영 총괄 알림 시간(분). 기본 25
+//    ALERT_UNCLAIMED_MIN   채널 공개 전환 시간(분). 기본 off(꺼짐)
+//    ALERT_LEAD_MIN        운영 총괄 알림 시간(분). 기본 off(꺼짐)
 //    ALERT_LEAD_REPEAT_MIN 운영 총괄 재알림 간격(분). 기본 10
-//    ALERT_IN_PROGRESS_MIN 처리 시작 후 장기 미완료 경고 시간(분). 기본 20
+//    ALERT_IN_PROGRESS_MIN 처리 시작 후 장기 미완료 경고(분). 기본 off(꺼짐)
+//                          ※ 위 셋은 분(分)을 넣으면 켜지고, off 면 꺼집니다.
 //    ALERT_UNCLAIMED_MENTION  미처리 알림의 호출 방식. 기본 'channel'
 //                          'channel' → @channel (슬랙을 닫아둔 사람도 푸시 받음)
 //                          'here'    → @here   (슬랙에 '활동 중'인 사람만)
@@ -41,12 +48,13 @@ const num = (name, fallback) => {
   const n = parseInt(raw, 10)
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
-// 기본 15분 — 메이트가 한 팀에 머무는 시간이 15분이라, 그보다 짧게 잡으면
-// 다른 팀 멘토링 중인 담당자를 정상 상황에서도 계속 재촉하게 됩니다.
-const UNCLAIMED_MIN = num('ALERT_UNCLAIMED_MIN', 15)
-const LEAD_MIN = num('ALERT_LEAD_MIN', 25)
+// 켤 때 권하는 값: 미처리 20~25분 (메이트가 한 팀에 머무는 시간이 15분이라,
+// 그보다 짧게 잡으면 정상적으로 멘토링 중인 담당자를 계속 재촉하게 됩니다),
+// 총괄 알림 25분, 처리중 장기 20분.
+const UNCLAIMED_MIN = num('ALERT_UNCLAIMED_MIN', 0)
+const LEAD_MIN = num('ALERT_LEAD_MIN', 0)
 const LEAD_REPEAT_MIN = num('ALERT_LEAD_REPEAT_MIN', 10)
-const IN_PROGRESS_MIN = num('ALERT_IN_PROGRESS_MIN', 20)
+const IN_PROGRESS_MIN = num('ALERT_IN_PROGRESS_MIN', 0)
 // 미처리 알림은 특정 담당자를 지목하지 않으므로 멘션이 없으면 아무 폰도
 // 울리지 않고 채널에 글만 쌓입니다. 그래서 기본값을 @channel 로 둡니다.
 // (@here 는 슬랙에 '활동 중'인 사람만 받아서, 슬랙을 닫아둔 메이트는 놓칩니다)
