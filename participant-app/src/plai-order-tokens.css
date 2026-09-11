@@ -33,6 +33,13 @@
   --po-bg-elevated:    #FFFFFF;
   --po-scrim:          rgba(23, 41, 58, 0.45);
 
+  /* 발송·저장 확인 토스트. 4초 뒤 사라지므로 "읽히기 전에 사라지지 않는 것"이
+     유일한 요구사항입니다. 페이지와 같은 밝기의 면을 쓰면 그 4초가 그대로
+     날아갑니다 — 낮에는 바탕을 뒤집어 어둡게, 밤에는 눈부시지 않게 한 단
+     올린 면으로. 역할이 다르니 다른 면 토큰을 빌려 쓰지 않고 따로 둡니다. */
+  --po-toast-bg:       #17293A;
+  --po-toast-ink:      #FFFFFF;
+
   /* 선 */
   --po-border:         #CFE3EF;
   --po-border-strong:  #A9CCE0;
@@ -75,6 +82,8 @@
     --po-bg-sunken:      #0B1424;
     --po-bg-elevated:    #22334F;
     --po-scrim:          rgba(11, 20, 36, 0.60);
+    --po-toast-bg:       #22334F;
+    --po-toast-ink:      #F4EEDD;
 
     --po-border:         #2E4166;
     --po-border-strong:  #43598A;
@@ -118,6 +127,8 @@
   --po-bg-sunken: #0B1424;
   --po-bg-elevated: #22334F;
   --po-scrim: rgba(11, 20, 36, 0.60);
+  --po-toast-bg: #22334F;
+  --po-toast-ink: #F4EEDD;
   --po-border: #2E4166;
   --po-border-strong: #43598A;
   --po-text-primary: #F4EEDD;

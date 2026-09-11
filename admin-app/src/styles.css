@@ -278,8 +278,14 @@ body {
   position: fixed; z-index: 1600; left: 50%; bottom: max(24px, env(safe-area-inset-bottom));
   transform: translateX(-50%); width: min(calc(100% - 28px), 520px); min-height: 52px;
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  padding: 10px 12px 10px 16px; border-radius: 12px; background: var(--po-bg-sunken); color: var(--on-accent);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28); font-size: 13px; font-weight: 700;
+  padding: 10px 12px 10px 16px; border-radius: 12px;
+  /* 예전에는 바탕색(--po-bg-sunken) 위에 흰 글씨(--on-accent)였습니다.
+     --on-accent 는 액센트 위에 얹을 때 쓰는 색이라, 연한 바탕에 올리니
+     대비 1.15:1 — 화면에도 캡처에도 글자가 남지 않았습니다. */
+  background: var(--po-toast-bg); color: var(--po-toast-ink);
+  /* 다크에서는 그림자가 보이지 않아, 테두리로 페이지와 층을 나눕니다 */
+  border: 1px solid var(--po-border-strong);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28); font-size: 13.5px; font-weight: 700;
 }
 .undo-toast span { min-width: 0; }
 .undo-toast button {
