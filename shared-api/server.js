@@ -494,6 +494,14 @@ const server = http.createServer(async (req, res) => {
       keys: store.size,
       persist: persistState,
       slack: slack.state,
+      // 환경변수로 덮어쓸 수 있는 값들은 여기 드러냅니다. 앱은 config.js 의
+      // 값을 보고 화면을 그리는데, 서버가 다른 값을 들고 있으면 화면에는
+      // 5회라고 쓰여 있는데 서버가 3회에서 막는 식으로 어긋납니다.
+      // 행사 전에 /health 한 번으로 확인할 수 있게 합니다.
+      rules: {
+        callLimitPerTeam: CALL_LIMIT_PER_TEAM,
+        teams: TEAM_LEAGUES.map((l) => l.prefix + ':' + l.count).join(','),
+      },
     })
     return
   }
