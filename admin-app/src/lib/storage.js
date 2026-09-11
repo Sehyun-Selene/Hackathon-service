@@ -251,9 +251,11 @@ export function isHandledByMe(call, coach) {
 // 찾아갈 수 있는 메이트에게 보냅니다. 목록은 서버가 자기 데이터로 계산하므로
 // 앱이 임의 문장을 채널에 뿌릴 수는 없습니다.
 // 쿨다운 중이면 err.code === 'cooldown' (err.data.retryAfterSec).
-export async function notifyMissing({ kind, totalTeams, mealId, label }) {
+export async function notifyMissing({ kind, teamIds, leagues, mealId, label }) {
   if (!API_BASE_URL) return { ok: false, sent: false, teams: 0 }
-  return apiPost('/api/notify-missing', { kind, totalTeams, mealId, label })
+  // teamIds/leagues 를 반드시 함께 넘깁니다. 서버는 이 목록에서 빠진 팀을
+  // 골라내므로, 빠뜨리면 400(teamIds required)으로 아무도 못 받습니다.
+  return apiPost('/api/notify-missing', { kind, teamIds, leagues, mealId, label })
 }
 
 // 참가자 화면에 '주문해주세요' 배너를 띄웁니다.

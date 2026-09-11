@@ -291,3 +291,23 @@ test('그룹 배정 호출은 담당 전원을 멘션한다', () => {
   const one = slack._text.newCallText({ team: 'E-01', assignedSlackId: 'U999', assignedName: '김원희' })
   assert.ok(one.includes('<@U999> (김원희)'))
 })
+
+test('미등록 팀 재촉은 팀 번호 목록이 있어야 대상 계산까지 간다', async () => {
+  // 관리자 앱이 팀 번호를 빠뜨린 채 보내던 적이 있습니다. 서버는 이 목록에서
+  // 빠진 팀을 골라내므로, 빠지면 400에서 끝나 아무도 알림을 못 받습니다.
+  // 같은 실수가 조용히 돌아오지 않게 두 모양을 다 잠급니다.
+  const without = await post('/api/notify-missing', { kind: 'teams', mealId: '', label: '' })
+  assert.equal(without.status, 400)
+  assert.equal(without.body.error, 'teamIds required')
+
+  // 팀 번호가 있으면 목록 검증을 통과합니다. 이 테스트 서버에는 웹훅이 없어
+  // 슬랙 단계에서 503으로 끝나는데, 400이 아니라는 것이 곧 "대상 계산까지
+  // 갔다"는 뜻입니다 — 실제 발송은 웹훅이 있는 배포본에서만 일어납니다.
+  const withIds = await post('/api/notify-missing', {
+    kind: 'teams',
+    teamIds: ['E-01', 'E-02', 'G-47'],
+    mealId: '',
+    label: '',
+  })
+  assert.notEqual(withIds.status, 400)
+})

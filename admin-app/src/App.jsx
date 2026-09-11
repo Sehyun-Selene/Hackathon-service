@@ -402,7 +402,10 @@ export default function App() {
     return (
       <div className="gate">
         <div className="gate-card">
-          <h1>G-Order 운영 관리자</h1>
+          <h1>
+            <LanternIcon state="active" size={24} className="gate-lantern" />
+            G-Order 운영 관리자
+          </h1>
           <p>명단에서 본인을 찾아 주세요.</p>
           {/* 후보 목록은 입력칸 아래에 '떠 있게'(absolute) 두어, 뜨고 사라질 때
               카드 크기가 바뀌지 않도록 합니다. 후보를 눌러도 고르기만 하고
