@@ -5,7 +5,6 @@ import {
   MEAL_BY_ID,
   ALL_TEAM_IDS,
   LEAGUES,
-  groupByLeague,
   formatTeamRange,
   getAssignedCoachForTeam,
   teamSortKey,
