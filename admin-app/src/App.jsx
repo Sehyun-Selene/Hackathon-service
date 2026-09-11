@@ -330,7 +330,7 @@ export default function App() {
           id: previousCall?.handledById || coach?.id,
           name: previousCall?.handledBy || coach?.name,
         }
-        showUndo(`팀 ${teamId} 호출을 대기 상태로 되돌렸습니다.`, async () => {
+        showUndo(`팀 ${teamId} 호출을 미처리로 되돌렸습니다.`, async () => {
           await callStatusSet(teamId, callId, 'in_progress', previousHandler)
           await refresh()
         })

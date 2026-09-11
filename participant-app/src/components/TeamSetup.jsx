@@ -62,7 +62,7 @@ function DietSummary({ allergies }) {
 // 여러 명이 각각 하나씩인지에 따라 대체 메뉴 준비량이 달라지므로 사람 단위로 관리)
 // ※ 계열사는 더 이상 참가자가 선택하지 않음 — 마스터 메이트 담당은 팀 번호 기준
 //   개인별 배정(config.COACH_ASSIGNMENTS)으로 대체됨
-export default function TeamSetup({ initial, existingLookup, onComplete, onSaving }) {
+export default function TeamSetup({ initial, existingLookup, onComplete, onSaving, onCancel }) {
   // 이용 안내(S2) → 팀 등록(S1) 순서로 봅니다. 이미 등록해 본 기기(수정 중이거나
   // 저장된 팀이 있는 경우)는 안내를 다시 읽을 필요가 없어 바로 폼으로 갑니다.
   const [step, setStep] = useState(initial?.teamId ? 'form' : 'guide')
@@ -255,14 +255,18 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
             <LanternIcon state="active" size={16} className="brand-lantern" />
             G-Order
           </div>
-          <h1 className="screen-title header-table">팀 등록</h1>
+          <h1 className="screen-title header-table">{onCancel ? '팀 정보 편집' : '팀 등록'}</h1>
           <p className="screen-sub">우리 팀 정보를 알려주세요</p>
         </div>
         <img className="header-logo" src={logo52g} alt="52g" />
       </header>
 
       {/* 가장 먼저 읽어야 하는 안내라 참고 디자인의 상단 배너 위치에 둡니다. */}
-      <p className="setup-solo-note">👤 한 팀당 한 명씩만 팀 등록을 해주세요.</p>
+      {/* 처음 등록할 때만 필요한 당부입니다. 이미 등록한 팀이 정보를
+          고치러 들어온 화면에서는 읽을 이유가 없습니다. */}
+      {!onCancel && (
+        <p className="setup-solo-note">👤 한 팀당 한 명씩만 팀 등록을 해주세요.</p>
+      )}
 
       <section className="card setup-form">
         <div className="setup-field">
@@ -386,12 +390,19 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
       </section>
 
       <div className="screen-foot">
+        {/* 편집으로 들어온 경우에만. 지금까지는 저장 말고는 나갈 길이 없어,
+            잘못 눌러 들어오면 새로고침해야 원래 화면으로 돌아갔습니다. */}
+        {onCancel && (
+          <button className="btn-ghost setup-cancel" onClick={onCancel} disabled={saving}>
+            취소
+          </button>
+        )}
         <button
           className="btn-primary setup-submit"
           onClick={submit}
           disabled={saving || checking}
         >
-          {saving ? '저장 중…' : checking ? '확인 중…' : '이 정보로 시작하기'}
+          {saving ? '저장 중…' : checking ? '확인 중…' : onCancel ? '저장하기' : '이 정보로 시작하기'}
         </button>
       </div>
     </div>

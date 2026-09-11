@@ -368,6 +368,9 @@ export default function App() {
         initial={editingTeam ? team : prefill}
         existingLookup={lookupTeam}
         onComplete={saveTeam}
+        // 편집으로 들어왔을 때만 돌아갈 길을 줍니다. 처음 등록은 팀 정보가
+        // 없으면 아무것도 못 하는 화면이라 취소할 곳이 없습니다.
+        onCancel={editingTeam ? () => setEditingTeam(false) : null}
       />
     )
   }
