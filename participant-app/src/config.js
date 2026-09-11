@@ -100,6 +100,90 @@ export function imageBoardsFor(teamId) {
 }
 
 // ---------------------------------------------------------------
+// 1-3. 행사장 Wi-Fi
+//
+//   행사장 곳곳에 구역별 AP가 따로 있고 비밀번호도 다릅니다. 안내 포스터가
+//   붙어 있지만 "현재 위치에 해당하는 구역"을 스스로 찾아야 해서, 자기 자리가
+//   어느 구역인지 모르면 소용이 없습니다. 팀 번호는 앱이 이미 알고 있으니
+//   우리 구역의 비밀번호만 바로 띄워 줍니다.
+//
+//   teams : 그 구역에 앉는 팀 번호. 비워 두면 "어느 구역인지 모름"으로 보고
+//           전체 목록만 보여줍니다 — 틀린 비밀번호를 자신 있게 띄우는 것보다
+//           목록을 주는 편이 낫습니다.
+//   lounge: 자리와 상관없이 누구나 쓰는 공용 구역. 늘 함께 보여줍니다.
+//
+//   ⚠️ 여기 적힌 비밀번호는 참가자 앱 번들에 그대로 들어갑니다. 행사장
+//      포스터에 붙는 것과 같은 값이라 그 이상 숨길 것은 없지만, 행사 뒤에는
+//      AP 비밀번호를 바꾸는 편이 좋습니다.
+// ---------------------------------------------------------------
+export const WIFI_ZONES = [
+  { id: 'HoL_01', area: 'Act Site 필드리그', pw: 'hack1131', teams: [
+      'E-81', 'E-80', 'E-84', 'E-83', 'E-82', 'E-208', 'E-104', 'E-79',
+      'E-14', 'E-19', 'E-207', 'E-103', 'E-15', 'E-12', 'E-18', 'E-206',
+      'E-102',
+    ] },
+  { id: 'HoL_02', area: 'Act Site 필드리그', pw: 'hack2252', teams: [
+      'E-13', 'E-10', 'E-17', 'E-205', 'E-101', 'E-11', 'E-09', 'E-16',
+      'E-204', 'E-100', 'E-96', 'E-95', 'E-08', 'E-203', 'E-200', 'E-06',
+      'E-07', 'E-02', 'E-202', 'E-201', 'E-05', 'E-04', 'E-03', 'E-01',
+    ] },
+  { id: 'HoL_03', area: 'Act Site 필드리그', pw: 'hack3383', teams: [
+      'E-78', 'E-77', 'E-106', 'E-105', 'E-42', 'E-31', 'E-30', 'E-24',
+      'E-99', 'E-41', 'E-35', 'E-29', 'E-23',
+    ] },
+  { id: 'HoL_04', area: 'Act Site 필드리그', pw: 'hack4474', teams: [
+      'E-98', 'E-97', 'E-39', 'E-34', 'E-28', 'E-22', 'E-44', 'E-37',
+      'E-33', 'E-26', 'E-21', 'E-43', 'E-36', 'E-32', 'E-25', 'E-20',
+      'E-76', 'E-75', 'E-40', 'E-38', 'E-27',
+    ] },
+  { id: 'HoL_05', area: 'Act Site 필드리그', pw: 'hack5525', teams: [
+      'E-93', 'E-74', 'E-73', 'E-72', 'E-71', 'E-91', 'E-70', 'E-69',
+      'E-68', 'E-67', 'E-90', 'E-66', 'E-65', 'E-64', 'E-63', 'E-89',
+      'E-62', 'E-61', 'E-60', 'E-59',
+    ] },
+  { id: 'HoL_06', area: 'Act Site 필드리그', pw: 'hack6636', teams: [
+      'E-88', 'E-58', 'E-57', 'E-56', 'E-54', 'E-87', 'E-52', 'E-50',
+      'E-49', 'E-48', 'E-86', 'E-85', 'E-47', 'E-46', 'E-45', 'E-94',
+      'E-92', 'E-55', 'E-53', 'E-51',
+    ] },
+  { id: 'HoL_07', area: 'Build Site 개발자리그', pw: 'hack7737', teams: [
+      'G-43', 'G-27', 'G-17', 'G-02', 'G-20', 'G-44', 'G-28', 'G-18',
+      'G-04', 'G-21', 'G-45', 'G-29', 'G-19', 'G-06', 'G-22', 'G-46',
+      'G-30', 'G-23', 'G-12', 'G-24', 'G-31', 'G-25', 'G-16', 'G-47',
+      'G-42', 'G-26', 'G-41', 'G-40',
+    ] },
+  { id: 'HoL_08', area: 'Build Site 개발자리그', pw: 'hack8898', teams: [
+      'G-10', 'G-01', 'G-11', 'G-03', 'G-13', 'G-14', 'G-08', 'G-15',
+      'G-09',
+    ] },
+  { id: 'HoL_Lounge_01', area: 'Welcome Desk & Picnic', pw: 'gsgr0101', lounge: true },
+  { id: 'HoL_Lounge_02', area: 'Refresh', pw: 'gsgr0202', lounge: true },
+  { id: 'HoL_Lounge_03', area: 'Story & Food', pw: 'gsgr0303', lounge: true },
+]
+
+// 우리 팀 자리의 Wi-Fi (모르면 null)
+export function wifiForTeam(teamId) {
+  const id = String(teamId || '')
+  if (!id) return null
+  return WIFI_ZONES.find((z) => !z.lounge && z.teams.includes(id)) || null
+}
+
+// 자리와 상관없이 누구나 쓰는 공용 Wi-Fi
+export const WIFI_LOUNGES = WIFI_ZONES.filter((z) => z.lounge)
+
+// 우리 자리 쪽 구역들 — 정확한 구역을 아직 모를 때, 적어도 건너편 홀까지
+// 훑지는 않도록 좁혀서 보여줍니다.
+//
+// 소속(leagueOf)이 아니라 자리(tableLeagueOf)로 고릅니다. Wi-Fi는 어느 AP
+// 아래 앉아 있느냐의 문제라서요 — G-47은 필드리그지만 개발자리그 구역에
+// 앉으므로 Build Site 쪽 AP를 씁니다.
+export function wifiZonesForSeat(teamId) {
+  const seat = tableLeagueOf(teamId)?.id
+  const area = seat === 'dev' ? 'Build Site 개발자리그' : 'Act Site 필드리그'
+  return WIFI_ZONES.filter((z) => !z.lounge && z.area === area)
+}
+
+// ---------------------------------------------------------------
 // 2. 마스터 메이트 호출
 //    호출 사유 선택 없음 — 버튼 한 번으로 바로 호출됩니다.
 // ---------------------------------------------------------------
@@ -521,12 +605,11 @@ export const COACH_ASSIGNMENTS = [
   { id: 'mate-46', name: '김민수', nickname: 'Liam', company: '삼양통상', teamNumbers: ['E-208'], slackUserId: 'U0A7M79J606' },
   // 최종 배정표에서 새로 마스터 메이트가 된 분들입니다. 김현민·하지희·장수연
   // 님은 플레이 메이트 명단에도 있습니다 — 이번 배정에서 마스터 메이트로
-  // 팀을 맡았습니다. 김헌기·한정민 님은 현업이라 아직 슬랙 계정이 없습니다 —
-  // 계정이 생기면 채웁니다. 그때까지 호출 알림에는 이름만 나갑니다.
+  // 팀을 맡았습니다.
   { id: 'mate-47', name: '김원희', nickname: 'Ian', company: '', teamNumbers: ['E-01', 'E-43', 'E-44'], slackUserId: 'U08DB572AF4' },
   { id: 'mate-48', name: '김현민', nickname: 'Charlie', company: 'GS에너지', teamNumbers: ['E-02'], slackUserId: 'U0A749Q7TD4' },
-  { id: 'mate-49', name: '김헌기', nickname: 'darion', company: '', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: '' },
-  { id: 'mate-50', name: '한정민', nickname: 'Peter', company: '', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: '' },
+  { id: 'mate-49', name: '김헌기', nickname: 'darion', company: '', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0BUW1YCKNC' },
+  { id: 'mate-50', name: '한정민', nickname: 'Peter', company: '', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0BUX4U0HG8' },
   { id: 'mate-51', name: '하지희', nickname: 'Lia', company: 'GS스포츠', teamNumbers: ['E-95', 'E-96'], slackUserId: 'U0AHW7U9A57' },
   { id: 'mate-52', name: '장수연', nickname: 'Jen', company: '삼양인터내셔날', teamNumbers: ['E-207'], slackUserId: 'U0A6RPQSR8X' },
   // 리테일 조 전체를 보는 두 분(Ciso · HONG)입니다. 담당 구간을 따로 나눠
