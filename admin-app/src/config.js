@@ -771,7 +771,12 @@ export const DELIVERY_TEAM_RANGE_SIZE = 25 // 관리자 배부 화면의 팀 번
 // 시트에 없는 번호로 등록할 때만 쓰이는 상한 (보통은 TEAMS[teamId].size가 상한)
 export const MAX_MEMBER_COUNT = 10
 export const PARTICIPANT_POLL_MS = 5000 // 참가자 화면 폴링 주기
-export const ADMIN_POLL_MS = 3000 // 관리자 화면 폴링 주기 (호출 알림 포함)
+// 관리자 화면 폴링 주기 (호출 알림 포함).
+// 관리자 한 대가 3초마다 전체 스냅샷을 받아 갑니다. 당일에는 팀 153 · 주문 ·
+// 호출이 모두 들어차 응답이 지금의 열 배가 되는데, 운영진 50여 명이 함께
+// 보면 서버가 그 큰 JSON을 초당 열일곱 번 만들게 됩니다. 5초로 늘리면
+// 요청이 40% 줄고, 호출을 알아채는 시간은 최대 2초 늦어질 뿐입니다.
+export const ADMIN_POLL_MS = 5000
 
 // 참가자 화면 다크모드 시간대 (밤 20시 ~ 아침 7시 — 야식/새벽 눈부심 방지)
 export const DARK_MODE_HOURS = { start: 20, end: 7 }
