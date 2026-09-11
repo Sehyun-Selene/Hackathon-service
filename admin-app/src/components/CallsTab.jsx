@@ -91,15 +91,19 @@ export default function CallsTab({
 
   const mineCount = active.filter((c) => c.mine).length
   const unassignedCount = active.filter((c) => !c.assignedName).length
-  // 아직 아무도 잡지 않은 호출. 이 앱에서 "대기"는 메이트가 쉬고 있다는
-  // 뜻으로만 씁니다 — 같은 말이 두 뜻이면 화면에서도 코드에서도 잘못 읽힙니다.
-  const openCount = active.filter((c) => c.status === 'waiting').length
-
   const shown = active.filter((c) => {
     if (filter === 'mine') return c.mine
     if (filter === 'unassigned') return !c.assignedName
     return true
   })
+
+  // 아직 아무도 잡지 않은 호출. 이 앱에서 "대기"는 메이트가 쉬고 있다는
+  // 뜻으로만 씁니다 — 같은 말이 두 뜻이면 화면에서도 코드에서도 잘못 읽힙니다.
+  //
+  // 지금 보고 있는 목록(shown) 기준으로 셉니다. 내 담당만 걸러 놓았는데
+  // 전체 미처리 숫자가 떠 있으면, 정작 내가 가야 할 곳이 몇 군데인지
+  // 세는 데는 쓸 수 없는 숫자가 화면에서 가장 눈에 띄는 자리에 남습니다.
+  const openCount = shown.filter((c) => c.status === 'waiting').length
 
   // 내가 잡은 호출은 자동으로 골라 둡니다 — 완료를 누르러 돌아왔을 때
   // 목록에서 다시 찾게 하지 않습니다. 다만 직접 접었으면(null) 그 뜻을
@@ -133,6 +137,7 @@ export default function CallsTab({
     { id: 'mine', label: '내 담당', count: mineCount, hide: myTeams.length === 0 },
     { id: 'unassigned', label: '미배정', count: unassignedCount, hide: !showAllTeams },
   ].filter((f) => !f.hide)
+  const filterLabel = FILTERS.find((f) => f.id === filter)?.label || '전체'
 
   return (
     <div className="screen">
@@ -171,7 +176,13 @@ export default function CallsTab({
           </button>
         ))}
         <span className="chip-spacer" />
-        {openCount > 0 && <span className="waiting-chip">미처리 {openCount}</span>}
+        {openCount > 0 && (
+          // 무엇의 미처리인지 숫자만으로는 갈리지 않아, 거른 상태에서는
+          // 무엇을 걸렀는지 앞에 붙입니다 (내 담당 미처리 2).
+          <span className="waiting-chip">
+            {filter === 'all' ? '미처리' : `${filterLabel} 미처리`} {openCount}
+          </span>
+        )}
       </div>
 
       <div className={`screen-body${wide ? ' split' : ''}`}>
