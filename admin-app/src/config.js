@@ -154,7 +154,7 @@ export const WIFI_ZONES = [
     ] },
   { id: 'HoL_08', area: 'Build Site 개발자리그', pw: 'hack8898', teams: [
       'G-10', 'G-01', 'G-11', 'G-03', 'G-13', 'G-14', 'G-08', 'G-15',
-      'G-09',
+      'G-09', 'G-07',
     ] },
   { id: 'HoL_Lounge_01', area: 'Welcome Desk & Picnic', pw: 'gsgr0101', lounge: true },
   { id: 'HoL_Lounge_02', area: 'Refresh', pw: 'gsgr0202', lounge: true },
