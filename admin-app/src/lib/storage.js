@@ -233,15 +233,15 @@ export async function flagSet(key, field, value) {
   }
 }
 
-// 이 호출을 내가 잡았는가 — 신원 단위는 이름입니다 (담당 팀 연결도 이름 기준).
-// 기기 id는 같은 사람이 폰과 노트북을 함께 쓰면 갈라지므로, 이름을 먼저 보고
-// 이름이 비어 있는 옛 기록만 기기 id로 보완합니다.
+// 이 호출을 내가 잡았는가 — 신원 단위는 명단 항목(crewId)입니다.
+// 기기가 아니라 사람에 붙으므로, 한 기기를 두 사람이 번갈아 써도 갈라지고
+// 한 사람이 폰·노트북을 함께 써도 같은 사람으로 모입니다.
 export function isHandledByMe(call, coach) {
   if (!call || !coach) return false
-  // 같은 기기면 확실합니다. 이름 비교는 한 사람이 폰·노트북 두 대로 열었을
-  // 때를 위한 것인데, 이름이 겹치는 분(이상윤 두 분)에게는 쓸 수 없습니다 —
-  // 남이 처리한 호출까지 내 것으로 세어집니다.
   if (call.handledById && call.handledById === coach.id) return true
+  // 기기 id를 쓰던 시절의 기록에는 명단 id가 없습니다. 그때 것은 이름으로만
+  // 찾을 수 있는데, 이름이 겹치는 분(이상윤 두 분)에게는 쓸 수 없어
+  // 고유한 이름일 때만 봅니다.
   return !!call.handledBy && call.handledBy === coach.name && crewNameIsUnique(coach.name)
 }
 

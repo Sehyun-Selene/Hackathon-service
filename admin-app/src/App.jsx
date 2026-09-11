@@ -107,15 +107,6 @@ function getDefaultMealId() {
   return getNextMeal(t)?.id || MEALS[MEALS.length - 1].id
 }
 
-function getCoachId() {
-  let id = window.localStorage.getItem('torder-coach-id')
-  if (!id) {
-    id = `coach-${Math.random().toString(36).slice(2, 10)}`
-    window.localStorage.setItem('torder-coach-id', id)
-  }
-  return id
-}
-
 export default function App() {
   const [coach, setCoach] = useState(() => {
     try {
@@ -294,7 +285,11 @@ export default function App() {
   // 담당 팀은 이름이 아니라 crewId로 찾습니다. 같은 이름이 둘 있어
   // 이름으로 찾으면 둘 중 아무나 걸립니다.
   const enterAsCoach = useCallback(async (member) => {
-    const id = getCoachId()
+    // 신원은 사람(명단 항목)입니다. 예전에는 기기마다 만든 임의의 id를 썼는데,
+    // 그 id는 '다른 이름으로 입장'을 해도 그대로 남아서 한 노트북을 두 사람이
+    // 번갈아 쓰면 서로의 '내가 완료한 호출'이 섞였습니다. 반대로 한 사람이
+    // 폰과 노트북을 함께 쓰면 같은 사람이 둘로 갈라졌습니다.
+    const id = member.id
     const record = { id, name: member.name, crewId: member.id }
     window.localStorage.setItem(MY_COACH_KEY, JSON.stringify(record))
     try {
@@ -726,6 +721,9 @@ export default function App() {
           onChangeName={() => {
             // 기기를 다른 사람이 쓰게 될 때: 저장된 이름을 지우고 입장 화면으로
             window.localStorage.removeItem(MY_COACH_KEY)
+            // 기기 id를 쓰던 시절의 찌꺼기 — 남겨두면 예전 버전으로 돌아갔을 때
+            // 다시 두 사람이 한 신원을 쓰게 됩니다
+            window.localStorage.removeItem('torder-coach-id')
             setShowProfile(false)
             setCoach(null)
             setNameInput('')
