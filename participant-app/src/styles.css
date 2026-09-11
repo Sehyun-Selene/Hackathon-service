@@ -1417,7 +1417,10 @@ body {
    자리 구역의 비밀번호를 바로 띄웁니다. 여덟 자리를 폰 키보드로 옮겨
    적다가 틀리면 어디를 틀렸는지도 모르므로, 눌러서 복사하게 했습니다. */
 .wifi-block {
-  margin-top: 14px; padding: 14px; border: 1px solid var(--line);
+  /* 위아래 여백을 같은 값으로. 앞 칸(.team-sheet-details)의 아래 여백과
+     같은 18px 이라 칸 사이 간격이 전부 고르게 떨어집니다 — 아래 여백이
+     없을 때는 '이용 안내 다시 보기' 버튼이 이 칸에 붙어 있었습니다. */
+  margin: 0 0 18px; padding: 14px; border: 1px solid var(--line);
   border-radius: var(--po-radius-card); background: var(--po-bg-surface);
   display: flex; flex-direction: column; gap: 8px;
 }
