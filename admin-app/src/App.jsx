@@ -402,7 +402,7 @@ export default function App() {
     return (
       <div className="gate">
         <div className="gate-card">
-          <h1>🛠️ 해커톤 운영 관리자</h1>
+          <h1>G-Order 운영 관리자</h1>
           <p>명단에서 본인을 찾아 주세요.</p>
           {/* 후보 목록은 입력칸 아래에 '떠 있게'(absolute) 두어, 뜨고 사라질 때
               카드 크기가 바뀌지 않도록 합니다. 후보를 눌러도 고르기만 하고
@@ -522,11 +522,11 @@ export default function App() {
       <aside className="sidebar">
         <div className="brand-row">
           <div className="brand">
-            {/* 플라오더의 랜턴 — 참가자 앱과 같은 표식입니다.
+            {/* G-Order 의 랜턴 — 참가자 앱과 같은 표식입니다.
                 운영자가 참가자 화면을 대신 봐 줄 때 같은 서비스로 읽혀야 합니다. */}
             <LanternIcon state="active" size={22} className="brand-lantern" />
             <span className="brand-text">
-              플라오더 <b>운영</b>
+              G-Order <b>운영</b>
             </span>
           </div>
           {/* 좁은 화면에서는 사이드바 하단(.side-foot)이 숨겨지므로 이 줄의
