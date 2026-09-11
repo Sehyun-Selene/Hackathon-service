@@ -50,6 +50,12 @@ async function main() {
 
     if (!coach.id?.trim()) errors.push(`${label}: id가 비어 있습니다.`)
     else if (ids.has(coach.id)) errors.push(`${label}: id(${coach.id})가 중복되었습니다.`)
+    // 이 id가 곧 신원입니다 — 처리 이력과 되돌리기 권한이 이걸로 갈립니다.
+    // 서버는 /^[a-z0-9-]{1,20}$/ 만 저장하므로, 여기서 벗어나면 서버가 조용히
+    // 빈 값으로 떨어뜨리고 이름으로만 사람을 가리게 됩니다 — 이름이 겹치는
+    // 분(이상윤 두 분)에게는 그 방법이 통하지 않습니다.
+    else if (!/^[a-z0-9-]{1,20}$/.test(coach.id))
+      errors.push(`${label}: id(${coach.id})는 영소문자·숫자·하이픈 20자 이내여야 합니다.`)
     else ids.add(coach.id)
 
     if (!coach.name?.trim()) errors.push(`항목 ${index + 1}: 이름이 비어 있습니다.`)

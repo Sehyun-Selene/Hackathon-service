@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { CALL_LIMIT_PER_TEAM, IDEA_BOARD } from '../config.js'
 import { now, fmtAgo, fmtHM } from '../lib/time.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
@@ -74,9 +74,19 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
 
   // 보드를 완성해야 호출할 수 있는 규칙이라, 팀의 첫 호출에서 한 번 묻습니다.
   // callCount는 서버 값이라 팀원이 다른 기기로 들어와도 팀당 한 번입니다.
+  // 한 번 쓰기 시작한 호출의 식별자. 전송이 실패해 다시 누를 때 같은 값을
+  // 써야 합니다 — 서버는 같은 id를 중복으로 보고 한 건으로 처리하지만,
+  // 새 id로 다시 보내면 응답만 못 받았을 뿐 이미 들어간 호출과 합쳐
+  // 두 건이 되고 남은 횟수도 두 번 깎입니다. 창을 닫으면 버립니다:
+  // 나중에 다른 용건으로 다시 부를 때 옛 id를 쓰면 서버가 중복으로 보고
+  // 새 호출을 만들지 않습니다.
+  const attemptRef = useRef(null)
   const startCall = () => {
     if (callCount === 0) setBoardAsk(true)
     else setConfirming(true)
+  }
+  const dropAttempt = () => {
+    attemptRef.current = null
   }
 
   const send = async () => {
@@ -89,7 +99,11 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
     setReasonError(false)
     setConfirming(false)
     try {
-      await onCall(text)
+      if (!attemptRef.current) {
+        attemptRef.current = `${now().getTime()}-${Math.floor(Math.random() * 1e6)}`
+      }
+      await onCall(text, attemptRef.current)
+      attemptRef.current = null
       setReason('')
     } catch (err) {
       // 제한은 서버가 최종 판단합니다 — 다른 기기에서 이미 다 썼을 수 있음
@@ -220,7 +234,14 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
             <button className="btn-call" disabled={sending} onClick={send}>
               🙋 호출하기
             </button>
-            <button className="btn-ghost" disabled={sending} onClick={() => setConfirming(false)}>
+            <button
+              className="btn-ghost"
+              disabled={sending}
+              onClick={() => {
+                dropAttempt()
+                setConfirming(false)
+              }}
+            >
               취소
             </button>
           </div>

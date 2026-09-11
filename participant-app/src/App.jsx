@@ -291,7 +291,7 @@ export default function App() {
   // 담당 메이트 이름·슬랙 ID도 함께 저장합니다. 공유 API 서버가 슬랙 알림을
   // 보낼 때 쓰는데, 서버는 config를 모르기 때문에 앱이 값을 실어보냅니다.
   const sendCall = useCallback(
-    async (reason) => {
+    async (reason, attempt) => {
       // 담당은 한 명일 수도, 그룹(리테일 조)일 수도 있습니다.
       // 그룹이면 구성원 전원을 실어보내 전원이 알림을 받습니다 —
       // 누가 갈지 정해두지 않는 것이 그룹 배정의 취지입니다.
@@ -301,7 +301,10 @@ export default function App() {
       // 예전에는 두 번 나눠 써서, 둘째가 실패하면 "전송 실패"라고 안내하면서
       // 실제로는 호출이 들어가 중복이 생겼습니다.
       await callAdd(teamId, {
-        id: `${teamId}-${now().getTime()}-${Math.floor(Math.random() * 1e6)}`,
+        // 화면이 준 값(attempt)을 그대로 씁니다. 같은 작성 창에서 다시
+        // 보내면 같은 id라, 답을 못 받았을 뿐 이미 들어간 호출과 한 건으로
+        // 합쳐집니다.
+        id: `${teamId}-${attempt || `${now().getTime()}-${Math.floor(Math.random() * 1e6)}`}`,
         status: 'waiting',
         createdAt: now().getTime(),
         reason: (reason || '').trim(),
