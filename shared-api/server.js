@@ -378,7 +378,7 @@ async function sweepAlerts() {
     }
 
     // ② 미처리 전환 — 채널 공개 (멘션 없음)
-    if (!m.unclaimed && waitedMin >= slack.UNCLAIMED_MIN) {
+    if (slack.UNCLAIMED_MIN > 0 && !m.unclaimed && waitedMin >= slack.UNCLAIMED_MIN) {
       if (await slack.notifyUnclaimed(call, waitedMin)) {
         markers[call.id] = { ...markers[call.id], unclaimed: now }
         changed = true
@@ -386,7 +386,9 @@ async function sweepAlerts() {
     }
 
     // ③ 장시간 미처리 — 운영 총괄 묶음 알림 대상으로 모음
-    if (waitedMin >= slack.LEAD_MIN) stuck.push({ call, waitedMin, phase: 'waiting' })
+    if (slack.LEAD_MIN > 0 && waitedMin >= slack.LEAD_MIN) {
+      stuck.push({ call, waitedMin, phase: 'waiting' })
+    }
   }
 
   // 처리 시작을 눌러둔 채 현장에서 완료를 잊은 호출도 총관리자에게 알립니다.
@@ -394,7 +396,7 @@ async function sweepAlerts() {
   const inProgress = allCalls().filter((c) => c.status === 'in_progress' && c.startedAt)
   for (const call of inProgress) {
     const handledMin = Math.floor((now - call.startedAt) / slack.MIN)
-    if (handledMin >= slack.IN_PROGRESS_MIN) {
+    if (slack.IN_PROGRESS_MIN > 0 && handledMin >= slack.IN_PROGRESS_MIN) {
       stuck.push({ call, waitedMin: handledMin, phase: 'in_progress' })
     }
   }

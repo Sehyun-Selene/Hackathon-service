@@ -32,8 +32,13 @@
 
 const WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL || ''
 const LEAD_USER_ID = process.env.SLACK_LEAD_USER_ID || ''
+// 'off'(또는 0/none/false)이면 그 단계 알림을 아예 보내지 않습니다.
+// 알림 채널을 대화도 하는 채널과 겸해 쓰면 부수 알림이 방해가 될 수 있어,
+// 코드를 고치지 않고 환경변수만으로 끌 수 있게 둡니다.
 const num = (name, fallback) => {
-  const n = parseInt(process.env[name] || '', 10)
+  const raw = (process.env[name] || '').trim().toLowerCase()
+  if (['off', 'none', 'false', '0'].includes(raw)) return 0
+  const n = parseInt(raw, 10)
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
 // 기본 15분 — 메이트가 한 팀에 머무는 시간이 15분이라, 그보다 짧게 잡으면
