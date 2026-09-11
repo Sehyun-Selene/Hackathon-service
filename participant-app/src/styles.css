@@ -1473,7 +1473,9 @@ body {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wifi-pw {
-  flex: 0 0 auto; min-height: 40px; padding: 0 12px;
+  /* 폭을 고정해 둡니다 — 눌렀을 때 글자가 '복사됨'으로 바뀌면서 칸이
+     줄면, 방금 누른 자리가 움직여 잘못 눌렀나 싶어집니다 */
+  flex: 0 0 auto; min-width: 104px; min-height: 44px; padding: 5px 12px; text-align: left;
   border: 1px solid var(--edge-accent); border-radius: var(--po-radius-input);
   background: var(--po-bg-surface); color: var(--po-text-primary);
   font: inherit; font-size: var(--po-body-size); font-weight: 700;
@@ -1481,6 +1483,14 @@ body {
   cursor: pointer; white-space: nowrap;
 }
 .wifi-pw:active { background: var(--tint-accent); }
+/* 값 위에 붙는 작은 이름표. 값보다 눈에 띄면 안 되므로 한 단 흐리게 */
+.wifi-key {
+  display: block; font-style: normal;
+  font-size: 10.5px; line-height: 14px; font-weight: 700; letter-spacing: 0.02em;
+  color: var(--po-text-muted);
+}
+.wifi-pw .wifi-key { color: inherit; opacity: 0.6; }
+.wifi-pw b { display: block; font-weight: 700; }
 .wifi-pw.copied {
   background: var(--tint-done); border-color: var(--po-state-done);
   color: var(--po-state-done);

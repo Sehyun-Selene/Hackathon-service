@@ -52,9 +52,12 @@ function WifiRow({ zone, primary = false }) {
     setCopied(ok ? 'ok' : 'fail')
     setTimeout(() => setCopied(false), 1600)
   }
+  // 두 칸 다 무엇인지 적어둡니다. 값만 있으면 오른쪽 네모가 비밀번호인지
+  // 다른 이름인지 알 수 없어, 폰의 와이파이 목록과 대조하기 어렵습니다.
   return (
     <div className={`wifi-row${primary ? ' primary' : ''}`}>
       <span className="wifi-ssid">
+        <i className="wifi-key">네트워크 이름</i>
         <b>{zone.id}</b>
         <small>{zone.area}</small>
       </span>
@@ -64,7 +67,8 @@ function WifiRow({ zone, primary = false }) {
         onClick={copy}
         aria-label={`${zone.id} 비밀번호 ${zone.pw} 복사`}
       >
-        {copied === 'ok' ? '복사됨' : copied === 'fail' ? '직접 입력' : zone.pw}
+        <i className="wifi-key">비밀번호</i>
+        <b>{copied === 'ok' ? '복사됨' : copied === 'fail' ? '직접 입력' : zone.pw}</b>
       </button>
     </div>
   )
