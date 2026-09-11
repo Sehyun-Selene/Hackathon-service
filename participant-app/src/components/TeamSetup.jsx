@@ -251,7 +251,10 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
     <div className="app screen setup-app">
       <header className="screen-head setup-header">
         <div>
-          <div className="header-brand">G-Order</div>
+          <div className="header-brand">
+            <LanternIcon state="active" size={16} className="brand-lantern" />
+            G-Order
+          </div>
           <h1 className="screen-title header-table">팀 등록</h1>
           <p className="screen-sub">우리 팀 정보를 알려주세요</p>
         </div>

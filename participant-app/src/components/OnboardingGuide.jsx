@@ -16,7 +16,10 @@ export default function OnboardingGuide({ onNext }) {
     <div className="app screen screen-guide">
       <header className="screen-head">
         <div>
-          <div className="header-brand">G-Order</div>
+          <div className="header-brand">
+            <LanternIcon state="active" size={16} className="brand-lantern" />
+            G-Order
+          </div>
           <h1 className="screen-title">이용 안내</h1>
           <p className="screen-sub">꼭 읽어주세요</p>
         </div>

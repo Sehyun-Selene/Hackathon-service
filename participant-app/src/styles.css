@@ -118,14 +118,20 @@ body {
 /* 들어온 뒤 화면들의 좌상단 워드마크. 팀 등록 화면의 .header-brand 와
    같은 크기·색이라 화면을 옮겨도 같은 자리에 같은 글자가 있습니다. */
 .app-brand {
+  display: flex; align-items: center; gap: 5px;
   font-size: 11px; line-height: 16px; font-weight: 800; letter-spacing: 0.14em;
   color: var(--po-accent-ink); margin-bottom: 8px;
 }
 
 .header-brand {
+  display: flex; align-items: center; gap: 5px;
   font-size: 11px; line-height: 16px; font-weight: 800; letter-spacing: 0.14em;
   color: var(--po-accent-ink);
 }
+/* 랜턴은 글자 높이(16px)에 맞춥니다. 줄 높이보다 크면 워드마크가 아니라
+   아이콘이 먼저 읽혀, 화면 제목보다 앞줄이 무거워집니다.
+   flex: none — 좁은 폭에서 아이콘이 찌그러지지 않게. */
+.brand-lantern { flex: none; }
 .screen-title {
   margin-top: 4px;
   font-size: var(--po-display-size); line-height: var(--po-display-line);

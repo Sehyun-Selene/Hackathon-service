@@ -28,6 +28,7 @@ import MenuBoard from './components/MenuBoard.jsx'
 import ImageBoard from './components/ImageBoard.jsx'
 import CallSection from './components/CallSection.jsx'
 import TeamInfoSheet from './components/TeamInfoSheet.jsx'
+import LanternIcon from './components/LanternIcon.jsx'
 import GuideSheet from './components/GuideSheet.jsx'
 
 // 이 기기가 어느 팀인지 기억합니다. 행사 중 창을 닫거나 새로고침해도 다시
@@ -454,7 +455,10 @@ export default function App() {
           이용 안내 화면은 제 헤더에 워드마크를 갖고 있는데, 들어온 뒤 화면들은
           없어서 "여기가 어느 앱이지"가 화면마다 달랐습니다. 화면마다 넣지 않고
           여기 한 번만 둡니다 — 탭을 옮겨도 자리가 그대로입니다. */}
-      <div className="app-brand">G-Order</div>
+      <div className="app-brand">
+        <LanternIcon state="active" size={16} className="app-brand-lantern" />
+        G-Order
+      </div>
 
       <div className="folder">
         {/* 탭은 둘 이상일 때만 그립니다. 개발자리그는 호출이 없어
