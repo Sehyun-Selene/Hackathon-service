@@ -1159,23 +1159,25 @@ body {
   padding: 12px 13px; border: 1px solid var(--line); border-radius: 15px;
   background: var(--card);
 }
-/* 두 칸을 정확히 반씩 나눕니다. flex 로 두면 왼쪽 라벨이 길어질 때
-   오른쪽이 밀려 여백만 남습니다 — 가운데 선도 자리를 못 잡고요. */
+/* 두 숫자를 한 줄에 나란히 두면, 라벨("아직 처리되지 않은 호출")이 길어
+   숫자가 왼쪽으로 몰리고 오른쪽이 비었습니다. 위아래로 세우고 줄마다
+   이름은 왼쪽, 숫자는 오른쪽 끝에 붙입니다 — 노트북의 왼쪽 기둥과 같은
+   모양이라, 폰과 노트북을 오가도 읽는 방법이 같습니다. */
 .stat-row {
-  display: grid; grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
-  gap: 14px; align-items: center;
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px;
 }
-.stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat {
+  display: flex; flex-direction: row; align-items: baseline;
+  justify-content: space-between; gap: 10px; min-width: 0;
+}
 .stat-label {
-  font-size: 10.5px; font-weight: 700; color: var(--sub);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 12px; font-weight: 700; color: var(--sub); min-width: 0;
 }
 .stat-value {
   font-size: 22px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
 }
 .stat-value.accent { color: var(--primary-dark); }
 .stat-value small { font-size: 12px; font-weight: 700; color: var(--sub); margin-left: 1px; }
-.stat-divide { width: 1px; height: 32px; background: var(--line); }
 
 /* 세 칸이 곧 요약입니다 — 대기 몇 명, 대응 몇 명, 전부 몇 명 */
 .tile-row { display: flex; gap: 7px; }
@@ -1462,12 +1464,7 @@ body {
   .status-body .stat-strip.wide {
     display: flex; flex-direction: column; gap: 10px; position: sticky; top: 12px;
   }
-  .status-body .stat-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-  .status-body .stat-divide { display: none; }
-  .status-body .stat {
-    flex-direction: row; align-items: baseline; justify-content: space-between; gap: 8px;
-  }
-  .status-body .stat-label { font-size: 11.5px; white-space: normal; }
+  .status-body .stat-label { font-size: 11.5px; }
   .status-body .tile-row { flex-direction: column; }
   /* row-reverse — 글씨가 앞, 숫자가 뒤. 왼쪽 기둥에서는 이름을 먼저 읽고
      숫자를 확인하는 순서가 자연스럽습니다 */

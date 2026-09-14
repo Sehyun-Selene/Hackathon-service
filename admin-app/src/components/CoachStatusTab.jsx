@@ -191,7 +191,6 @@ export default function CoachStatusTab({
               <small>건</small>
             </span>
           </span>
-          <span className="stat-divide" aria-hidden="true" />
           {/* 담당 구간(E-97~E-99)은 라벨에서 뺐습니다. 자기 구간은 프로필에
               늘 있고, 여기서는 괄호가 길어져 오른쪽이 텅 비었습니다.
               총관리자는 담당 구간이 없어 이 칸이 왼쪽과 같은 숫자가 됐었는데,
