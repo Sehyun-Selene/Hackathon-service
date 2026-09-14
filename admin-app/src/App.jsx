@@ -110,7 +110,18 @@ function getDefaultMealId() {
 export default function App() {
   const [coach, setCoach] = useState(() => {
     try {
-      return JSON.parse(window.localStorage.getItem(MY_COACH_KEY) || 'null')
+      const saved = JSON.parse(window.localStorage.getItem(MY_COACH_KEY) || 'null')
+      if (!saved) return null
+      // 예전에는 기기마다 만든 임의의 id를 신원으로 썼습니다. 그때 저장된 기록이
+      // 남아 있으면, 이름만 바꿔 들어와도 그 기기를 먼저 쓴 사람의 처리 이력이
+      // 내 것으로 보입니다. 다시 입장하지 않아도 여기서 명단 id로 고쳐둡니다.
+      if (saved.crewId && saved.id !== saved.crewId) {
+        const fixed = { ...saved, id: saved.crewId }
+        window.localStorage.setItem(MY_COACH_KEY, JSON.stringify(fixed))
+        window.localStorage.removeItem('torder-coach-id')
+        return fixed
+      }
+      return saved
     } catch {
       return null
     }
