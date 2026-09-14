@@ -178,6 +178,7 @@ export default function CoachStatusTab({
         </button>
       </header>
 
+      <div className="status-body">
       <div className={`stat-strip${wide ? ' wide' : ''}`}>
       <div className="stat-card">
         <div className="stat-row">
@@ -287,6 +288,7 @@ export default function CoachStatusTab({
             )
           })
         )}
+      </div>
       </div>
 
       {/* 노트북에는 아래 바를 두지 않습니다 — 메뉴가 왼쪽에 늘 보이고,

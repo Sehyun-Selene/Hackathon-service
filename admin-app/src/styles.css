@@ -1194,6 +1194,7 @@ body {
 .tile.tone-busy.on { border-color: var(--edge-error); background: var(--tint-error); }
 .tile.tone-all.on { border-color: var(--po-border-strong); background: var(--tint-sunken); }
 
+.status-body { display: flex; flex-direction: column; gap: 12px; }
 .mate-list { display: flex; flex-direction: column; gap: 7px; }
 .mate-row {
   display: flex; align-items: center; gap: 11px;
@@ -1449,22 +1450,54 @@ body {
     font-size: 13px; font-weight: 600; color: var(--sub);
   }
 
-  /* 메이트 현황 — 요약과 필터를 한 줄에, 목록은 여러 칸으로.
-     50명 남짓이 한 줄짜리 목록으로 쌓이면 노트북에서 계속 스크롤해야
-     "지금 비어 있는 사람"에 닿습니다. */
-  .stat-strip.wide {
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
-    gap: 12px; align-items: stretch;
+  /* 메이트 현황 — 요약을 왼쪽 기둥으로 세우고 남은 폭을 목록이 씁니다.
+     가로로 길게 늘어난 요약 카드는 숫자 두 개를 위해 화면 절반을 비워
+     두고 있었고, 50명 남짓이 한 줄짜리 목록으로 쌓이면 노트북에서 계속
+     스크롤해야 "지금 비어 있는 사람"에 닿습니다. */
+  .status-body {
+    display: grid; grid-template-columns: 264px minmax(0, 1fr);
+    gap: 12px; align-items: start;
   }
-  .stat-strip.wide .tile-row { flex-direction: row; }
-  .stat-strip.wide .tile { height: auto; }
+  /* 목록이 길어도 요약은 따라옵니다 */
+  .status-body .stat-strip.wide {
+    display: flex; flex-direction: column; gap: 10px; position: sticky; top: 12px;
+  }
+  .status-body .stat-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .status-body .stat-divide { display: none; }
+  .status-body .stat {
+    flex-direction: row; align-items: baseline; justify-content: space-between; gap: 8px;
+  }
+  .status-body .stat-label { font-size: 11.5px; white-space: normal; }
+  .status-body .tile-row { flex-direction: column; }
+  /* row-reverse — 글씨가 앞, 숫자가 뒤. 왼쪽 기둥에서는 이름을 먼저 읽고
+     숫자를 확인하는 순서가 자연스럽습니다 */
+  .status-body .tile {
+    flex-direction: row-reverse; justify-content: space-between;
+    height: auto; min-height: 44px; padding: 0 14px;
+  }
+
+  /* 폭이 늘어나는 만큼 칸이 늘어나되 넷에서 멈춥니다. 최소 232px 를 넘기면
+     '전체 폭의 1/4'이 최소 칸 너비가 되어 다섯 번째가 들어가지 못하고,
+     더 넓어지면 칸이 늘지 않고 카드가 넓어집니다. */
   .mate-list {
-    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+    display: grid; gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(232px, calc((100% - 24px) / 4), 100%), 1fr));
   }
   .mate-list > .empty-text { grid-column: 1 / -1; }
-}
 
-/* 넓은 노트북 — 메이트 목록을 세 칸으로 */
-@media (min-width: 1360px) {
-  .mate-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* 카드는 좁게 — 호출 수를 오른쪽 끝이 아니라 이름 아래로 내립니다.
+     가로로 길게 눕히면 한 줄에 두 장밖에 들어가지 않습니다. */
+  .mate-row {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px;
+    align-items: center; padding: 10px 12px;
+  }
+  .mate-avatar { grid-row: 1 / span 2; width: 34px; height: 34px; font-size: 12px; }
+  .mate-right {
+    grid-column: 2; justify-self: start; flex-direction: row; align-items: center; gap: 8px;
+  }
+  /* 담당 팀은 배경 정보라 한 단 흐리게, 호출 수는 이 화면에서 읽어야 할
+     숫자라 한 단 크게 — 이름 아래에서도 눈에 걸리도록 */
+  .mate-range { color: var(--po-text-muted); }
+  .mate-calls { font-size: 16px; }
+  .mate-calls small { font-size: 11px; }
 }
