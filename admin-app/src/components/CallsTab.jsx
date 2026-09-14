@@ -10,7 +10,7 @@ import {
   teamLabel,
   leagueAllowsCall,
 } from '../config.js'
-import { fmtTimeOnly } from '../lib/time.js'
+import { fmtTimeOnly, fmtElapsed as agoText } from '../lib/time.js'
 import { isHandledByMe } from '../lib/storage.js'
 import Icon from './Icon.jsx'
 import AdminDock, { DockHint } from './AdminDock.jsx'
@@ -24,13 +24,6 @@ const URGENT_MS = 3 * 60 * 1000
 // 'E-45' → 'E-45' / 'E-105' → 'E-105'. 아바타 칸에 들어갈 짧은 표기입니다.
 const shortTeam = (teamId) => String(teamId || '').replace(/^([EG])-0*/, '$1-')
 
-// 경과 시간을 짧게. 목록에서 한 줄에 들어가야 해서 '분/시간'까지만 씁니다.
-function agoText(ms) {
-  const min = Math.floor(ms / 60000)
-  if (min < 1) return '방금'
-  if (min < 60) return `${min}분`
-  return `${Math.floor(min / 60)}시간 ${min % 60}분`
-}
 
 // 마스터 메이트 호출 알림.
 //

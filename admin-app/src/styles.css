@@ -1175,6 +1175,7 @@ body {
 }
 .stat-value {
   font-size: 22px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .stat-value.accent { color: var(--primary-dark); }
 .stat-value small { font-size: 12px; font-weight: 700; color: var(--sub); margin-left: 1px; }
@@ -1498,3 +1499,9 @@ body {
   .mate-calls { font-size: 16px; }
   .mate-calls small { font-size: 11px; }
 }
+
+/* 가장 오래 기다린 호출 — 팀 번호가 들어오므로 숫자만 있을 때보다 작게.
+   경과 시간은 팀 번호 옆에 한 단 작게 붙습니다. */
+/* 팀 번호와 경과 시간 사이 — 단위(건)처럼 붙으면 "E-4514분"으로 읽힙니다 */
+.stat-value .stat-elapsed { margin-left: 6px; }
+.stat-value .stat-none { font-size: 15px; font-weight: 700; color: var(--sub); }

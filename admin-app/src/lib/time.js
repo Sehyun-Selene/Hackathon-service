@@ -62,6 +62,15 @@ export function fmtAgo(ms) {
   return `${Math.floor(m / 60)}시간 ${m % 60}분 전`
 }
 
+// 경과 시간을 짧게. 한 줄에 들어가야 하는 자리에서 씁니다 —
+// fmtAgo 의 '…전'이 붙으면 '팀 E-45 14분 전' 처럼 어색해지는 곳.
+export function fmtElapsed(ms) {
+  const min = Math.floor(ms / 60000)
+  if (min < 1) return '방금'
+  if (min < 60) return `${min}분`
+  return `${Math.floor(min / 60)}시간 ${min % 60}분`
+}
+
 // ---- 식사 시간대 판단 (PRD 4.2) ----
 export function mealTimes(meal) {
   return {

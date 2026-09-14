@@ -3,12 +3,11 @@ import {
   formatTeamRange,
   teamSortKey,
   crewFor,
-  getAssignedCoachForTeam,
   crewLabel,
   crewRoleLabel,
   resolveCrewId,
 } from '../config.js'
-import { fmtTimeOnly } from '../lib/time.js'
+import { fmtTimeOnly, fmtElapsed } from '../lib/time.js'
 import Icon from './Icon.jsx'
 import AdminDock from './AdminDock.jsx'
 import { useMediaQuery } from '../lib/useMediaQuery.js'
@@ -131,11 +130,22 @@ export default function CoachStatusTab({
   const myAssignment = crewFor(coach)
   const myTeams = myAssignment?.teamNumbers || []
   const totalOpen = Object.values(openCallsByTeam).reduce((n, v) => n + v, 0)
-  // 담당자가 아예 없는 팀의 호출 — 아무도 가지 않을 건이라 총관리자가
-  // 직접 사람을 붙여야 합니다. 그분 화면에서만 씁니다.
-  const unassignedOpen = Object.entries(openCallsByTeam)
-    .filter(([teamId]) => !getAssignedCoachForTeam(teamId))
-    .reduce((n, [, v]) => n + v, 0)
+  // 가장 오래 기다린 호출 — 총관리자 화면에서만.
+  //
+  // 원래 이 자리는 "담당자가 배정되지 않은 팀의 호출"이었는데, 116팀이
+  // 빠짐없이 배정된 지금은 늘 0이라 아무것도 말해주지 않았습니다. 총관리자가
+  // 보고 움직이는 기준은 "몇 건"이 아니라 "어디가 제일 오래 기다리는가"라,
+  // 건수 대신 그 팀 번호와 경과 시간을 보여줍니다.
+  const oldestWaiting = useMemo(() => {
+    let found = null
+    Object.entries(scan.calls).forEach(([teamId, data]) => {
+      ;(data.calls || []).forEach((c) => {
+        if (c.status !== 'waiting' || !c.createdAt) return
+        if (!found || c.createdAt < found.createdAt) found = { teamId, createdAt: c.createdAt }
+      })
+    })
+    return found
+  }, [scan.calls])
   const myOpen = myAssignment?.callManager
     ? totalOpen
     : myTeams.reduce((n, id) => n + (openCallsByTeam[id] || 0), 0)
@@ -197,12 +207,25 @@ export default function CoachStatusTab({
               같은 수를 두 번 보여주느니 그분만 볼 수 있는 것을 둡니다. */}
           <span className="stat">
             <span className="stat-label">
-              {myAssignment?.callManager ? '담당자 없는 호출' : '내 담당'}
+              {myAssignment?.callManager ? '가장 오래 기다린 호출' : '내 담당'}
             </span>
-            <span className="stat-value accent">
-              {myAssignment?.callManager ? unassignedOpen : myOpen}
-              <small>건</small>
-            </span>
+            {myAssignment?.callManager ? (
+              <span className="stat-value accent">
+                {oldestWaiting ? (
+                  <>
+                    팀 {oldestWaiting.teamId}
+                    <small className="stat-elapsed">{fmtElapsed(Date.now() - oldestWaiting.createdAt)}</small>
+                  </>
+                ) : (
+                  <span className="stat-none">없음</span>
+                )}
+              </span>
+            ) : (
+              <span className="stat-value accent">
+                {myOpen}
+                <small>건</small>
+              </span>
+            )}
           </span>
         </div>
         <div className="chip-row">
