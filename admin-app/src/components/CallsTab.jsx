@@ -3,7 +3,7 @@ import {
   CALL_LIMIT_PER_TEAM,
   ALL_TEAM_IDS,
   groupBySeat,
-  getAssignedCoachForTeam,
+  coachGroupForTeam,
   isCoachForTeam,
   crewFor,
   assignedCoachLabel,
@@ -42,7 +42,7 @@ export default function CallsTab({
   onRefresh,
   refreshing,
 }) {
-  // 'all' | 'mine' | 'unassigned' — 예전에는 체크박스 두 개였는데, 서로
+  // 'all' | 'mine' | 'busy' — 예전에는 체크박스 두 개였는데, 서로
   // 겹칠 수 있어 "내 담당이면서 미배정"이라는 빈 목록이 나왔습니다.
   // 노트북에서는 목록 옆에 상세 칸을 펼칩니다. 폰의 "고르고 → 아래 바"를
   // 그대로 늘리면 목록 한 줄이 1000px가 되고 아래 절반이 빕니다.
@@ -61,8 +61,10 @@ export default function CallsTab({
     (data.calls || []).map((c) => ({
       ...c,
       team: teamId,
-      assignedName: getAssignedCoachForTeam(teamId)?.name || '',
-      assignedLabel: assignedCoachLabel(teamId) || '미배정',
+      // 그룹 구간(리테일)은 조 이름만 적습니다. 13명 중 누가 갈지 정해두지
+      // 않는 것이 그룹 배정이라, 명단 첫 사람의 이름을 적으면 거짓말이 되고
+      // '리테일 마스터 메이트'는 좁은 줄에서 팀 번호를 밀어냅니다.
+      assignedLabel: coachGroupForTeam(teamId)?.label || assignedCoachLabel(teamId) || '미배정',
       mine: isCoachForTeam(myAssignment, teamId),
     })),
   )
@@ -83,10 +85,12 @@ export default function CallsTab({
     .sort((a, b) => b.doneAt - a.doneAt)
 
   const mineCount = active.filter((c) => c.mine).length
-  const unassignedCount = active.filter((c) => !c.assignedName).length
+  // 지금 누군가 가 있는 호출. 예전에는 여기가 '미배정'이었는데, 116팀이
+  // 빠짐없이 배정된 뒤로는 늘 0이라 아무것도 거르지 못했습니다.
+  const busyCount = active.filter((c) => c.status === 'in_progress').length
   const shown = active.filter((c) => {
     if (filter === 'mine') return c.mine
-    if (filter === 'unassigned') return !c.assignedName
+    if (filter === 'busy') return c.status === 'in_progress'
     return true
   })
 
@@ -128,7 +132,7 @@ export default function CallsTab({
   const FILTERS = [
     { id: 'all', label: '전체', count: active.length },
     { id: 'mine', label: '내 담당', count: mineCount, hide: myTeams.length === 0 },
-    { id: 'unassigned', label: '미배정', count: unassignedCount, hide: !showAllTeams },
+    { id: 'busy', label: '처리 중', count: busyCount },
   ].filter((f) => !f.hide)
   const filterLabel = FILTERS.find((f) => f.id === filter)?.label || '전체'
 
@@ -182,8 +186,8 @@ export default function CallsTab({
       <div className="call-list">
         {shown.length === 0 ? (
           <p className="empty-text">
-            {filter === 'unassigned'
-              ? '담당자가 없는 호출이 없습니다.'
+            {filter === 'busy'
+              ? '지금 처리 중인 호출이 없습니다.'
               : filter === 'mine'
                 ? '내가 담당하는 진행 중 호출이 없습니다.'
                 : '진행 중인 호출이 없습니다.'}
