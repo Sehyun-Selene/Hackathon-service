@@ -58,6 +58,10 @@ const slack = require('./slack.js')
 
 const store = new Map()
 const PORT = process.env.PORT || 3001
+// 이 프로세스가 언제 떴는지. 무료 티어는 요청이 15분 없으면 잠들고, 깨어날 때
+// 프로세스가 새로 뜹니다. 그래서 이 값이 작다 = 방금 깨어났다 = keep-warm 크론이
+// 돌지 않고 있다는 뜻입니다. 크론이 살아 있으면 계속 커집니다.
+const BOOT_AT = Date.now()
 
 // ---- 원격 영속 저장 (Upstash Redis REST) --------------------------
 // REST 방식이라 npm 패키지 없이 fetch 만으로 씁니다 (Node 18+ 내장).
@@ -500,6 +504,8 @@ const server = http.createServer(async (req, res) => {
       // 값을 보고 화면을 그리는데, 서버가 다른 값을 들고 있으면 화면에는
       // 5회라고 쓰여 있는데 서버가 3회에서 막는 식으로 어긋납니다.
       // 행사 전에 /health 한 번으로 확인할 수 있게 합니다.
+      // 깨어 있은 시간. 크론 점검용 — 위 주석 참고
+      uptimeSec: Math.round((Date.now() - BOOT_AT) / 1000),
       rules: {
         callLimitPerTeam: CALL_LIMIT_PER_TEAM,
         teams: TEAM_LEAGUES.map((l) => l.prefix + ':' + l.count).join(','),
