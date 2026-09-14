@@ -541,6 +541,10 @@ body {
    ============================================================ */
 
 .screen-guide .screen-body { gap: 20px; }
+/* 워터마크가 화면 오른쪽으로 52px 삐져나가 있어, 첫 화면을 옆으로
+   끌 수 있었습니다. 여기서 잘라둡니다 — clip 은 hidden 과 달리 스크롤
+   상자를 만들지 않아 아래 CTA의 sticky 가 그대로 동작합니다. */
+.screen-guide { overflow-x: clip; }
 /* 배경 워터마크 — 안내를 읽는 데 방해되지 않을 만큼만 */
 .screen-guide > .screen-guide-mark {
   position: absolute; right: -52px; top: -8px; z-index: 0;
