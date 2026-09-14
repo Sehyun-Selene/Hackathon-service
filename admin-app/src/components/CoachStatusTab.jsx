@@ -173,7 +173,7 @@ export default function CoachStatusTab({
             마스터 메이트 현황
           </h1>
           <p className="screen-sub">
-            대기 중인 메이트가 다른 담당자의 팀 호출을 대신 받을 수 있습니다
+            원 안의 숫자는 그 메이트의 담당 팀에서 아직 처리되지 않은 호출 건수입니다
           </p>
         </div>
         <button
@@ -303,6 +303,10 @@ export default function CoachStatusTab({
                   title="아직 처리되지 않은 호출"
                   aria-label={`아직 처리되지 않은 호출 ${m.openCalls}건`}
                 >
+                  {/* 숫자만 있으면 무슨 수인지 알 수 없습니다. 이 화면을 보는
+                      사람은 새벽에 급히 훑는 운영진이라, 아이콘 해석이나
+                      작은 글씨 확인 같은 한 단계를 두지 않습니다. */}
+                  <small className="count-side">호출</small>
                   {m.openCalls}
                 </span>
               </div>
