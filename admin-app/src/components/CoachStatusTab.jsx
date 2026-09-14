@@ -117,7 +117,6 @@ export default function CoachStatusTab({
           // 아직 담당 구간을 못 받은 분도 목록에는 남깁니다 — 손이 비어 있는
           // 사람이라, 다른 구간을 메우러 갈 수 있습니다
           roleLabel: crewRoleLabel(assigned),
-          initial: (label || '?').trim().charAt(0),
           sortKey: teams.length ? Math.min(...teams.map(teamSortKey)) : Number.MAX_SAFE_INTEGER,
         }
       })
@@ -280,7 +279,6 @@ export default function CoachStatusTab({
             const isBusy = m.busy.length > 0
             return (
               <div key={m.coach.id} className={`mate-row${isBusy ? ' busy' : ' idle'}`}>
-                <span className="mate-avatar" aria-hidden="true">{m.initial}</span>
                 <span className="mate-body">
                   <span className="mate-line">
                     <b className="mate-name">{m.coach.name}</b>
@@ -289,22 +287,23 @@ export default function CoachStatusTab({
                   <span className="mate-range">
                     {m.range ? `팀 ${m.range}` : m.roleLabel || '담당 미배정'}
                   </span>
-                </span>
-                {/* '대기'는 이 화면에서 사람이 쉬고 있다는 뜻으로만 씁니다.
-                    처리되지 않은 호출은 "호출 N건" — 같은 말을 두 뜻으로
-                    쓰면 새벽에 잘못 읽습니다. */}
-                <span className="mate-right">
-                  <span className={`mate-calls${m.openCalls ? ' hot' : ''}`}>
-                    <small className="mate-calls-lead">호출</small>
-                    {m.openCalls}
-                    <small>건</small>
-                  </span>
                   {isBusy && (
                     <span className="mate-at">
                       <Icon name="pin" size={13} />
                       팀 {m.busy.map((x) => x.teamId).join(', ')}
                     </span>
                   )}
+                </span>
+                {/* 아직 처리되지 않은 호출 수. '대기'는 이 화면에서 사람이
+                    쉬고 있다는 뜻으로만 쓰므로 여기서는 쓰지 않습니다.
+                    성씨 동그라미를 없앤 자리를 이 숫자가 가져갑니다 — 이
+                    화면에서 눈으로 훑는 것은 이름이 아니라 이 수입니다. */}
+                <span
+                  className={`mate-count${m.openCalls ? ' hot' : ''}`}
+                  title="아직 처리되지 않은 호출"
+                  aria-label={`아직 처리되지 않은 호출 ${m.openCalls}건`}
+                >
+                  {m.openCalls}
                 </span>
               </div>
             )

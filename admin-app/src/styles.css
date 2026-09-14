@@ -1204,12 +1204,16 @@ body {
   padding: 11px 13px; border: 1px solid var(--line); border-radius: 14px; background: var(--card);
 }
 .mate-row.busy { border-color: var(--edge-error); }
-.mate-avatar {
+/* 아직 처리되지 않은 호출 수. 왼쪽 성씨 동그라미를 없애고 그 자리를
+   오른쪽 끝으로 옮겼습니다 — 이 화면에서 눈으로 훑는 것은 이름이 아니라
+   이 숫자입니다. 0이면 조용한 회색, 밀린 호출이 있으면 붉게. */
+.mate-count {
   flex: none; width: 40px; height: 40px; border-radius: 999px;
-  display: grid; place-items: center; font-size: 13px; font-weight: 800;
-  background: var(--tint-done); border: 1.5px solid var(--edge-done); color: var(--green);
+  display: grid; place-items: center;
+  font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums;
+  background: var(--tint-sunken); border: 1.5px solid var(--line); color: var(--sub);
 }
-.mate-row.busy .mate-avatar {
+.mate-count.hot {
   background: var(--tint-error); border-color: var(--edge-error); color: var(--po-state-error);
 }
 .mate-body { flex: 1; min-width: 0; }
@@ -1228,17 +1232,6 @@ body {
   display: block; margin-top: 1px; font-size: 11.5px; font-weight: 500; color: var(--sub);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.mate-right {
-  flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
-}
-.mate-calls {
-  font-size: 14px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
-}
-.mate-calls small { font-size: 10px; font-weight: 700; color: var(--sub); margin-left: 1px; }
-/* 숫자 앞에 오는 '호출' — 뒤 단위와 붙는 방향이 반대입니다 */
-.mate-calls .mate-calls-lead { margin-left: 0; margin-right: 3px; }
-/* 밀린 호출이 있으면 숫자를 붉게 — 이 화면에서 눈이 먼저 가야 할 곳입니다 */
-.mate-calls.hot { color: var(--po-state-error); }
 .mate-at {
   display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px;
   border-radius: 7px; background: var(--tint-error); color: var(--po-state-error);
@@ -1485,19 +1478,11 @@ body {
 
   /* 카드는 좁게 — 호출 수를 오른쪽 끝이 아니라 이름 아래로 내립니다.
      가로로 길게 눕히면 한 줄에 두 장밖에 들어가지 않습니다. */
-  .mate-row {
-    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px;
-    align-items: center; padding: 10px 12px;
-  }
-  .mate-avatar { grid-row: 1 / span 2; width: 34px; height: 34px; font-size: 12px; }
-  .mate-right {
-    grid-column: 2; justify-self: start; flex-direction: row; align-items: center; gap: 8px;
-  }
+  .mate-row { padding: 10px 12px; }
+  .mate-count { width: 34px; height: 34px; font-size: 14px; }
   /* 담당 팀은 배경 정보라 한 단 흐리게, 호출 수는 이 화면에서 읽어야 할
      숫자라 한 단 크게 — 이름 아래에서도 눈에 걸리도록 */
   .mate-range { color: var(--po-text-muted); }
-  .mate-calls { font-size: 16px; }
-  .mate-calls small { font-size: 11px; }
 }
 
 /* 가장 오래 기다린 호출 — 팀 번호가 들어오므로 숫자만 있을 때보다 작게.
