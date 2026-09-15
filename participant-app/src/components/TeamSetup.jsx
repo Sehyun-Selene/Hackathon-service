@@ -13,7 +13,6 @@ import {
   leagueNumberHint,
 } from '../config.js'
 import { normalizeTeam } from '../lib/storage.js'
-import OnboardingGuide from './OnboardingGuide.jsx'
 import LanternIcon from './LanternIcon.jsx'
 
 // 알레르기 인원 블록의 React key 겸 식별자 생성 (사람별로 별개 목록을 구분하기 위함)
@@ -63,9 +62,8 @@ function DietSummary({ allergies }) {
 // ※ 계열사는 더 이상 참가자가 선택하지 않음 — 마스터 메이트 담당은 팀 번호 기준
 //   개인별 배정(config.COACH_ASSIGNMENTS)으로 대체됨
 export default function TeamSetup({ initial, existingLookup, onComplete, onSaving, onCancel }) {
-  // 이용 안내(S2) → 팀 등록(S1) 순서로 봅니다. 이미 등록해 본 기기(수정 중이거나
-  // 저장된 팀이 있는 경우)는 안내를 다시 읽을 필요가 없어 바로 폼으로 갑니다.
-  const [step, setStep] = useState(initial?.teamId ? 'form' : 'guide')
+  // 이용 안내는 여기 없습니다 — 등록을 마친 뒤 App 이 세웁니다.
+  // 안내 내용이 리그마다 다른데, 리그는 이 화면에서 정해지기 때문입니다.
   // 테이블 번호는 리그 접두어까지가 한 팀입니다(E-45 / G-12).
   // 리그를 먼저 고르면 입력칸 앞에 접두어가 붙고 숫자만 입력하면 됩니다.
   // 여기서 고르는 것은 소속이 아니라 "테이블 번호 앞 글자"입니다. 그래서
@@ -231,20 +229,6 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
       setSaving(false)
       onSaving?.(false)
     }
-  }
-
-  // 이용 안내를 먼저 읽고 등록으로 넘어갑니다
-  if (step === 'guide') {
-    return (
-      <OnboardingGuide
-        onNext={() => {
-          setStep('form')
-          window.requestAnimationFrame(() => {
-            window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-          })
-        }}
-      />
-    )
   }
 
   return (

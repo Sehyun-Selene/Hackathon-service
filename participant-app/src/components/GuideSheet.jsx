@@ -7,10 +7,9 @@ import { useDialogFocus } from '../lib/useDialogFocus.js'
 // 돌아갈 수 없어서, 호출 횟수·인원수 규칙을 확인할 길이 없었습니다.
 //
 // 내용은 첫 화면과 같은 GuideSection을 그대로 씁니다 — 두 곳에 따로
-// 적으면 한쪽만 고쳐져 서로 다른 말을 하게 됩니다.
-// showCall: 리그를 이미 알고 있으므로, 호출을 쓰지 않는 리그에는
-// 호출 항목을 빼고 보여줍니다.
-export default function GuideSheet({ showCall = true, onClose }) {
+// 적으면 한쪽만 고쳐져 서로 다른 말을 하게 됩니다. 팀 번호를 넘기면
+// 리그에 맞는 항목(개발자리그는 호출 없음)이 그대로 따라옵니다.
+export default function GuideSheet({ teamId, onClose }) {
   const drag = useSheetDrag(onClose)
   const dialogRef = useDialogFocus(true, onClose)
 
@@ -34,7 +33,7 @@ export default function GuideSheet({ showCall = true, onClose }) {
           </button>
         </div>
         <p className="guide-sheet-sub">꼭 읽어주세요</p>
-        <GuideSection showCall={showCall} />
+        <GuideSection teamId={teamId} />
       </section>
     </div>
   )

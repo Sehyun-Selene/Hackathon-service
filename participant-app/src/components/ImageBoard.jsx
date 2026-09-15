@@ -32,9 +32,9 @@ export default function ImageBoard({ board, teamButton = null }) {
       {board.id === 'journey' && (
         <div className="image-board-meals">
           {/* '주문 없이 제공되는 끼니'는 설명이라 제목으로 길었습니다.
-              무엇을 여는지만 짧게 — 주문 대상이 아니라는 안내는 각 끼니
-              안의 '주문 없이 인원수대로 제공됩니다'가 이미 합니다. */}
-          <h4 className="image-board-subtitle">🍚 음식 사진</h4>
+              무엇을 여는지만 짧게 — 주문해야 받는 끼니(야식·아침)에는 각
+              칸에 'G-Order로 직접 주문!' 태그가 따로 붙습니다. */}
+          <h4 className="image-board-subtitle">🍚 메뉴판</h4>
           <ServedMeals />
         </div>
       )}

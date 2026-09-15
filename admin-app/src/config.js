@@ -133,6 +133,18 @@ export const DEV_LEAGUE_EVENTS = [
   { no: '07', title: '우수팀', desc: '맥 미니의 주인공에 도전하세요!' },
 ]
 
+// 체크아웃 설문 — 행사가 끝날 때 남기는 설문입니다.
+//
+//   주소가 비어 있으면 바로가기 탭에 줄이 서지 않습니다. 이용 안내에는
+//   이름이 그대로 남습니다 — 이 앱으로 하게 될 일을 미리 알려주는 목록이라,
+//   아직 열리지 않았다고 빼면 설문이 있다는 사실 자체를 모르게 됩니다.
+export const CHECKOUT_SURVEY = {
+  title: '체크아웃 설문',
+  desc: '행사가 끝나면 남겨주세요',
+  url: '',
+  when: '행사 마지막에 열립니다',
+}
+
 // 앱 밖 사이트. 둘 다 새 탭에서 엽니다 — 앱 안에 가두면 참가자가 주문·호출로
 // 돌아올 길을 잃습니다.
 //
@@ -248,11 +260,11 @@ export function wifiZonesForSeat(teamId) {
 // 팀당 호출 가능 총 횟수 (확정: 5회) — 초과 시 호출 버튼 자동 비활성화
 export const CALL_LIMIT_PER_TEAM = 5
 
-// 아이디어 보드 작성 시간.
+// 팀대시보드 작성 시간.
 // 보드를 완성해야 마스터 메이트를 호출할 수 있어, 팀의 첫 호출 때 한 번
 // 확인 팝업을 띄웁니다. 문구의 시각은 여기서 뽑습니다 — 글자로 박아두면
 // 시간이 바뀔 때 화면에만 옛 시간이 남습니다.
-export const IDEA_BOARD = { start: '2026-09-21T14:00:00', end: '2026-09-21T16:00:00' }
+export const TEAM_DASHBOARD = { start: '2026-09-21T14:00:00', end: '2026-09-21T16:00:00' }
 
 // ---------------------------------------------------------------
 // 2-1. 리그와 팀 (자리배치 시트에서 옮김)
@@ -963,6 +975,36 @@ export const SERVED_MEALS = [
       '얼갈이 된장국',
     ],
   },
+  // 아래 둘은 나머지와 달리 '주문해야 받는' 끼니입니다. 주문 화면에서 담은
+  // 것이 그대로 나오지만, 음식 여정은 시간 순서로 읽는 화면이라 야식·아침만
+  // 빠져 있으면 밤에 뭘 먹는지가 통째로 비어 보입니다. 그래서 여기에도
+  // 세우되, ordered 로 표시해 "직접 주문" 태그를 답니다.
+  {
+    id: 'day1-midnight',
+    label: '[DAY 1] 야식',
+    icon: '🍕',
+    cuisine: '피자',
+    servedAt: '21:00',
+    ordered: true,
+    photos: [
+      { src: './menu/super-jackson.png', caption: '수퍼잭슨 (1인)' },
+      { src: './menu/pepperoni-delight.png', caption: '페퍼로니 딜라이트 (1인)' },
+    ],
+    note: '피자는 한 판이 1인용입니다. 주문 시간에 직접 담아주세요.',
+  },
+  {
+    id: 'day2-breakfast',
+    label: '[DAY 2] 아침',
+    icon: '🥯',
+    cuisine: '베이글 샌드위치',
+    servedAt: '09:00',
+    ordered: true,
+    photos: [
+      { src: './menu/jambon-beurre.jpg', caption: '잠봉뵈르 샌드위치' },
+      { src: './menu/ham-cheese.jpg', caption: '햄&치즈 샌드위치' },
+    ],
+    note: '야식과 같은 시간에 함께 주문합니다.',
+  },
   {
     id: 'day2-lunch',
     label: '[DAY 2] 점심',
@@ -1185,4 +1227,65 @@ export function teamDiet(memberCount, allergies) {
   })
 
   return { eatableByMenu, eatableByMeal, altByMeal, altPeople }
+}
+
+// ---------------------------------------------------------------
+// 1-5. 이용 안내 — 'G-Order로 확인할 수 있는 것'에 들어가는 칸
+//
+//   이용 안내는 "이 앱으로 뭘 하나"를 알려주는 지도입니다. 그래서 목록을
+//   화면에 적어두지 않고 실제 탭·링크 설정에서 만듭니다 — 타임테이블이
+//   개발자리그에도 생기면 안내에도 저절로 한 칸이 늘어납니다.
+// ---------------------------------------------------------------
+// 2번 칸은 리그와 상관없이 여섯 가지가 같은 순서로 섭니다.
+//
+//   ⚠️ 개발자리그 타임테이블 이미지는 아직 없습니다. 안내에는 이름이
+//     서지만 하단 탭은 IMAGE_BOARDS 의 leagues 를 따르므로 아직 안 열립니다.
+//     이미지가 나오면 IMAGE_BOARDS 의 timetable 에 'dev' 를 더하세요 —
+//     안내는 고칠 것이 없습니다.
+export function guideCanItems() {
+  // 이름·아이콘은 실제 탭 설정에서 가져옵니다 — 탭 이름을 고치면 안내도
+  // 따라옵니다. 순서만 여기서 정합니다.
+  const board = (id) => IMAGE_BOARDS.find((x) => x.id === id)
+  const tt = board('timetable')
+  const journey = board('journey')
+  return [
+    { id: 'timetable', icon: tt.icon, label: tt.label },
+    { id: 'journey', icon: journey.icon, label: journey.label },
+    { id: 'event', icon: '🏕️', label: '이벤트 안내' },
+    { id: 'platform', icon: '🖥️', label: PLATFORM_LINK.title },
+    ...EXTRA_LINKS.map((l) => ({ id: l.id, icon: '🎟️', label: l.title })),
+    { id: 'survey', icon: '📝', label: CHECKOUT_SURVEY.title },
+  ]
+}
+
+// 반드시 G-Order로 해야 하는 것 — 호출(필드리그만)과 주문.
+// 주문 시간은 MEALS 에서 그대로 읽습니다. 안내에 적힌 시간과 실제로 열리는
+// 시간이 어긋나면 안내가 아니라 오답이 됩니다.
+export function guideMustItems(teamId) {
+  const order = {
+    id: 'order',
+    title: MEALS.map((m) => m.shortLabel).join(' · ') + ' 주문',
+    desc: MEALS.map((m) => m.label).join('과 ') + '을 여기서 주문하세요.',
+    when: orderWindowLabel(),
+    note: '이 시간에만 주문할 수 있어요.',
+  }
+  if (!leagueAllowsCall(teamId)) return [order]
+  return [
+    {
+      id: 'call',
+      title: '마스터 메이트 호출',
+      desc: `도움이 필요할 때 팀당 ${CALL_LIMIT_PER_TEAM}회까지 마스터 메이트를 호출할 수 있어요.`,
+    },
+    order,
+  ]
+}
+
+// '9/21(월) 13:30 – 16:00' — 끼니마다 주문 창이 같아서 한 줄로 씁니다.
+// 달라지면 여기서 끼니별로 나눠 적어야 합니다.
+function orderWindowLabel() {
+  const start = new Date(MEALS[0].orderStart)
+  const end = new Date(MEALS[0].orderEnd)
+  const days = ['일', '월', '화', '수', '목', '금', '토']
+  const hm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return `${start.getMonth() + 1}/${start.getDate()}(${days[start.getDay()]}) ${hm(start)} – ${hm(end)}`
 }

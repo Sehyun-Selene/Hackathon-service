@@ -3,6 +3,7 @@ const assert = require('node:assert/strict')
 const { spawn } = require('node:child_process')
 const http = require('node:http')
 const slack = require('./slack.js')
+const sheets = require('./sheets.js')
 
 const PORT = 3197
 const BASE = `http://127.0.0.1:${PORT}`
@@ -310,4 +311,60 @@ test('미등록 팀 재촉은 팀 번호 목록이 있어야 대상 계산까지
     label: '',
   })
   assert.notEqual(withIds.status, 400)
+})
+
+// ── 구글 시트 아카이빙 ──────────────────────────────────────────────
+// 시트 연동은 곁다리입니다. 꺼져 있어도(환경변수 없음) 호출은 그대로
+// 들어가야 하고, 켜져 있어도 시트가 죽으면 호출을 막아서는 안 됩니다.
+test('시트 연동이 꺼져 있어도 호출은 정상 저장된다', async () => {
+  assert.equal(sheets.enabled, false, 'SHEETS_WEBHOOK_URL 없이 도는 테스트입니다')
+  const res = await post('/api/call-add', {
+    teamId: 'E-77',
+    call: { id: 'E-77-sheet-off', reason: '시트 꺼짐 확인', teamName: '테스트팀' },
+  })
+  assert.equal(res.status, 200)
+  assert.equal(res.body.ok, true)
+})
+
+test('호출에 실린 팀 정보가 기록에 남는다', async () => {
+  await post('/api/call-add', {
+    teamId: 'E-78',
+    call: {
+      id: 'E-78-info',
+      reason: '팀 정보 동봉 확인',
+      teamName: '스마트터빈',
+      company: '오리온',
+      league: '필드리그',
+    },
+  })
+  const read = await post('/api/get', { keys: ['call:E-78'] })
+  const call = read.body['call:E-78'].calls.find((c) => c.id === 'E-78-info')
+  assert.equal(call.teamName, '스마트터빈')
+  assert.equal(call.company, '오리온')
+  assert.equal(call.league, '필드리그')
+})
+
+test('시트로 보낼 한 줄은 한국 시각과 우리말 상태로 바뀐다', () => {
+  // 2026-09-21T12:00:00Z = 한국 시각 21:00
+  const row = sheets._toRow({
+    id: 'E-12-1',
+    team: 'E-12',
+    teamName: '스마트터빈',
+    reason: '빌드가 안 돼요',
+    status: 'done',
+    createdAt: Date.UTC(2026, 8, 21, 12, 0, 0),
+    doneAt: Date.UTC(2026, 8, 21, 12, 7, 0),
+    handledBy: '김세현',
+  })
+  assert.equal(row.createdAt, '2026-09-21 21:00:00')
+  assert.equal(row.doneAt, '2026-09-21 21:07:00')
+  assert.equal(row.status, '완료')
+  assert.equal(row.teamId, 'E-12')
+  assert.equal(row.reason, '빌드가 안 돼요')
+  // 아직 시작하지 않은 칸은 빈 문자열 — 시트에 1970-01-01 이 찍히면 안 됩니다
+  assert.equal(row.startedAt, '')
+})
+
+test('id 없는 호출은 시트로 보내지 않는다', async () => {
+  assert.equal(await sheets.archiveCall({ team: 'E-01', reason: '아이디 없음' }), false)
 })

@@ -1,38 +1,57 @@
-import { CALL_LIMIT_PER_TEAM } from '../config.js'
+import { guideMustItems, guideCanItems } from '../config.js'
 
-// 참가자 안내사항 — 참가자가 꼭 알아야 할 기본 규칙 모음.
-// 첫 입장 안내 화면(OnboardingGuide)에서 펼친 카드 목록으로 보여줍니다.
-// ※ 주문 시간 안내는 공지사항(OrderNotice)이 따로 담당합니다.
-// showCall=false면 호출 항목을 빼고 보여줍니다 (개발자리그는 호출을 쓰지 않음)
-export default function GuideSection({ showCall = true }) {
+// 이용 안내 본문 — 두 덩이입니다.
+//
+//   1  반드시 G-Order로 해야 하는 것   호출(필드리그만) · 주문
+//   2  G-Order로 확인할 수 있는 것     타임테이블 · 음식 여정 · 이벤트 …
+//
+// 두 덩이를 나눈 이유: 이 앱은 "해야 하는 일"과 "찾아보는 정보"를 같이
+// 담고 있는데, 예전 안내는 규칙만 나열해서 앱이 무엇을 하는 물건인지가
+// 드러나지 않았습니다. 무게가 다르니 생김새도 다릅니다 — 1번은 카드,
+// 2번은 이름만 늘어놓은 격자입니다.
+//
+// 1번 카드에 아이콘을 두지 않습니다. 두 장뿐이라 아이콘이 구분에 보태는
+// 것이 없고, 글자가 먼저 읽히는 편이 낫습니다.
+//
+// 목록은 화면이 아니라 config에서 옵니다(guideMustItems·guideCanItems).
+// 팀 번호만 넘기면 리그에 맞는 항목이 나옵니다 — 그래서 이 화면은 팀 등록
+// '뒤'에 섭니다. 등록 전에는 어느 리그인지 알 수 없어, 호출을 쓰지 않는
+// 개발자리그에도 호출 안내를 띄우게 됩니다.
+export default function GuideSection({ teamId }) {
+  const must = guideMustItems(teamId)
+  const can = guideCanItems()
+
   return (
     <div className="guide-body">
-      {showCall && (
-        <div className="guide-block">
-          <span className="guide-block-icon" aria-hidden="true">🙋</span>
-          <div className="guide-block-text">
-            <b>마스터 메이트 호출</b>
-            <p>도움이 필요하면 마스터 메이트를 호출하세요.</p>
-            <p className="guide-call-limit">
-              <span>팀당</span>
-              <strong>{CALL_LIMIT_PER_TEAM}회</strong>
-              <span>까지 가능합니다.</span>
-            </p>
-          </div>
+      <div className="guide-sect">
+        <div className="guide-sect-label">
+          <span className="guide-sect-num must" aria-hidden="true">1</span>
+          <b>반드시 G-Order로 해야 하는 것</b>
         </div>
-      )}
-      <div className="guide-block">
-        <span className="guide-block-icon" aria-hidden="true">👥</span>
-        <div className="guide-block-text">
-          <b>음식은 팀 인원수에 맞게</b>
-          <p>각 식사마다 등록한 팀 인원수만큼만 담을 수 있어요.</p>
+        <div className="guide-must">
+          {must.map((item) => (
+            <div className="guide-must-card" key={item.id}>
+              <b>{item.title}</b>
+              <p>{item.desc}</p>
+              {item.when && <span className="guide-when">🕜 {item.when}</span>}
+              {item.note && <p className="guide-note">{item.note}</p>}
+            </div>
+          ))}
         </div>
       </div>
-      <div className="guide-block">
-        <span className="guide-block-icon" aria-hidden="true">🥗</span>
-        <div className="guide-block-text">
-          <b>알레르기</b>
-          <p>메뉴에 포함된 알레르기 유발 물질 중 해당 사항이 있다면 다음 페이지에서 표기해주세요.</p>
+
+      <div className="guide-sect">
+        <div className="guide-sect-label">
+          <span className="guide-sect-num" aria-hidden="true">2</span>
+          <b>G-Order로 확인할 수 있는 것</b>
+        </div>
+        <div className="guide-can">
+          {can.map((item) => (
+            <div className="guide-can-tile" key={item.id}>
+              <span className="guide-can-icon" aria-hidden="true">{item.icon}</span>
+              <b>{item.label}</b>
+            </div>
+          ))}
         </div>
       </div>
     </div>

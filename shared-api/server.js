@@ -55,6 +55,7 @@
 const http = require('http')
 const zlib = require('zlib')
 const slack = require('./slack.js')
+const sheets = require('./sheets.js')
 
 const store = new Map()
 const PORT = process.env.PORT || 3001
@@ -500,6 +501,7 @@ const server = http.createServer(async (req, res) => {
       keys: store.size,
       persist: persistState,
       slack: slack.state,
+      sheets: { enabled: sheets.enabled, ...sheets.state },
       // 환경변수로 덮어쓸 수 있는 값들은 여기 드러냅니다. 앱은 config.js 의
       // 값을 보고 화면을 그리는데, 서버가 다른 값을 들고 있으면 화면에는
       // 5회라고 쓰여 있는데 서버가 3회에서 막는 식으로 어긋납니다.
@@ -733,7 +735,11 @@ const server = http.createServer(async (req, res) => {
           [countKey, count],
         ])
         const sent = sendWriteResult(res, { ok: true, duplicate: true, count }, persisted)
-        if (sent && existing) alertNewCalls([{ ...existing, team: teamId }]).catch(() => {})
+        if (sent && existing) {
+          alertNewCalls([{ ...existing, team: teamId }]).catch(() => {})
+          sheets.archiveCall({ ...existing, team: teamId }).catch(() => {})
+        }
+
         return
       }
       if (count >= CALL_LIMIT_PER_TEAM) {
@@ -743,6 +749,12 @@ const server = http.createServer(async (req, res) => {
       const record = {
         id: call.id,
         reason,
+        // 팀명·소속·리그는 서버가 모릅니다(앱 config에 있습니다). 구글 시트
+        // 아카이빙에 쓰려고 앱이 실어 보낸 값을 그대로 담아 둡니다 — 번호만
+        // 남기면 나중에 명단과 일일이 맞춰야 합니다.
+        teamName: String(call.teamName || '').slice(0, 60),
+        company: String(call.company || '').slice(0, 60),
+        league: String(call.league || '').slice(0, 20),
         assignedName: String(call.assignedName || '').slice(0, 40),
         assignedSlackId: validSlackId(call.assignedSlackId),
         // 한 구간을 여럿이 맡는 그룹 배정(리테일 조)에서는 전원을 부릅니다.
@@ -761,8 +773,11 @@ const server = http.createServer(async (req, res) => {
         [countKey, nextCount],
       ])
       const sent = sendWriteResult(res, { ok: true, count: nextCount }, persisted)
-      // 알림은 응답 뒤에 (참가자 화면이 기다리지 않게)
-      if (sent) alertNewCalls([{ ...record, team: teamId }]).catch(() => {})
+      // 알림·기록은 응답 뒤에 (참가자 화면이 기다리지 않게)
+      if (sent) {
+        alertNewCalls([{ ...record, team: teamId }]).catch(() => {})
+        sheets.archiveCall({ ...record, team: teamId }).catch(() => {})
+      }
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }
@@ -817,7 +832,9 @@ const server = http.createServer(async (req, res) => {
       const next = { team: teamId, calls: nextCalls }
       store.set(key, next)
       const persisted = await persistKey(key, next)
-      sendWriteResult(res, { ok: true, call }, persisted)
+      const sent = sendWriteResult(res, { ok: true, call }, persisted)
+      // 호출 ID가 같으므로 시트에서는 줄이 늘지 않고 그 줄이 갱신됩니다.
+      if (sent) sheets.archiveCall({ ...call, team: teamId }).catch(() => {})
     } catch {
       sendJson(res, 400, { error: 'invalid request' })
     }

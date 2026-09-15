@@ -2,16 +2,15 @@ import logo52g from '../assets/52g-logo.png'
 import GuideSection from './GuideSection.jsx'
 import LanternIcon from './LanternIcon.jsx'
 
-// S2 이용 안내 — 팀 등록 앞에 오는 첫 화면.
+// 이용 안내 — 팀 등록을 마친 직후 한 번 서는 화면.
 //
-// 예전에는 등록 화면 안에 접힌 상자(details)로 들어 있어, 대부분 펼치지
-// 않은 채 지나갔습니다. 규칙을 모르고 등록하면 주문 시간·호출 횟수를
-// 뒤늦게 알게 되므로, 등록 앞에 한 화면으로 세우고 다 펼쳐 보여줍니다.
+// 등록 '앞'에 있던 것을 뒤로 옮겼습니다. 안내 내용이 리그마다 다른데
+// (개발자리그는 호출을 쓰지 않습니다), 등록 전에는 어느 리그인지 알 수
+// 없어 양쪽 안내를 다 띄우고 있었습니다.
 //
 // 주문 시간 공지(OrderNotice)는 여기 두지 않습니다 — 주문할 자리에서 봐야
 // 하는 내용이라 음식 주문 탭에만 둡니다.
-// 리그를 아직 고르기 전이라 호출 안내도 함께 보여줍니다.
-export default function OnboardingGuide({ onNext }) {
+export default function OnboardingGuide({ teamId, onNext }) {
   return (
     <div className="app screen screen-guide">
       <header className="screen-head">
@@ -27,7 +26,7 @@ export default function OnboardingGuide({ onNext }) {
       </header>
 
       <div className="screen-body">
-        <GuideSection showCall />
+        <GuideSection teamId={teamId} />
       </div>
 
       <div className="screen-foot">

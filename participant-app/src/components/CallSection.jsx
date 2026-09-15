@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { CALL_LIMIT_PER_TEAM, IDEA_BOARD } from '../config.js'
+import { CALL_LIMIT_PER_TEAM, TEAM_DASHBOARD } from '../config.js'
 import { now, fmtAgo, fmtHM } from '../lib/time.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 import LanternIcon from './LanternIcon.jsx'
@@ -17,7 +17,7 @@ const REASON_MAX = 300
 // (config.COACH_ASSIGNMENTS — 담당자 이름은 팀 프로필 시트에서 보여줍니다)
 // 호출 횟수 제한 예외 여부는 참가자가 정하지 않고, 처리하는 관리자가
 // 호출 하나하나에 대해 직접 판단해 설정함 (관리자 CallsTab 참고)
-// 첫 호출 전 확인 팝업. 시각은 config.IDEA_BOARD에서 뽑습니다.
+// 첫 호출 전 확인 팝업. 시각은 config.TEAM_DASHBOARD에서 뽑습니다.
 function BoardCheck({ onYes, onNo }) {
   const dialogRef = useDialogFocus(true, onNo)
   return (
@@ -33,10 +33,10 @@ function BoardCheck({ onYes, onNo }) {
       >
         <div className="ask-emoji" aria-hidden="true">📝</div>
         <h3 className="ask-title" id="board-ask-title">
-          아이디어 보드 작성을 완료했나요?
+          팀대시보드 작성을 완료했나요?
         </h3>
         <p className="ask-body">
-          {fmtHM(IDEA_BOARD.start)}부터 {fmtHM(IDEA_BOARD.end)}까지 아이디어 보드를 작성합니다.
+          {fmtHM(TEAM_DASHBOARD.start)}부터 {fmtHM(TEAM_DASHBOARD.end)}까지 팀대시보드를 작성합니다.
           <br />
           작성을 마쳐야 마스터 메이트를 호출할 수 있어요.
         </p>
@@ -58,7 +58,7 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
   const [sending, setSending] = useState(false)
   const [reason, setReason] = useState('')
   const [reasonError, setReasonError] = useState(false)
-  // 아이디어 보드 확인 팝업: null=안 띄움 / true=묻는 중 / false=아직이라고 답함
+  // 팀대시보드 확인 팝업: null=안 띄움 / true=묻는 중 / false=아직이라고 답함
   const [boardAsk, setBoardAsk] = useState(null)
   // 지난 호출 내역 시트 — 남은 호출 알약을 누르면 열립니다
   const [showLog, setShowLog] = useState(false)
@@ -256,7 +256,7 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
           {/* 팝업에서 "아직이요"를 고른 뒤 — 왜 호출로 넘어가지 않았는지 */}
           {boardAsk === false && (
             <p className="call-hint board-todo">
-              아이디어 보드를 먼저 작성해주세요. 작성을 마친 뒤 다시 눌러주세요.
+              팀대시보드를 먼저 작성해주세요. 작성을 마친 뒤 다시 눌러주세요.
             </p>
           )}
           <button className="btn-call" disabled={sending} onClick={startCall}>

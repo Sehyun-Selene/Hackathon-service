@@ -7,6 +7,8 @@ import {
   leagueAllowsCall,
   imageBoardsFor,
   leagueOf,
+  teamLabel,
+  TEAMS,
 } from './config.js'
 import {
   storageGet,
@@ -31,12 +33,16 @@ import CallSection from './components/CallSection.jsx'
 import TeamInfoSheet from './components/TeamInfoSheet.jsx'
 import LanternIcon from './components/LanternIcon.jsx'
 import GuideSheet from './components/GuideSheet.jsx'
+import OnboardingGuide from './components/OnboardingGuide.jsx'
 import LinksSection from './components/LinksSection.jsx'
 import EventGuideSheet from './components/EventGuideSheet.jsx'
 
 // 이 기기가 어느 팀인지 기억합니다. 행사 중 창을 닫거나 새로고침해도 다시
 // 등록하지 않도록 — 팀 등록은 행사 시작 때 한 번만 하면 됩니다.
 const MY_TEAM_KEY = 'torder-my-team'
+// 이용 안내를 읽었다는 표시. 값으로 그때의 리그를 담습니다 — 팀 번호를
+// 고쳐 다른 리그로 옮기면 안내 내용도 달라지므로 한 번 더 보여줍니다.
+const GUIDE_SEEN_KEY = 'torder-guide-seen'
 // 관리자 재촉 표시의 유효기간 — 오래된 표시로 계속 뜨지 않게
 const NUDGE_TTL_MS = 10 * 60 * 1000
 
@@ -52,6 +58,14 @@ export default function App() {
   const [restoring, setRestoring] = useState(true)
   // 서버에 기록이 없을 때(초기화 등) 등록 화면에 채워줄 값
   const [prefill, setPrefill] = useState(null)
+  // 이용 안내를 이미 읽은 리그
+  const [guideSeen, setGuideSeen] = useState(() => {
+    try {
+      return window.localStorage.getItem(GUIDE_SEEN_KEY) || ''
+    } catch {
+      return ''
+    }
+  })
 
   // 화면 하단 탭: 'order'(음식 주문) | 'call'(마스터 메이트 호출)
   // 현재 주문 가능한 식사가 있을 때만 음식 주문 탭으로 랜딩
@@ -236,6 +250,18 @@ export default function App() {
 
   const closeTeamInfo = useCallback(() => setShowTeamInfo(false), [])
   const closeGuide = useCallback(() => setShowGuide(false), [])
+  // 안내를 다 읽었습니다 — 같은 리그로는 다시 세우지 않습니다
+  const finishOnboarding = useCallback((leagueId) => {
+    try {
+      window.localStorage.setItem(GUIDE_SEEN_KEY, leagueId)
+    } catch {
+      /* 저장을 못 해도 이번 화면은 넘어갑니다 */
+    }
+    setGuideSeen(leagueId)
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    })
+  }, [])
   const openEventGuide = useCallback(() => setShowEventGuide(true), [])
   const closeEventGuide = useCallback(() => setShowEventGuide(false), [])
   // 팀 정보 시트를 닫고 안내 시트를 엽니다 — 시트를 두 장 겹쳐 띄우면
@@ -307,6 +333,10 @@ export default function App() {
       // 호출 추가 + 횟수 증가 + 제한 검사를 서버가 한 번에 처리합니다.
       // 예전에는 두 번 나눠 써서, 둘째가 실패하면 "전송 실패"라고 안내하면서
       // 실제로는 호출이 들어가 중복이 생겼습니다.
+      // 팀명·소속·리그는 서버가 모릅니다(명단은 앱 config에만 있습니다).
+      // 호출 기록이 구글 시트에 쌓일 때 번호만 남으면 나중에 명단과 일일이
+      // 맞춰야 해서, 보낼 때 함께 실어 보냅니다.
+      const league = leagueOf(teamId)
       await callAdd(teamId, {
         // 화면이 준 값(attempt)을 그대로 씁니다. 같은 작성 창에서 다시
         // 보내면 같은 id라, 답을 못 받았을 뿐 이미 들어간 호출과 한 건으로
@@ -315,6 +345,9 @@ export default function App() {
         status: 'waiting',
         createdAt: now().getTime(),
         reason: (reason || '').trim(),
+        teamName: teamLabel(teamId),
+        company: TEAMS[teamId]?.company || '',
+        league: league?.label || '',
         assignedName: group ? group.label + ' 마스터 메이트' : assigned[0]?.name || '',
         // 예전 서버는 하나만 읽습니다 — 둘 다 실어 보내 어느 쪽이든 동작하게
         assignedSlackId: assigned[0]?.slackUserId || '',
@@ -382,6 +415,16 @@ export default function App() {
         // 없으면 아무것도 못 하는 화면이라 취소할 곳이 없습니다.
         onCancel={editingTeam ? () => setEditingTeam(false) : null}
       />
+    )
+  }
+
+  // 등록 직후 이용 안내 한 번 — 리그가 정해진 뒤라야 호출을 쓰는 리그인지
+  // 알 수 있습니다. 읽은 리그를 기억해 두므로 새로고침해도 다시 서지
+  // 않고, 팀 번호를 다른 리그로 고치면 그때 한 번 더 섭니다.
+  const myLeague = leagueOf(team.teamId)?.id || ''
+  if (guideSeen !== myLeague) {
+    return (
+      <OnboardingGuide teamId={team.teamId} onNext={() => finishOnboarding(myLeague)} />
     )
   }
 
@@ -571,7 +614,7 @@ export default function App() {
       )}
 
       {showGuide && (
-        <GuideSheet showCall={canCall} onClose={closeGuide} />
+        <GuideSheet teamId={team.teamId} onClose={closeGuide} />
       )}
 
       {showEventGuide && <EventGuideSheet onClose={closeEventGuide} />}

@@ -1,6 +1,11 @@
 import { SERVED_MEALS } from '../config.js'
 
-// 주문 없이 제공되는 음식(간식·저녁·점심) 안내.
+// 음식 여정 탭 아래에 붙는 끼니별 사진 안내.
+//
+// 대부분은 가만히 있어도 나오는 음식이지만, 야식·아침 둘은 주문 화면에서
+// 직접 담아야 받습니다(config의 ordered). 시간 순서로 읽는 화면이라 그
+// 둘만 빼면 밤이 통째로 비어 보여 함께 세우고, 대신 제목 위에 태그를
+// 달아 "이건 할 일이 있다"를 먼저 알립니다.
 //
 // 주문 대상이 아니라 "무엇이 나오는지" 보여주는 것뿐이므로 수량 조절이나
 // 담기 없이 사진과 목록만 보여줍니다.
@@ -38,6 +43,14 @@ export default function ServedMeals() {
       {SERVED_MEALS.map((meal) => (
         <details key={meal.id} className="served-meal" onToggle={scrollToggledIntoView}>
           <summary className="served-meal-summary">
+            {/* 주문해야 받는 끼니는 제목 앞에 한 줄 띄워 표시합니다. 나머지는
+                가만히 있어도 나오는 음식이라, 이 둘만 할 일이 있습니다 —
+                제목 옆에 붙이면 폰 폭에서 제목과 시각 사이에 끼어 잘립니다. */}
+            {meal.ordered && (
+              <span className="served-meal-tagline">
+                <i className="served-meal-tag">G-Order로 직접 주문!</i>
+              </span>
+            )}
             <span className="served-meal-title">
               {meal.icon || '🍚'} {meal.label}
               {meal.cuisine ? ` · ${meal.cuisine}` : ''}
