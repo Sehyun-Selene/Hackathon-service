@@ -23,7 +23,7 @@ import {
   fetchStock,
   orderSave,
 } from './lib/storage.js'
-import { now, fmtAgo, fmtClock, fmtCountdown, getOpenMeals, getNextMeals } from './lib/time.js'
+import { now, fmtAgo, fmtCountdown, getOpenMeals, getNextMeals } from './lib/time.js'
 import TeamSetup from './components/TeamSetup.jsx'
 import MenuBoard from './components/MenuBoard.jsx'
 import ImageBoard from './components/ImageBoard.jsx'
@@ -560,9 +560,6 @@ export default function App() {
         </div>
       </div>
 
-      {lastSync && (
-        <div className="sync-footer">마지막 동기화 {fmtClock(lastSync)} · 자동 갱신 중</div>
-      )}
 
       {showTeamInfo && (
         <TeamInfoSheet
