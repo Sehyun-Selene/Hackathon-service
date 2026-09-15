@@ -86,7 +86,7 @@ export const IMAGE_BOARDS = [
     label: '음식 여정',
     icon: '🗺️',
     title: 'PLAI 음식 여정',
-    src: './board/food-journey.jpg',
+    src: './board/food-journey.jpg?v=2',
     alt: '음식 여정 지도 — 간식·저녁·야식·아침·점심·간식 순서와 시각',
     leagues: ['field', 'dev'],
   },
