@@ -345,7 +345,7 @@ export default function App() {
         createdAt: now().getTime(),
         reason: (reason || '').trim(),
         teamName: teamLabel(teamId),
-        company: TEAMS[teamId]?.company || '',
+        affiliation: TEAMS[teamId]?.affiliation || '',
         assignedName: group ? group.label + ' 마스터 메이트' : assigned[0]?.name || '',
         // 예전 서버는 하나만 읽습니다 — 둘 다 실어 보내 어느 쪽이든 동작하게
         assignedSlackId: assigned[0]?.slackUserId || '',
@@ -565,6 +565,7 @@ export default function App() {
           )}
           {tab === 'links' ? (
             <LinksSection
+              teamId={team.teamId}
               teamButton={teamButton}
               showDevEvents={isDevLeague}
               onOpenGuide={openEventGuide}

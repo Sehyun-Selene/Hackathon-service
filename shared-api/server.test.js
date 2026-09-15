@@ -333,13 +333,13 @@ test('호출에 실린 팀 정보가 기록에 남는다', async () => {
       id: 'E-78-info',
       reason: '팀 정보 동봉 확인',
       teamName: '스마트터빈',
-      company: '오리온',
+      affiliation: '계열사 혼합',
     },
   })
   const read = await post('/api/get', { keys: ['call:E-78'] })
   const call = read.body['call:E-78'].calls.find((c) => c.id === 'E-78-info')
   assert.equal(call.teamName, '스마트터빈')
-  assert.equal(call.company, '오리온')
+  assert.equal(call.affiliation, '계열사 혼합')
 })
 
 test('시트로 보낼 한 줄은 한국 시각으로 바뀌고, 쓰지 않는 칸은 빠진다', () => {

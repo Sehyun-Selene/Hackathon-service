@@ -1,4 +1,10 @@
-import { EVENT_POSTER, DEV_LEAGUE_EVENTS, PLATFORM_LINK, EXTRA_LINKS } from '../config.js'
+import {
+  EVENT_POSTER,
+  DEV_LEAGUE_EVENTS,
+  PLATFORM_LINK,
+  EXTRA_LINKS,
+  checkoutSurveyFor,
+} from '../config.js'
 
 // 바로가기 탭 — 앱 밖으로 나가야 하는 곳과 이벤트 안내를 모은 화면입니다.
 //
@@ -17,7 +23,15 @@ import { EVENT_POSTER, DEV_LEAGUE_EVENTS, PLATFORM_LINK, EXTRA_LINKS } from '../
 //
 // showDevEvents: 개발자리그 참가자인지. 필드리그에는 06·07이 해당하지
 // 않으므로 아예 보여주지 않습니다 — 못 하는 이벤트를 띄워두면 혼란입니다.
-export default function LinksSection({ teamButton = null, showDevEvents = false, onOpenGuide }) {
+export default function LinksSection({
+  teamId,
+  teamButton = null,
+  showDevEvents = false,
+  onOpenGuide,
+}) {
+  // 체크아웃 설문은 필드리그에만 섭니다 — 개발자리그는 설문이 따로 있습니다.
+  const survey = checkoutSurveyFor(teamId)
+  const extras = survey ? [...EXTRA_LINKS, survey] : EXTRA_LINKS
   return (
     <section className="links-board">
       <div className="card-head-row">
@@ -94,7 +108,7 @@ export default function LinksSection({ teamButton = null, showDevEvents = false,
       {/* 위 소제목들보다 한 단 조용하게 — 안 해도 그만인 것들입니다 */}
       <h4 className="links-aside">더 관심이 있다면?</h4>
       <div className="quick-link-list">
-        {EXTRA_LINKS.map((link) => (
+        {extras.map((link) => (
           <a
             key={link.id}
             className="quick-link"

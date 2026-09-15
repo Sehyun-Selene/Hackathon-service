@@ -753,7 +753,7 @@ const server = http.createServer(async (req, res) => {
         // 아카이빙에 쓰려고 앱이 실어 보낸 값을 그대로 담아 둡니다 — 번호만
         // 남기면 나중에 명단과 일일이 맞춰야 합니다.
         teamName: String(call.teamName || '').slice(0, 60),
-        company: String(call.company || '').slice(0, 60),
+        affiliation: String(call.affiliation || '').slice(0, 60),
         assignedName: String(call.assignedName || '').slice(0, 40),
         assignedSlackId: validSlackId(call.assignedSlackId),
         // 한 구간을 여럿이 맡는 그룹 배정(리테일 조)에서는 전원을 부릅니다.

@@ -78,7 +78,7 @@ function doPost(e) {
         row.createdAt || '',
         row.teamId || '',
         row.teamName || '',
-        row.company || '',
+        row.affiliation || '',
         row.reason || '',
         row.assignedName || '',
         row.handledBy || '',
@@ -132,6 +132,10 @@ function getSheet() {
     if (String(head[i]) !== HEADERS[i]) same = false
   }
   if (!same) {
+    // 칸 수를 줄인 뒤라면 옛 제목이 오른쪽에 남습니다. 먼저 지웁니다 —
+    // 안 그러면 '처리 시작 · 완료' 같은 쓰지 않는 제목이 그대로 붙어 있습니다.
+    var extra = sheet.getLastColumn() - HEADERS.length
+    if (extra > 0) sheet.getRange(1, HEADERS.length + 1, sheet.getMaxRows(), extra).clear()
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
     sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold')
     sheet.setFrozenRows(1)

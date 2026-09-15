@@ -57,6 +57,9 @@ function kst(ms) {
 // 보낼 때 함께 실어 보내며, 없으면 빈 칸으로 둡니다 — 팀 번호만 있어도
 // 나중에 명단과 맞출 수 있습니다.
 //
+// 소속(affiliation)은 계열사 이름입니다. 개인 지원자끼리 꾸린 팀은 회사가
+// 여럿이라 '계열사 혼합', 계열사가 아닌 곳은 '외부사/관계사' 로 들어옵니다.
+//
 // 처리 시작·완료 시각과 상태는 보내지 않습니다. 메이트가 그 자리에서 처리하고
 // 끝나는 일이라 기록으로 남길 값이 아니고, 회고에 쓰는 건 "무엇을 물었나"
 // (사유)와 "누가 갔나"(처리자)입니다. 리그도 뺐습니다 — 호출은 필드리그만
@@ -70,7 +73,7 @@ function toRow(call) {
     createdAt: kst(call.createdAt),
     teamId: String(call.team || ''),
     teamName: String(call.teamName || ''),
-    company: String(call.company || ''),
+    affiliation: String(call.affiliation || ''),
     reason: String(call.reason || ''),
     assignedName: String(call.assignedName || ''),
     handledBy: String(call.handledBy || ''),
