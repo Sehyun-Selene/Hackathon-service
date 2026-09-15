@@ -45,17 +45,14 @@ var HEADERS = [
   '팀 번호',
   '팀명',
   '소속',
-  '리그',
   '호출 사유',
   '담당 마스터 메이트',
-  '상태',
-  '처리 시작',
-  '완료',
   '처리자',
   '호출 ID',
 ]
 
-// 호출 ID 열(마지막)은 중복 확인에 씁니다. 사람이 읽을 일이 없어 맨 끝입니다.
+// 호출 ID 열(마지막)은 같은 줄을 다시 찾을 때만 씁니다 — 완료 처리 때
+// '처리자'를 채우는 열쇠입니다. 사람이 읽을 일이 없어 맨 끝이자 숨김입니다.
 var ID_COL = HEADERS.length
 
 function doPost(e) {
@@ -82,18 +79,16 @@ function doPost(e) {
         row.teamId || '',
         row.teamName || '',
         row.company || '',
-        row.league || '',
         row.reason || '',
         row.assignedName || '',
-        row.status || '',
-        row.startedAt || '',
-        row.doneAt || '',
         row.handledBy || '',
         row.id,
       ]
       var at = findRowById(sheet, row.id)
       if (at > 0) {
-        sheet.getRange(at, 1, 1, values.length).setValues([values])
+        // 이미 있는 줄이면 '처리자'만 채웁니다. 나머지는 호출될 때 적힌
+        // 그대로 두어야 합니다 — 뒤늦게 온 값이 빈칸이면 지워버립니다.
+        if (row.handledBy) sheet.getRange(at, HEADERS.length - 1).setValue(row.handledBy)
         return json({ ok: true, updated: at })
       }
       sheet.appendRow(values)
@@ -112,19 +107,39 @@ function doGet() {
   return json({ ok: true, service: 'G-Order 호출 아카이빙' })
 }
 
+// 이 스크립트가 붙어 있는 스프레드시트의 주소를 찍어 줍니다.
+// 시트를 어디 뒀는지 잃어버렸을 때: 편집기 위쪽에서 이 함수를 골라 '실행' →
+// 아래 '실행 로그'에 주소가 나옵니다.
+function 시트주소() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+  Logger.log(ss.getName() + ' → ' + ss.getUrl())
+}
+
 function getSheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sheet = ss.getSheetByName(SHEET_NAME)
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME)
   }
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(HEADERS)
+  // 제목 줄이 없거나 지금 칸 구성과 다르면 다시 씁니다. 칸을 늘리거나 줄인
+  // 뒤에도 시트를 손으로 고칠 필요가 없게 — 이미 쌓인 줄은 건드리지 않으니,
+  // 칸 구성을 바꿨다면 옛 줄은 지우고 새로 쌓는 편이 맞습니다.
+  var head = sheet.getLastRow() > 0
+    ? sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0]
+    : []
+  var same = head.length === HEADERS.length
+  for (var i = 0; same && i < HEADERS.length; i++) {
+    if (String(head[i]) !== HEADERS[i]) same = false
+  }
+  if (!same) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
     sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold')
     sheet.setFrozenRows(1)
     // 호출 사유는 길어서 기본 폭으로는 읽을 수 없습니다.
-    sheet.setColumnWidth(6, 420)
-    sheet.getRange(1, 6, sheet.getMaxRows(), 1).setWrap(true)
+    sheet.setColumnWidth(5, 420)
+    sheet.getRange(1, 5, sheet.getMaxRows(), 1).setWrap(true)
+    // 호출 ID 는 기계만 쓰는 칸이라 감춥니다.
+    sheet.hideColumns(ID_COL)
   }
   return sheet
 }

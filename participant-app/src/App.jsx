@@ -333,10 +333,9 @@ export default function App() {
       // 호출 추가 + 횟수 증가 + 제한 검사를 서버가 한 번에 처리합니다.
       // 예전에는 두 번 나눠 써서, 둘째가 실패하면 "전송 실패"라고 안내하면서
       // 실제로는 호출이 들어가 중복이 생겼습니다.
-      // 팀명·소속·리그는 서버가 모릅니다(명단은 앱 config에만 있습니다).
+      // 팀명·소속은 서버가 모릅니다(명단은 앱 config에만 있습니다).
       // 호출 기록이 구글 시트에 쌓일 때 번호만 남으면 나중에 명단과 일일이
       // 맞춰야 해서, 보낼 때 함께 실어 보냅니다.
-      const league = leagueOf(teamId)
       await callAdd(teamId, {
         // 화면이 준 값(attempt)을 그대로 씁니다. 같은 작성 창에서 다시
         // 보내면 같은 id라, 답을 못 받았을 뿐 이미 들어간 호출과 한 건으로
@@ -347,7 +346,6 @@ export default function App() {
         reason: (reason || '').trim(),
         teamName: teamLabel(teamId),
         company: TEAMS[teamId]?.company || '',
-        league: league?.label || '',
         assignedName: group ? group.label + ' 마스터 메이트' : assigned[0]?.name || '',
         // 예전 서버는 하나만 읽습니다 — 둘 다 실어 보내 어느 쪽이든 동작하게
         assignedSlackId: assigned[0]?.slackUserId || '',

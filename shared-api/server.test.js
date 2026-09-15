@@ -334,17 +334,15 @@ test('호출에 실린 팀 정보가 기록에 남는다', async () => {
       reason: '팀 정보 동봉 확인',
       teamName: '스마트터빈',
       company: '오리온',
-      league: '필드리그',
     },
   })
   const read = await post('/api/get', { keys: ['call:E-78'] })
   const call = read.body['call:E-78'].calls.find((c) => c.id === 'E-78-info')
   assert.equal(call.teamName, '스마트터빈')
   assert.equal(call.company, '오리온')
-  assert.equal(call.league, '필드리그')
 })
 
-test('시트로 보낼 한 줄은 한국 시각과 우리말 상태로 바뀐다', () => {
+test('시트로 보낼 한 줄은 한국 시각으로 바뀌고, 쓰지 않는 칸은 빠진다', () => {
   // 2026-09-21T12:00:00Z = 한국 시각 21:00
   const row = sheets._toRow({
     id: 'E-12-1',
@@ -357,12 +355,13 @@ test('시트로 보낼 한 줄은 한국 시각과 우리말 상태로 바뀐다
     handledBy: '김세현',
   })
   assert.equal(row.createdAt, '2026-09-21 21:00:00')
-  assert.equal(row.doneAt, '2026-09-21 21:07:00')
-  assert.equal(row.status, '완료')
   assert.equal(row.teamId, 'E-12')
   assert.equal(row.reason, '빌드가 안 돼요')
-  // 아직 시작하지 않은 칸은 빈 문자열 — 시트에 1970-01-01 이 찍히면 안 됩니다
-  assert.equal(row.startedAt, '')
+  assert.equal(row.handledBy, '김세현')
+  // 상태·처리 시작·완료·리그는 더 이상 시트로 가지 않습니다
+  for (const gone of ['status', 'startedAt', 'doneAt', 'league']) {
+    assert.equal(row[gone], undefined, gone + ' 는 보내지 않아야 합니다')
+  }
 })
 
 test('id 없는 호출은 시트로 보내지 않는다', async () => {

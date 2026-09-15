@@ -51,17 +51,19 @@ function kst(ms) {
   )
 }
 
-const STATUS_LABEL = {
-  waiting: '미처리',
-  in_progress: '처리 중',
-  done: '완료',
-}
-
 // 호출 한 건 → 시트 한 줄.
 //
-// 팀명·소속·리그는 서버가 모릅니다(그건 앱 config에 있습니다). 참가자 앱이
-// 호출을 보낼 때 함께 실어 보내며, 없으면 빈 칸으로 둡니다 — 팀 번호만
-// 있어도 나중에 명단과 맞출 수 있습니다.
+// 팀명·소속은 서버가 모릅니다(그건 앱 config에 있습니다). 참가자 앱이 호출을
+// 보낼 때 함께 실어 보내며, 없으면 빈 칸으로 둡니다 — 팀 번호만 있어도
+// 나중에 명단과 맞출 수 있습니다.
+//
+// 처리 시작·완료 시각과 상태는 보내지 않습니다. 메이트가 그 자리에서 처리하고
+// 끝나는 일이라 기록으로 남길 값이 아니고, 회고에 쓰는 건 "무엇을 물었나"
+// (사유)와 "누가 갔나"(처리자)입니다. 리그도 뺐습니다 — 호출은 필드리그만
+// 씁니다.
+//
+// id 는 시트에 숨은 칸으로 들어갑니다. 완료 처리 때 같은 줄을 찾아 처리자를
+// 채우는 열쇠라서, 화면에서 감출 뿐 지울 수는 없습니다.
 function toRow(call) {
   return {
     id: String(call.id || ''),
@@ -69,12 +71,8 @@ function toRow(call) {
     teamId: String(call.team || ''),
     teamName: String(call.teamName || ''),
     company: String(call.company || ''),
-    league: String(call.league || ''),
     reason: String(call.reason || ''),
     assignedName: String(call.assignedName || ''),
-    status: STATUS_LABEL[call.status] || String(call.status || ''),
-    startedAt: kst(call.startedAt),
-    doneAt: kst(call.doneAt),
     handledBy: String(call.handledBy || ''),
   }
 }
