@@ -54,6 +54,8 @@ a:focus-visible {
   --tint-error:  color-mix(in srgb, var(--po-state-error) 14%, var(--po-bg-surface));
   --tint-active: color-mix(in srgb, var(--po-state-active) 18%, var(--po-bg-surface));
   --edge-accent: color-mix(in srgb, var(--po-accent) 38%, transparent);
+  /* 아래를 향한 화살표. 펼치면 이 그림만 180° 돌립니다. */
+  --chevron-down: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><path d='M5 9l7 7 7-7'/></svg>");
   --edge-error:  color-mix(in srgb, var(--po-state-error) 40%, transparent);
   --on-accent:   var(--po-text-on-accent);
   --ink-accent:  var(--po-accent-ink);
@@ -755,16 +757,23 @@ body {
 .served-meals { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; overflow-anchor: none; }
 .served-meal { overflow: hidden; }
 .served-meal-summary {
-  /* 태그가 있는 끼니는 태그가 한 줄을 통째로 차지하고 제목·시각이 다음
-     줄로 내려옵니다. 태그 없는 끼니는 감쌀 것이 없어 한 줄 그대로입니다. */
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
   min-height: 52px; padding: 13px 16px; cursor: pointer; list-style: none;
   font-size: var(--po-body-size); font-weight: 650;
 }
 .served-meal-summary::-webkit-details-marker { display: none; }
+/* 여닫기 화살표.
+   '⌄' 글자를 쓰면 글리프의 획이 글자 상자 아래쪽에 치우쳐 있어 제목·시각보다
+   낮게 보이고, 180° 돌리는 순간 그 획이 위로 올라가 화살표가 튀어 오릅니다.
+   크기가 고정된 네모 안에 도형(mask)으로 그려 두면 상자는 그대로 있고
+   안쪽 그림만 뒤집혀서, 높이가 변하지 않고 방향만 바뀝니다. */
 .served-meal-summary::after {
-  content: '⌄'; margin-left: 2px; color: var(--po-text-muted);
-  font-size: 15px; line-height: 1; transition: transform 140ms;
+  content: ''; flex: 0 0 auto; align-self: center;
+  width: 18px; height: 18px; margin-left: 2px;
+  background-color: var(--po-text-muted);
+  -webkit-mask: var(--chevron-down) center / 13px 13px no-repeat;
+  mask: var(--chevron-down) center / 13px 13px no-repeat;
+  transition: transform 140ms;
 }
 .served-meal[open] .served-meal-summary::after { transform: rotate(180deg); }
 .served-meal-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1682,17 +1691,19 @@ body {
   margin: 0;
   font-size: var(--po-body-size); line-height: 22px; color: var(--po-text-secondary);
 }
-/* 주문 창 — 이 화면에서 유일하게 숫자가 중요한 줄이라 알약으로 세웁니다 */
+/* 주문 창 — 시각만 주황으로 세우고 나머지는 본문 색 그대로.
+   알약으로 감싸 두면 눌러야 하는 것처럼 보입니다. */
 .guide-when {
-  display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
-  padding: 5px 11px; border-radius: var(--po-radius-pill);
-  background: var(--po-accent-subtle); color: var(--po-accent-ink);
-  font-size: var(--po-caption-size); line-height: 18px; font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.guide-note {
   margin-top: 8px !important;
-  font-size: var(--po-caption-size); line-height: 18px; color: var(--po-text-muted) !important;
+  font-size: var(--po-body-size); line-height: 22px;
+  color: var(--po-text-primary) !important;
+}
+/* 카드 안의 b 는 제목용이라 블록입니다(.guide-must-card b).
+   이 b 는 문장 가운데 들어가는 색 강조라 다시 인라인으로 돌립니다 —
+   안 그러면 시각과 '주문할 수 있어요'가 두 줄로 갈립니다. */
+.guide-when b {
+  display: inline;
+  color: var(--po-accent-ink); font-weight: 700; font-variant-numeric: tabular-nums;
 }
 
 /* 2번은 이름만. 무엇인지는 그 탭에 가면 바로 보이므로 여기서는 "있다"만
@@ -1709,11 +1720,27 @@ body {
 
 /* 주문해야 받는 끼니(야식·아침) 표시 — 제목 위 한 줄.
    나머지 끼니와 섞여 있어도 눈에 먼저 걸려야 합니다. */
-/* 껍데기가 줄을 통째로 차지해 제목을 다음 줄로 내리고, 알약은 글자
-   폭만큼만 차지합니다. 알약에 바로 100%를 주면 주황 띠가 됩니다. */
-.served-meal-tagline { flex: 0 0 100%; display: flex; margin-bottom: 2px; }
+/* 주문해야 받는 끼니(야식·아침)를 주황 테두리로 한 덩이로 묶습니다.
+   끼니마다 태그를 달면 같은 말이 두 번 나오고, 둘이 한 번에 주문된다는
+   것도 드러나지 않습니다. 안쪽 상자는 다른 끼니와 똑같은 크기입니다. */
+.served-order-group {
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+  padding: 10px; margin: 2px 0;
+  border: 1.5px solid var(--po-accent); border-radius: 16px;
+  background: var(--po-accent-subtle);
+}
+.served-order-head {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px;
+  padding: 0 2px 2px;
+}
+/* 시각은 태그와 같은 계열의 글씨로 — 알약을 하나 더 만들면 둘 중 어느
+   쪽을 먼저 읽어야 할지 모르게 됩니다. */
+.served-order-when {
+  font-size: 12.5px; line-height: 16px; font-weight: 700;
+  color: var(--po-accent-ink); font-variant-numeric: tabular-nums;
+}
 .served-meal-tag {
-  display: inline-flex; align-items: center; font-style: normal;
+  display: inline-flex; align-items: center;
   padding: 3px 9px;
   border-radius: var(--po-radius-pill);
   background: var(--po-accent); color: var(--po-text-on-accent);

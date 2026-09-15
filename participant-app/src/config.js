@@ -1267,7 +1267,7 @@ export function guideMustItems(teamId) {
     title: MEALS.map((m) => m.shortLabel).join(' · ') + ' 주문',
     desc: MEALS.map((m) => m.label).join('과 ') + '을 여기서 주문하세요.',
     when: orderWindowLabel(),
-    note: '이 시간에만 주문할 수 있어요.',
+    note: '주문할 수 있어요.',
   }
   if (!leagueAllowsCall(teamId)) return [order]
   return [
@@ -1280,12 +1280,30 @@ export function guideMustItems(teamId) {
   ]
 }
 
-// '9/21(월) 13:30 – 16:00' — 끼니마다 주문 창이 같아서 한 줄로 씁니다.
+// 주문 창을 글자로 — 끼니마다 창이 같아서 한 줄로 씁니다.
 // 달라지면 여기서 끼니별로 나눠 적어야 합니다.
-function orderWindowLabel() {
+//
+//   orderWindowLabel()  '9/21(월) 13:30부터 16:00까지'  이용 안내의 문장용
+//   orderWindowShort()  '9/21(월) 13:30–16:00'          좁은 자리(메뉴판 태그 옆)용
+//
+// 시간을 글자로 박아두지 않는 이유: 주문 창이 바뀌면 화면에만 옛 시간이
+// 남습니다. MEALS 를 고치면 두 곳이 함께 따라옵니다.
+function orderWindowParts() {
   const start = new Date(MEALS[0].orderStart)
   const end = new Date(MEALS[0].orderEnd)
   const days = ['일', '월', '화', '수', '목', '금', '토']
   const hm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  return `${start.getMonth() + 1}/${start.getDate()}(${days[start.getDay()]}) ${hm(start)} – ${hm(end)}`
+  return {
+    day: `${start.getMonth() + 1}/${start.getDate()}(${days[start.getDay()]})`,
+    from: hm(start),
+    to: hm(end),
+  }
+}
+function orderWindowLabel() {
+  const { day, from, to } = orderWindowParts()
+  return `${day} ${from}부터 ${to}까지`
+}
+export function orderWindowShort() {
+  const { day, from, to } = orderWindowParts()
+  return `${day} ${from}–${to}`
 }

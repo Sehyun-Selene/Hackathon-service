@@ -33,8 +33,14 @@ export default function GuideSection({ teamId }) {
             <div className="guide-must-card" key={item.id}>
               <b>{item.title}</b>
               <p>{item.desc}</p>
-              {item.when && <span className="guide-when">🕜 {item.when}</span>}
-              {item.note && <p className="guide-note">{item.note}</p>}
+              {/* 시각만 주황으로 — 이 카드에서 놓치면 안 되는 건 시간뿐입니다.
+                  알약으로 감싸 두니 눌러야 할 것처럼 보였습니다. */}
+              {item.when && (
+                <p className="guide-when">
+                  <b>{item.when}</b>
+                  {item.note ? ' ' + item.note : ''}
+                </p>
+              )}
             </div>
           ))}
         </div>
