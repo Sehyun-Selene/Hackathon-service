@@ -6,6 +6,7 @@ import {
   coachGroupForTeam,
   leagueAllowsCall,
   imageBoardsFor,
+  leagueOf,
 } from './config.js'
 import {
   storageGet,
@@ -30,6 +31,8 @@ import CallSection from './components/CallSection.jsx'
 import TeamInfoSheet from './components/TeamInfoSheet.jsx'
 import LanternIcon from './components/LanternIcon.jsx'
 import GuideSheet from './components/GuideSheet.jsx'
+import LinksSection from './components/LinksSection.jsx'
+import EventGuideSheet from './components/EventGuideSheet.jsx'
 
 // 이 기기가 어느 팀인지 기억합니다. 행사 중 창을 닫거나 새로고침해도 다시
 // 등록하지 않도록 — 팀 등록은 행사 시작 때 한 번만 하면 됩니다.
@@ -43,6 +46,8 @@ export default function App() {
   const [showTeamInfo, setShowTeamInfo] = useState(false)
   // 이용 안내 다시 보기 시트 (첫 화면의 안내를 행사 중에 꺼내 봅니다)
   const [showGuide, setShowGuide] = useState(false)
+  // 이벤트 안내 전체 보기 시트 (바로가기 탭에서 노션을 화면 꽉 채워 봅니다)
+  const [showEventGuide, setShowEventGuide] = useState(false)
   // 저장된 팀을 확인하는 중 — 등록 화면이 잠깐 스쳤다 사라지는 것을 막습니다
   const [restoring, setRestoring] = useState(true)
   // 서버에 기록이 없을 때(초기화 등) 등록 화면에 채워줄 값
@@ -231,6 +236,8 @@ export default function App() {
 
   const closeTeamInfo = useCallback(() => setShowTeamInfo(false), [])
   const closeGuide = useCallback(() => setShowGuide(false), [])
+  const openEventGuide = useCallback(() => setShowEventGuide(true), [])
+  const closeEventGuide = useCallback(() => setShowEventGuide(false), [])
   // 팀 정보 시트를 닫고 안내 시트를 엽니다 — 시트를 두 장 겹쳐 띄우면
   // 뒤 시트가 스크롤을 잡아 닫기 버튼을 누르기 어려워집니다.
   const openGuide = useCallback(() => {
@@ -404,10 +411,12 @@ export default function App() {
   // 탭 글자는 짧게 씁니다. 폰에서 네 개가 한 줄에 들어가야 하고, 펼친
   // 화면에는 전체 제목이 다시 나오기 때문입니다.
   const boards = imageBoardsFor(team.teamId)
+  const isDevLeague = leagueOf(team.teamId)?.id === 'dev'
   const tabs = [
     ...(canCall ? [{ id: 'call', label: '호출', logo: './logo-call.png' }] : []),
     { id: 'order', label: '주문', logo: './logo-order.png' },
     ...boards.map((b) => ({ id: b.id, label: b.label, icon: b.icon })),
+    { id: 'links', label: '바로가기', icon: '🔗' },
   ]
   // 고른 탭이 이미지 탭이면 그 정의를 넘겨줍니다
   const board = boards.find((b) => b.id === tab) || null
@@ -513,7 +522,13 @@ export default function App() {
               </span>
             </button>
           )}
-          {board ? (
+          {tab === 'links' ? (
+            <LinksSection
+              teamButton={teamButton}
+              showDevEvents={isDevLeague}
+              onOpenGuide={openEventGuide}
+            />
+          ) : board ? (
             <ImageBoard board={board} teamButton={teamButton} />
           ) : tab === 'call' && canCall ? (
             <CallSection
@@ -561,6 +576,8 @@ export default function App() {
       {showGuide && (
         <GuideSheet showCall={canCall} onClose={closeGuide} />
       )}
+
+      {showEventGuide && <EventGuideSheet onClose={closeEventGuide} />}
 
       {/* 다른 탭에 있는 동안 담아둔 메뉴를 잊지 않도록 — 담기만 하고
           '주문하기'를 누르지 않으면 마감과 함께 그대로 사라집니다.
