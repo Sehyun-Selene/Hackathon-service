@@ -37,7 +37,9 @@ const enabled = Boolean(WEBHOOK_URL)
 
 // 상태는 /health 에 그대로 실립니다 — 행사 당일 "쌓이고 있나"를 눈으로
 // 확인할 수 있어야 합니다.
-const state = { sent: 0, failed: 0, lastOk: null, lastError: null }
+// unconfirmed: 보내긴 했는데 결과 페이지를 못 읽은 건수. 기록은 된 것으로
+// 봅니다(위 send 의 주석 참고) — 숫자가 커도 시트에 줄이 있으면 정상입니다.
+const state = { sent: 0, failed: 0, unconfirmed: 0, lastOk: null, lastError: null }
 
 // ISO 대신 한국 시각 문자열로 보냅니다. 시트에서 그대로 읽히는 편이,
 // 여는 사람마다 시간대가 달라 어긋나는 것보다 낫습니다.
@@ -80,23 +82,63 @@ function toRow(call) {
   }
 }
 
+// 결과 페이지를 읽어 봅니다.
+//   true  = 스크립트가 성공이라고 답했다
+//   false = 스크립트가 거절했다 (토큰 불일치 등)
+//   null  = 읽지 못했다 (기록 여부는 이 응답으로 알 수 없음)
+async function readResult(url) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) })
+    if (!res.ok) return null
+    const body = await res.json().catch(() => null)
+    if (!body || typeof body.ok !== 'boolean') return null
+    return body.ok
+  } catch {
+    return null
+  }
+}
+
 async function send(row) {
   if (!enabled) return false
   try {
     const res = await fetch(WEBHOOK_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // Node 의 fetch 는 User-Agent 로 그냥 'node' 를 보냅니다. 구글은 그런
+        // 요청의 결과 페이지에 404 를 주는 일이 있어, 우리가 누구인지 밝힙니다.
+        'User-Agent': 'G-Order/1.0 (hackathon call archive)',
+        Accept: 'application/json, text/plain, */*',
+      },
       body: JSON.stringify({ token: TOKEN, row }),
-      // Apps Script 웹앱은 /exec 에서 302 로 한 번 튕깁니다 — fetch 가
-      // 기본으로 따라가므로 따로 처리하지 않습니다.
+      // Apps Script 웹앱은 스크립트를 '먼저 실행하고' 결과 페이지로 넘깁니다.
+      // 그래서 3xx 를 받았다는 것 자체가 "시트에 쓰는 코드가 돌았다"는 뜻입니다.
+      // 그 결과 페이지는 구글 쪽 사정으로 404 가 나기도 하는데, 따라가기를
+      // 맡겨 두면 그 404 가 전송 실패로 둔갑합니다 — 줄은 이미 들어갔는데도요.
+      // 그래서 넘김을 직접 받아 보고, 결과는 읽히면 읽고 아니면 넘어갑니다.
+      redirect: 'manual',
       signal: AbortSignal.timeout(8000),
     })
-    if (!res.ok) throw new Error(`sheets ${res.status}`)
-    const body = await res.json().catch(() => ({}))
-    if (body && body.ok === false) throw new Error(body.error || 'sheets rejected')
+
+    let ok = null
+    if (res.status >= 300 && res.status < 400) {
+      const where = res.headers.get('location')
+      ok = where ? await readResult(where) : null
+    } else if (res.ok) {
+      const body = await res.json().catch(() => null)
+      ok = body && typeof body.ok === 'boolean' ? body.ok : null
+    } else {
+      throw new Error(`sheets ${res.status}`)
+    }
+
+    // 스크립트가 '거절했다'고 분명히 답한 경우에만 실패로 봅니다.
+    if (ok === false) throw new Error('sheets rejected (토큰을 확인하세요)')
+
     state.sent += 1
     state.lastOk = new Date().toISOString()
     state.lastError = null
+    // 결과를 읽지 못했으면 그렇다고 남깁니다 — 기록 자체는 됐습니다.
+    state.unconfirmed = ok === null ? (state.unconfirmed || 0) + 1 : state.unconfirmed || 0
     return true
   } catch (err) {
     state.failed += 1

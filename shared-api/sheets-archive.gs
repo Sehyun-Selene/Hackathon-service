@@ -131,19 +131,19 @@ function getSheet() {
   for (var i = 0; same && i < HEADERS.length; i++) {
     if (String(head[i]) !== HEADERS[i]) same = false
   }
+  // 칸 수를 줄인 뒤라면 옛 제목이 오른쪽에 남습니다. 제목이 이미 맞더라도
+  // 남은 칸은 그대로 있을 수 있어, 제목 검사와 따로 매번 확인합니다.
+  var extra = sheet.getLastColumn() - HEADERS.length
+  if (extra > 0) sheet.getRange(1, HEADERS.length + 1, sheet.getMaxRows(), extra).clear()
+  // 호출 ID 는 기계만 쓰는 칸이라 늘 감춰 둡니다.
+  if (!sheet.isColumnHiddenByUser(ID_COL)) sheet.hideColumns(ID_COL)
   if (!same) {
-    // 칸 수를 줄인 뒤라면 옛 제목이 오른쪽에 남습니다. 먼저 지웁니다 —
-    // 안 그러면 '처리 시작 · 완료' 같은 쓰지 않는 제목이 그대로 붙어 있습니다.
-    var extra = sheet.getLastColumn() - HEADERS.length
-    if (extra > 0) sheet.getRange(1, HEADERS.length + 1, sheet.getMaxRows(), extra).clear()
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
     sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold')
     sheet.setFrozenRows(1)
     // 호출 사유는 길어서 기본 폭으로는 읽을 수 없습니다.
     sheet.setColumnWidth(5, 420)
     sheet.getRange(1, 5, sheet.getMaxRows(), 1).setWrap(true)
-    // 호출 ID 는 기계만 쓰는 칸이라 감춥니다.
-    sheet.hideColumns(ID_COL)
   }
   return sheet
 }
