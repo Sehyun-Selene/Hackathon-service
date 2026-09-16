@@ -16,8 +16,16 @@ import { SERVED_MEALS, orderWindowShort } from '../config.js'
 // 현장 와이파이에서 주문 화면이 늦게 뜹니다.
 // 폰에서는 토글을 여닫아도 화면이 그대로여서, 펼친 내용을 보려면 직접
 // 내려야 했습니다.
-//   펼칠 때 → 그 칸을 화면 맨 위로 (바로 내용이 보이게)
-//   접을 때 → 페이지 맨 위로 (접은 자리에 어정쩡하게 남지 않게)
+//   펼칠 때 → 그 칸을 화면 위쪽으로 (바로 내용이 보이게)
+//   접을 때 → 그 자리에 그대로 (메뉴판을 떠나지 않습니다)
+//
+// 접을 때 페이지 맨 위로 보내던 것을 뺐습니다. 한 끼니를 닫으면 다른 끼니를
+// 보려는 것이지 화면 꼭대기로 가려는 게 아닌데, 매번 음식 여정 지도까지
+// 되돌아가 다시 내려와야 했습니다.
+//
+// 다만 아무것도 안 하면 곤란한 경우가 하나 있습니다. 펼친 내용 안을 한참
+// 내려다본 뒤 접으면 문서가 그만큼 짧아져, 방금 접은 칸이 화면 위로 밀려나
+// 엉뚱한 자리에 남습니다. 그때만 그 칸을 도로 데려옵니다.
 //
 // 위치는 프레임을 두 번 기다린 뒤에 잽니다. 여닫는 순간 문서 길이가 바뀌면서
 // 브라우저가 스크롤을 스스로 끌어당기는데(스크롤 앵커링), 그보다 먼저
@@ -31,8 +39,15 @@ function scrollToggledIntoView(event) {
   const 줄임 = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      const top = 펼침 ? el.getBoundingClientRect().top + window.scrollY - 10 : 0
-      window.scrollTo({ top, behavior: 줄임 ? 'auto' : 'smooth' })
+      const 자리 = el.getBoundingClientRect()
+      // 접었는데 그 칸이 아직 화면 안에 잘 보이면 건드리지 않습니다 —
+      // 가만히 있는 것이 가장 덜 놀랍습니다.
+      const 보인다 = 자리.top >= 0 && 자리.top <= window.innerHeight - 80
+      if (!펼침 && 보인다) return
+      window.scrollTo({
+        top: 자리.top + window.scrollY - 10,
+        behavior: 줄임 ? 'auto' : 'smooth',
+      })
     })
   })
 }
