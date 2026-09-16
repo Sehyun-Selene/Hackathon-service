@@ -139,6 +139,12 @@ export const DEV_LEAGUE_EVENTS = [
 //   따로 있습니다(leagues). 주소가 비어 있으면 줄 자체가 서지 않습니다.
 export const CHECKOUT_SURVEY = {
   id: 'survey',
+  // 화면의 소제목. '더 관심이 있다면?'과 달리 안 하면 안 되는 일이라
+  // 묶지 않고 제 소제목을 답니다.
+  heading: '해커톤 완주를 위한 마지막 단계!',
+  // 해커톤 플랫폼과 같은 생김새로 세웁니다 — 둘 다 "안 하면 안 되는 일"이라
+  // 같은 무게로 읽혀야 합니다.
+  icon: '📝',
   title: '체크아웃 설문',
   desc: '행사가 끝나면 남겨주세요',
   url: 'https://52g.typeform.com/to/W1icCUIw?typeform-source=qrcode-button',

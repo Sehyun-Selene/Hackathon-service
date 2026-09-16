@@ -30,8 +30,9 @@ export default function LinksSection({
   onOpenGuide,
 }) {
   // 체크아웃 설문은 필드리그에만 섭니다 — 개발자리그는 설문이 따로 있습니다.
+  // '더 관심이 있다면?' 묶음에 넣지 않습니다. 안 해도 그만인 것들과 달리
+  // 완주에 필요한 일이라, 맨 아래에 제 소제목을 달고 따로 섭니다.
   const survey = checkoutSurveyFor(teamId)
-  const extras = survey ? [...EXTRA_LINKS, survey] : EXTRA_LINKS
   return (
     <section className="links-board">
       <div className="card-head-row">
@@ -105,10 +106,28 @@ export default function LinksSection({
         </span>
       </button>
 
-      {/* 위 소제목들보다 한 단 조용하게 — 안 해도 그만인 것들입니다 */}
+      {survey && (
+        <>
+          <h4 className="links-aside">{survey.heading}</h4>
+          <a className="platform-link" href={survey.url} target="_blank" rel="noreferrer">
+            <span className="platform-link-icon" aria-hidden="true">
+              {survey.icon}
+            </span>
+            <span className="platform-link-text">
+              <b>{survey.title}</b>
+              <small>{survey.desc}</small>
+            </span>
+            <span className="platform-link-go" aria-hidden="true">
+              ↗
+            </span>
+          </a>
+        </>
+      )}
+
+      {/* 위 소제목들보다 한 단 조용하게 — 안 해도 그만인 것입니다 */}
       <h4 className="links-aside">더 관심이 있다면?</h4>
       <div className="quick-link-list">
-        {extras.map((link) => (
+        {EXTRA_LINKS.map((link) => (
           <a
             key={link.id}
             className="quick-link"

@@ -1554,6 +1554,7 @@ body {
    것들이라, 이벤트와 같은 크기로 두면 같은 무게로 읽힙니다. */
 .links-aside {
   margin: 26px 0 10px;
+  /* 이 소제목 바로 아래 카드가 오므로 붙는 여백만 조금 줄입니다 */
   font-size: var(--po-label-size); line-height: var(--po-label-line);
   font-weight: 700; color: var(--po-text-secondary);
 }

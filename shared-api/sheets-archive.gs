@@ -7,9 +7,10 @@
  *  넣으면 shared-api/sheets.js 가 여기로 호출 기록을 보냅니다.
  *
  *  ── 설치 (10분) ───────────────────────────────────────────────────
- *  1. 구글 드라이브에서 새 스프레드시트를 만듭니다.
- *     시트(탭) 이름은 그대로 둬도 됩니다 — 아래 SHEET_NAME 이 없으면
- *     스크립트가 만들어 씁니다.
+ *  1. 기록을 남길 스프레드시트를 정합니다. 새로 만들어도 되고, 이미 쓰고
+ *     있는 문서(시트가 여럿 모여 있는 그 문서)를 그대로 써도 됩니다 —
+ *     '호출 기록' 탭 하나만 새로 생기고 나머지 탭은 건드리지 않습니다.
+ *     ※ 기록할 곳을 나중에 바꾸려면 아래 SPREADSHEET_ID 를 보세요.
  *  2. 확장 프로그램 → Apps Script 를 엽니다.
  *  3. 기본으로 열린 Code.gs 의 내용을 지우고 이 파일 전체를 붙여 넣습니다.
  *  4. 왼쪽 톱니바퀴(프로젝트 설정) → 스크립트 속성 → 속성 추가
@@ -38,7 +39,19 @@
  * =====================================================================
  */
 
+// 기록이 들어갈 탭 이름. 이 이름의 탭이 없으면 만들어 씁니다.
+// 시트가 여럿 모여 있는 문서에 붙여도 이 탭 하나만 건드립니다.
 var SHEET_NAME = '호출 기록'
+
+// 어느 스프레드시트에 쓸지.
+//
+//   비워 두면  이 스크립트가 붙어 있는 문서 (확장 프로그램 → Apps Script 로
+//              연 바로 그 문서). 대부분 이대로 두면 됩니다.
+//   채우면     다른 문서. 주소창의 /d/ 와 /edit 사이에 있는 긴 글자를 넣으세요.
+//              https://docs.google.com/spreadsheets/d/⟨이 부분⟩/edit
+//              스크립트를 옮기지 않고 기록할 곳만 바꿀 때 씁니다. 처음 실행할
+//              때 그 문서를 열어도 되는지 한 번 더 승인을 요구합니다.
+var SPREADSHEET_ID = ''
 
 var HEADERS = [
   '호출 시각',
@@ -111,12 +124,16 @@ function doGet() {
 // 시트를 어디 뒀는지 잃어버렸을 때: 편집기 위쪽에서 이 함수를 골라 '실행' →
 // 아래 '실행 로그'에 주소가 나옵니다.
 function 시트주소() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet()
-  Logger.log(ss.getName() + ' → ' + ss.getUrl())
+  var ss = SPREADSHEET_ID
+    ? SpreadsheetApp.openById(SPREADSHEET_ID)
+    : SpreadsheetApp.getActiveSpreadsheet()
+  Logger.log('기록이 들어가는 문서: ' + ss.getName() + ' → ' + ss.getUrl())
 }
 
 function getSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet()
+  var ss = SPREADSHEET_ID
+    ? SpreadsheetApp.openById(SPREADSHEET_ID)
+    : SpreadsheetApp.getActiveSpreadsheet()
   var sheet = ss.getSheetByName(SHEET_NAME)
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME)
