@@ -39,8 +39,11 @@
  * =====================================================================
  */
 
-// 기록이 들어갈 탭 이름. 이 이름의 탭이 없으면 만들어 씁니다.
-// 시트가 여럿 모여 있는 문서에 붙여도 이 탭 하나만 건드립니다.
+// 기록이 들어갈 탭 이름. 이 이름의 탭이 없으면 문서 맨 끝에 만들어 씁니다.
+// 시트가 여럿 모여 있는 문서에 붙여도 이 탭 하나만 건드립니다 — 다른 탭은
+// 읽지도 쓰지도 않습니다.
+// 같은 이름의 탭이 이미 있고 거기 다른 자료가 들어 있으면, 덮어쓰지 않고
+// 멈춥니다(아래 getSheet 참고). 그때는 이 이름을 바꾸세요.
 var SHEET_NAME = '호출 기록'
 
 // 어느 스프레드시트에 쓸지.
@@ -136,8 +139,35 @@ function getSheet() {
     : SpreadsheetApp.getActiveSpreadsheet()
   var sheet = ss.getSheetByName(SHEET_NAME)
   if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME)
+    // 맨 끝에 답니다. 가운데 끼워 넣으면 쓰던 탭 순서가 흐트러집니다.
+    sheet = ss.insertSheet(SHEET_NAME, ss.getNumSheets())
+    return setUpSheet(sheet)
   }
+
+  // 이미 같은 이름의 탭이 있는 경우.
+  //
+  // 시트가 여럿 모인 문서에 붙였을 때, 하필 같은 이름의 탭이 이미 있으면
+  // 남의 자료를 제 것으로 알고 제목 줄을 덮어쓰고 오른쪽 칸을 지우게 됩니다.
+  // 비어 있거나 우리가 만든 탭일 때만 씁니다. 아니면 아무것도 하지 않고
+  // 그렇다고 알립니다 — 지워 놓고 나중에 아는 것보다 낫습니다.
+  if (sheet.getLastRow() > 0 && !looksLikeOurs(sheet)) {
+    throw new Error(
+      "'" + SHEET_NAME + "' 탭에 이미 다른 자료가 있습니다. " +
+        'SHEET_NAME 을 쓰지 않는 이름으로 바꾸거나 그 탭을 비우세요.',
+    )
+  }
+  return setUpSheet(sheet)
+}
+
+// 우리가 쓰던 탭인지 — 제목 줄이 지금 칸 구성이거나, 예전 구성이라도
+// 첫 칸이 '호출 시각' 이면 우리 것으로 봅니다(칸을 줄인 뒤의 시트).
+function looksLikeOurs(sheet) {
+  var width = Math.max(sheet.getLastColumn(), 1)
+  var head = sheet.getRange(1, 1, 1, width).getValues()[0]
+  return String(head[0]) === HEADERS[0]
+}
+
+function setUpSheet(sheet) {
   // 제목 줄이 없거나 지금 칸 구성과 다르면 다시 씁니다. 칸을 늘리거나 줄인
   // 뒤에도 시트를 손으로 고칠 필요가 없게 — 이미 쌓인 줄은 건드리지 않으니,
   // 칸 구성을 바꿨다면 옛 줄은 지우고 새로 쌓는 편이 맞습니다.
