@@ -38,7 +38,10 @@ function BoardCheck({ onYes, onNo }) {
         <p className="ask-body">
           {fmtHM(TEAM_DASHBOARD.start)}부터 {fmtHM(TEAM_DASHBOARD.end)}까지 팀대시보드를 작성합니다.
           <br />
-          작성을 마쳐야 마스터 메이트를 호출할 수 있어요.
+          {/* 폭이 넉넉하면 한 줄로 흐르고, 좁아서 못 담을 때만 끊깁니다.
+              그냥 두면 좁은 화면에서 '있어요.' 만 셋째 줄로 떨어지므로,
+              마지막 마디를 한 덩이로 묶어 통째로 내려가게 합니다. */}
+          작성을 마쳐야 마스터 메이트를 <span className="nowrap">호출할 수 있어요.</span>
         </p>
         <div className="ask-actions">
           <button className="btn-ghost" onClick={onNo}>

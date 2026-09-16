@@ -18,6 +18,14 @@ import OrderNotice from './OrderNotice.jsx'
 //   - 끼니별 상한 = 그 끼니에서 하나라도 먹을 수 있는 팀원 수
 // 로 자동 조정합니다 (판정은 config.teamDiet). 줄어든 몫은 운영진이
 // 대체 메뉴로 준비하므로, 문구도 "못 받는다"가 아니라 그렇게 안내합니다.
+// '아침을' / '피자를' — 받침에 따라 조사를 고릅니다. 끼니 이름이 바뀌어도
+// 문장이 어색해지지 않게, 글자로 박아두지 않고 그때그때 붙입니다.
+function 을를(말) {
+  const 끝 = 말.charCodeAt(말.length - 1)
+  if (끝 < 0xac00 || 끝 > 0xd7a3) return 말 + '를'
+  return 말 + ((끝 - 0xac00) % 28 ? '을' : '를')
+}
+
 export default function MenuBoard({
   openMeals,
   nextMeals,
@@ -44,6 +52,11 @@ export default function MenuBoard({
 }) {
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
+  // 같은 팀 다른 사람이 같은 끼니를 방금 저장했을 때 물어보는 창.
+  // window.confirm 을 쓰지 않습니다 — 그 창은 ESC 나 바깥 누르기가 '취소'로
+  // 처리돼서, 취소가 덮어쓰기면 실수로 닫았을 때 팀원 주문이 날아갑니다.
+  // 여기서는 바깥을 눌러도 아무 일도 일어나지 않습니다.
+  const [conflictAsk, setConflictAsk] = useState(null)
   const [activeMealId, setActiveMealId] = useState(openMeals[0]?.id || null)
   const [showCart, setShowCart] = useState(false) // 하단 장바구니 시트
   const [refreshing, setRefreshing] = useState(false)
@@ -197,15 +210,42 @@ export default function MenuBoard({
     }))
     .filter((g) => g.items.length > 0)
 
+  // 이 끼니를 내가 건드렸는가 — 화면이 알던 저장 내용과 지금 담은 것을
+  // 견줍니다. 서버는 보낸 끼니만 바꾸므로, 손대지 않은 끼니는 보내지
+  // 않는 것이 곧 "그대로 두라"는 뜻이 됩니다.
+  const mealChanged = (mealId) => {
+    const 담은것 = draft[mealId] || {}
+    const 저장된것 = savedByMeal[mealId] || {}
+    const 메뉴들 = new Set([...Object.keys(담은것), ...Object.keys(저장된것)])
+    for (const menuId of 메뉴들) {
+      if ((담은것[menuId] || 0) !== (저장된것[menuId] || 0)) return true
+    }
+    return false
+  }
+
   const submit = async () => {
     setSaving(true)
-    // 열려 있는 모든 식사의 주문을 한 번에 저장
+    // 내가 손댄 끼니만 보냅니다.
+    //
+    // 전에는 열린 끼니를 전부 보냈습니다. 그러면 한 팀에서 두 사람이 각자
+    // 폰으로 주문할 때, 야식을 건드린 적도 없는 사람이 '야식 0개'를 함께
+    // 보내서 앞사람이 담은 야식을 지워버렸습니다. 손댄 것만 보내면 서버가
+    // 나머지를 그대로 두므로, 야식 3개 + 아침 2개로 자연스럽게 합쳐집니다.
+    //
+    // 일부러 비운 끼니는 저장된 내용과 달라지므로 그대로 보내집니다 —
+    // "안 건드림"과 "지웠음"이 구분됩니다.
     const mealsMap = {}
-    openMeals.forEach((m) => {
+    openMeals.filter((m) => mealChanged(m.id)).forEach((m) => {
       mealsMap[m.id] = Object.entries(draft[m.id] || {})
         .filter(([, qty]) => qty > 0)
         .map(([menuId, qty]) => ({ menuId, qty }))
     })
+    // 바뀐 것이 없으면 보낼 이유가 없습니다 (버튼도 잠겨 있지만 방어적으로)
+    if (Object.keys(mealsMap).length === 0) {
+      setDirty(false)
+      setSaving(false)
+      return
+    }
     try {
       await onSave(mealsMap)
     } catch (err) {
@@ -227,13 +267,17 @@ export default function MenuBoard({
       // 같은 팀의 다른 기기가 그 사이에 주문을 저장한 경우 — 조용히 덮어쓰면
       // 그 사람이 담은 것이 사라지므로 어느 쪽을 남길지 물어봅니다
       if (err?.code === 'order-conflict') {
-        const overwrite = window.confirm(
-          '다른 팀원이 방금 주문을 저장했습니다.\n\n확인 = 지금 내 화면 내용으로 저장\n취소 = 팀원이 저장한 내역 불러오기',
-        )
-        if (!overwrite) {
+        const 고른것 = await new Promise((resolve) => setConflictAsk({ resolve }))
+        setConflictAsk(null)
+        if (고른것 === 'load') {
           setDirty(false)
           setSaving(false)
           await refreshBoard()
+          return
+        }
+        if (고른것 !== 'mine') {
+          // 창을 그냥 닫았습니다 — 아무것도 하지 않고 담아둔 것을 남겨 둡니다
+          setSaving(false)
           return
         }
         try {
@@ -259,6 +303,13 @@ export default function MenuBoard({
   }
 
   const hasSaved = openMeals.some((m) => Object.keys(savedByMeal[m.id] || {}).length > 0)
+  // 열린 끼니를 모두 주문했는지 — 버튼 글자가 여기서 갈립니다.
+  //   아무것도 안 함  주문하기
+  //   일부만 함       주문 이어하기   (아직 안 담은 끼니가 있다)
+  //   전부 함         주문 수정하기
+  const allSaved =
+    openMeals.length > 0 &&
+    openMeals.every((m) => Object.keys(savedByMeal[m.id] || {}).length > 0)
   const canCancel = hasSaved || totalQty > 0
 
   const cancelAll = async () => {
@@ -506,6 +557,37 @@ export default function MenuBoard({
 
       {/* S4 주문 완료 — 담기만 하고 끝난 것이 아니라 주방으로 넘어갔다는 것을
           한 화면으로 확인시켜 줍니다. 표시 시간(2초)은 그대로입니다. */}
+      {conflictAsk && (
+        <div className="ask-overlay" onClick={() => conflictAsk.resolve('dismiss')}>
+          <div
+            className="ask-box"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="order-conflict-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="ask-title" id="order-conflict-title">
+              다른 팀원이 방금 주문을 저장했습니다.
+            </h3>
+            <p className="ask-body">
+              팀원이 저장한 내역을 불러올까요?
+              <br />
+              불러오면 지금 담아둔 내용은 사라집니다.
+            </p>
+            <div className="ask-actions">
+              {/* 무엇을 하는지는 위 물음이 이미 말하고 있으므로, 버튼은
+                  짧게 답만 합니다 — 길면 두 줄로 접혀 크기가 어긋납니다. */}
+              <button className="btn-ghost" onClick={() => conflictAsk.resolve('mine')}>
+                내 주문으로 저장
+              </button>
+              <button className="btn-call" onClick={() => conflictAsk.resolve('load')}>
+                내역 불러오기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {savedFlash && (
         <div className="order-success" role="status" aria-live="polite">
           <div className="order-success-inner">
@@ -604,8 +686,15 @@ export default function MenuBoard({
             {hasSaved && (
               <p className={`cart-edit-hint${dirty ? " ready" : ""}`}>
                 {dirty
-                  ? '다시 주문하면 이전 주문은 지금 담은 내용으로 바뀝니다.'
-                  : '이미 주문이 접수됐습니다. 메뉴와 수량을 변경하시면 마지막에 넣은 주문으로 수정됩니다.'}
+                  ? '수정사항만 저장됩니다.'
+                  : allSaved
+                    ? '이미 주문이 접수됐습니다. 메뉴와 수량을 변경하시면 마지막 주문 내역으로 수정됩니다.'
+                    : `아직 ${을를(
+                        openMeals
+                          .filter((m) => !Object.keys(savedByMeal[m.id] || {}).length)
+                          .map((m) => m.shortLabel)
+                          .join(' · '),
+                      )} 주문하지 않았습니다.`}
               </p>
             )}
             <div className="sheet-foot">
@@ -615,7 +704,15 @@ export default function MenuBoard({
                 </button>
               )}
               <button className="cart-submit" onClick={submit} disabled={saving || !dirty}>
-                {saving ? '저장 중…' : savedFlash ? '✓ 저장 완료!' : hasSaved ? `주문 수정 (${totalQty})` : `주문하기 (${totalQty})`}
+                {saving
+                  ? '저장 중…'
+                  : savedFlash
+                    ? '✓ 저장 완료!'
+                    : !hasSaved
+                      ? `주문하기 (${totalQty})`
+                      : allSaved
+                        ? `주문 수정하기 (${totalQty})`
+                        : `주문 이어하기 (${totalQty})`}
               </button>
             </div>
           </div>
