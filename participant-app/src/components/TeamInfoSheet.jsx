@@ -6,6 +6,7 @@ import {
   wifiForTeam,
   wifiZonesForSeat,
   WIFI_LOUNGES,
+  WIFI_MAP,
 } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
@@ -175,6 +176,18 @@ export default function TeamInfoSheet({ team, onClose, onEdit, onGuide }) {
             {WIFI_LOUNGES.map((z) => (
               <WifiRow key={z.id} zone={z} />
             ))}
+          </div>
+
+          {/* 배치도는 접어두지 않고 그대로 펼쳐 둡니다. 버튼 뒤에 숨기면
+              "어느 구역인지 모르겠다"는 사람이 그 버튼을 찾아낼 이유가
+              없습니다 — 그림이 보여야 비교가 시작됩니다.
+              누르면 포스터 전체(구역별 비밀번호 포함)가 새 탭에서 열립니다. */}
+          <div className="wifi-map-block">
+            <span className="wifi-sub">자리 배치도</span>
+            <a className="wifi-map" href={WIFI_MAP.full} target="_blank" rel="noreferrer">
+              <img src={WIFI_MAP.src} alt={WIFI_MAP.alt} loading="lazy" />
+              <span className="image-board-zoom">🔍 크게 보기 · 구역별 비밀번호</span>
+            </a>
           </div>
         </div>
 

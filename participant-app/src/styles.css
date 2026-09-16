@@ -1507,6 +1507,16 @@ body {
   color: var(--po-state-error);
 }
 .wifi-lounges { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+
+/* 구역 배치도 — 비밀번호 줄 아래, 시트 버튼 위. 폭에 맞춰 통째로 보여주고
+   누르면 포스터 전체가 새 탭에서 열립니다(작은 글씨는 거기서 확대해 봅니다). */
+.wifi-map-block { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.wifi-map {
+  display: block; position: relative; overflow: hidden;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-card);
+  background: var(--po-bg-surface);
+}
+.wifi-map img { display: block; width: 100%; height: auto; }
 .wifi-sub {
   font-size: 11.5px; font-weight: 700; color: var(--po-text-muted);
 }
