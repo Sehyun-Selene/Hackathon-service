@@ -1,5 +1,21 @@
 import { guideMustItems, guideCanItems } from '../config.js'
 
+// 문장 안의 한 마디만 주황으로 세웁니다 ('5회' · 주문 시각).
+// 두 카드에서 놓치면 안 되는 건 '몇 번까지'와 '언제까지' 둘뿐이라,
+// 나머지 글자와 같은 색으로 흘려보내지 않습니다.
+function emphasize(text, word) {
+  if (!word) return text
+  const at = text.indexOf(word)
+  if (at < 0) return text
+  return (
+    <>
+      {text.slice(0, at)}
+      <b className="guide-hi">{word}</b>
+      {text.slice(at + word.length)}
+    </>
+  )
+}
+
 // 이용 안내 본문 — 두 덩이입니다.
 //
 //   1  반드시 G-Order로 해야 하는 것   호출(필드리그만) · 주문
@@ -32,12 +48,12 @@ export default function GuideSection({ teamId }) {
           {must.map((item) => (
             <div className="guide-must-card" key={item.id}>
               <b>{item.title}</b>
-              <p>{item.desc}</p>
+              <p>{emphasize(item.desc, item.emphasis)}</p>
               {/* 시각만 주황으로 — 이 카드에서 놓치면 안 되는 건 시간뿐입니다.
                   알약으로 감싸 두니 눌러야 할 것처럼 보였습니다. */}
               {item.when && (
                 <p className="guide-when">
-                  <b>{item.when}</b>
+                  <b className="guide-hi">{item.when}</b>
                   {item.note ? ' ' + item.note : ''}
                 </p>
               )}

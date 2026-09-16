@@ -77,7 +77,7 @@ export const IMAGE_BOARDS = [
     label: '타임테이블',
     icon: '🗓️',
     title: '해커톤 타임테이블',
-    src: './board/timetable.png?v=6',
+    src: './board/timetable.png?v=7',
     alt: 'PLAI 타임테이블 — DAY1 9/21, DAY2 9/22 시간별 일정',
     leagues: ['field'],
   },
@@ -1296,6 +1296,8 @@ export function guideMustItems(teamId) {
       id: 'call',
       title: '마스터 메이트 호출',
       desc: `도움이 필요할 때 팀당 ${CALL_LIMIT_PER_TEAM}회까지 마스터 메이트를 호출할 수 있어요.`,
+      // 문장 안에서 이 말만 주황으로 세웁니다 (주문 카드의 시각과 같은 표시)
+      emphasis: `${CALL_LIMIT_PER_TEAM}회`,
     },
     order,
   ]
