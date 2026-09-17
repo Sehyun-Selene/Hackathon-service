@@ -3,7 +3,7 @@ import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 // 이용 안내 다시 보기 — 첫 화면(OnboardingGuide)에서 읽고 지나간 안내를
-// 행사 중에 다시 꺼내 보는 자리입니다. 팀 등록이 끝나면 첫 화면으로는
+// 해커톤 중에 다시 꺼내 보는 자리입니다. 팀 등록이 끝나면 첫 화면으로는
 // 돌아갈 수 없어서, 호출 횟수·인원수 규칙을 확인할 길이 없었습니다.
 //
 // 내용은 첫 화면과 같은 GuideSection을 그대로 씁니다 — 두 곳에 따로

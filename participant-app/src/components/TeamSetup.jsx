@@ -2,6 +2,8 @@ import { useState } from 'react'
 import logo52g from '../assets/52g-logo.png'
 import {
   ALLERGY_OPTIONS,
+  CATERING_SWAPS,
+  cateringSwapFor,
   LEAGUES,
   TEAMS,
   MAX_MEMBER_COUNT,
@@ -13,6 +15,7 @@ import {
   leagueNumberHint,
 } from '../config.js'
 import { normalizeTeam } from '../lib/storage.js'
+import { 이가 } from '../lib/josa.js'
 import LanternIcon from './LanternIcon.jsx'
 
 // 알레르기 인원 블록의 React key 겸 식별자 생성 (사람별로 별개 목록을 구분하기 위함)
@@ -25,40 +28,74 @@ const newBlock = (list = []) => ({ id: `p${blockSeq++}`, list })
 const toAllergyBlocks = (allergies) =>
   (allergies || []).map((p) => newBlock(Array.isArray(p) ? p : [p]))
 
+
 // 한 사람의 알레르기 선택 결과를 사람이 읽을 수 있는 안내로 바꿔 보여줌.
 // 판정 자체는 config.personDiet 한 곳에서만 하므로 화면끼리 어긋나지 않습니다.
+//
+// 끼니는 하나도 빠짐없이 줄을 그립니다. 예전에는 먹을 수 있는 메뉴가 없는
+// 끼니의 줄을 지웠는데, 체크한 사람 눈에는 고른 항목이 많을수록 안내가
+// 오히려 줄어들어 그 끼니가 어떻게 되는지 알 길이 없었습니다.
+//
+// 못 드신다는 말은 적지 않습니다. 고른 사람은 이미 아는 사실이고, 여기서
+// 알려드릴 것은 그래서 우리가 무엇을 하는가 하나입니다.
+//
+// 주문 끼니(MEALS)와 도시락 끼니(CATERING_SWAPS)를 한 줄기로 세워 먹는 시각
+// 순서로 늘어놓습니다. 읽는 사람에게 '야식'과 '저녁'은 다른 종류의 끼니가
+// 아니라 그냥 앞뒤일 뿐이라, 종류별로 묶으면 저녁이 야식 뒤에 오는 이상한
+// 차례가 됩니다.
+//
+// 도시락은 주문 대상이 아니라 personDiet 가 보지 않습니다. 재료만 빼면 되는
+// 끼니라 CATERING_SWAPS 로 따로 셉니다 — 갑각류만 고른 사람은 야식·아침이
+// 둘 다 '전체 메뉴 가능' 이라, 이 줄이 없으면 고른 것이 아무 데도 쓰이지
+// 않은 듯이 보입니다.
 function DietSummary({ allergies }) {
   const { byMeal } = personDiet(allergies)
-  // 먹을 수 있는 메뉴가 있는 끼니만 보여줍니다. 하나도 없는 끼니는 줄을
-  // 그리지 않습니다 — 대체 메뉴 준비는 운영진 쪽 일이라 등록 화면에서
-  // 참가자에게 알릴 내용이 아닙니다.
-  const rows = MEALS.map((meal) => ({
-    meal,
-    eatable: byMeal[meal.id],
-    total: (MENUS[meal.id] || []).length,
-  })).filter((r) => r.eatable.length > 0)
-  if (rows.length === 0) return null
+  const rows = [
+    ...MEALS.map((meal) => ({
+      key: meal.id,
+      at: meal.eatAt,
+      label: meal.label,
+      eatable: byMeal[meal.id],
+      total: (MENUS[meal.id] || []).length,
+    })),
+    ...CATERING_SWAPS.map((swap) => ({
+      key: swap.id,
+      at: swap.eatAt,
+      label: swap.mealLabel,
+      removed: cateringSwapFor(swap, allergies),
+    })).filter((row) => row.removed.length > 0),
+  ].sort((a, b) => String(a.at).localeCompare(String(b.at)))
   return (
     <div className="diet-summary">
-      {rows.map(({ meal, eatable, total }) => (
-        <p key={meal.id}>
-          <span className="diet-meal">{meal.label}</span>
-          {eatable.length === total ? (
-            <span className="diet-ok">전체 메뉴 가능</span>
-          ) : (
-            <span className="diet-partial">
-              {eatable.map((m) => m.name.replace('\n', ' ')).join(', ')} 만 가능
-            </span>
-          )}
-        </p>
-      ))}
+      {rows.map((row) => {
+        const 뺄것 = row.removed?.map((e) => e.label).join(' · ')
+        return (
+          <p key={row.key}>
+            <span className="diet-meal">{row.label}</span>
+            {뺄것 ? (
+              <span className="diet-alt">
+                {이가(뺄것)} 들어가요
+                <b className="diet-alt-do">빼고 준비해 드려요</b>
+              </span>
+            ) : row.eatable.length === 0 ? (
+              <span className="diet-alt-do">식음 운영 크루가 찾아갈 거예요</span>
+            ) : row.eatable.length === row.total ? (
+              <span className="diet-ok">전체 메뉴 가능</span>
+            ) : (
+              <span className="diet-partial">
+                {row.eatable.map((m) => m.name.replace('\n', ' ')).join(', ')} 만 가능
+              </span>
+            )}
+          </p>
+        )
+      })}
     </div>
   )
 }
 
 // QR은 모든 팀이 공유 → 첫 진입 시 팀 정보를 직접 입력 (PRD 요청 #2)
 // 팀 번호 / 알레르기(인원별로 구분 입력 — 1명이 여러 개인지,
-// 여러 명이 각각 하나씩인지에 따라 대체 메뉴 준비량이 달라지므로 사람 단위로 관리)
+// 여러 명이 각각 하나씩인지에 따라 찾아갈 사람이 달라지므로 사람 단위로 관리)
 // ※ 계열사는 더 이상 참가자가 선택하지 않음 — 마스터 메이트 담당은 팀 번호 기준
 //   개인별 배정(config.COACH_ASSIGNMENTS)으로 대체됨
 export default function TeamSetup({ initial, existingLookup, onComplete, onSaving, onCancel }) {
@@ -211,7 +248,8 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
 
     // 알레르기를 하나도 선택 안 한 빈 블록은 제외하고 저장 (사람별 배열)
     const allergies = allergyBlocks.map((b) => b.list).filter((list) => list.length > 0)
-    // 알레르기 인원이 팀 인원수를 넘으면 대체식 준비 수량이 실제보다 많아집니다
+    // 팀 인원보다 많으면 어딘가 잘못 적은 것입니다 — 도시락 제외 개수가
+    // 실제 인원보다 많아지고, 크루가 없는 사람을 찾아가게 됩니다
     if (allergies.length > 팀.size) {
       return setError(
         '알레르기 인원(' + allergies.length + '명)이 팀 인원(' + 팀.size +
@@ -353,7 +391,7 @@ export default function TeamSetup({ initial, existingLookup, onComplete, onSavin
               </div>
               {/* 고른 알레르기가 실제로 어떤 결과가 되는지 즉시 보여줌 —
                   같은 끼니의 메뉴들이 성분을 거의 공유해서, 항목 하나로
-                  "다른 메뉴 선택 가능"과 "대체식 필요"가 갈립니다.
+                  "다른 메뉴 선택 가능"과 "드실 것이 없음"이 갈립니다.
                   잘못 체크한 경우도 이 자리에서 바로 알아챌 수 있음. */}
               {block.list.length > 0 && <DietSummary allergies={block.list} />}
             </div>

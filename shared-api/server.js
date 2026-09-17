@@ -10,7 +10,7 @@
 //  설정돼 있으면 쓰기마다 원격에도 함께 기록하고 부팅 시 되읽어옵니다.
 //  Render 무료 티어는 (1) 무요청 15분 슬립 (2) 재시작/재배포 시
 //  프로세스가 새로 뜨고 (3) 영구 디스크가 없어서, 메모리에만 두면
-//  행사 중 주문·호출 데이터가 통째로 사라질 수 있기 때문입니다.
+//  해커톤 중 주문·호출 데이터가 통째로 사라질 수 있기 때문입니다.
 //
 //  환경변수를 비워두면 예전처럼 메모리 전용으로 동작합니다(로컬 개발용).
 //    UPSTASH_REDIS_REST_URL    예) https://xxx-12345.upstash.io
@@ -49,7 +49,7 @@
 //    POST /api/nudge         body: { mealId }              → 참가자 화면 재촉 배너
 //    POST /api/notify-missing body: { kind, leagues, mealId, label }
 //                                                          → 미등록·미주문 팀을 슬랙에 재촉
-//    POST /api/reset  body: { token: string }         → 전체 삭제(행사 전 초기화용)
+//    POST /api/reset  body: { token: string }         → 전체 삭제(해커톤 전 초기화용)
 //    GET  /health                                     → 상태 확인용(크론 대상)
 // =====================================================================
 const http = require('http')
@@ -112,7 +112,7 @@ const NOTIFY_COOLDOWN_MS = Number(process.env.NOTIFY_COOLDOWN_SEC || 120) * 1000
 const notifyMarks = {}
 const persistOn = Boolean(REDIS_URL && REDIS_TOKEN)
 
-// 마지막 영속화 상태 — /health 로 확인해 행사 전에 정상 동작을 점검합니다.
+// 마지막 영속화 상태 — /health 로 확인해 해커톤 전에 정상 동작을 점검합니다.
 let persistState = persistOn
   ? { mode: 'redis', ready: false, lastOk: null, lastError: null }
   : { mode: 'memory', ready: true }
@@ -505,7 +505,7 @@ const server = http.createServer(async (req, res) => {
       // 환경변수로 덮어쓸 수 있는 값들은 여기 드러냅니다. 앱은 config.js 의
       // 값을 보고 화면을 그리는데, 서버가 다른 값을 들고 있으면 화면에는
       // 5회라고 쓰여 있는데 서버가 3회에서 막는 식으로 어긋납니다.
-      // 행사 전에 /health 한 번으로 확인할 수 있게 합니다.
+      // 해커톤 전에 /health 한 번으로 확인할 수 있게 합니다.
       // 깨어 있은 시간. 크론 점검용 — 위 주석 참고
       uptimeSec: Math.round((Date.now() - BOOT_AT) / 1000),
       rules: {
@@ -981,7 +981,7 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  // 행사 전 초기화용 — 이제 데이터가 원격에 남으므로 테스트 기록을
+  // 해커톤 전 초기화용 — 이제 데이터가 원격에 남으므로 테스트 기록을
   // 지울 수단이 필요합니다. ADMIN_TOKEN 이 없으면 아예 막습니다.
   if (req.method === 'POST' && url.pathname === '/api/reset') {
     try {

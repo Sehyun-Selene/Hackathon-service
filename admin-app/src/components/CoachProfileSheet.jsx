@@ -91,7 +91,7 @@ export default function CoachProfileSheet({ scan, coach, onOpenDetail, onClose, 
           {isManager || isOrderManager ? (
             /* 담당 구간이 없는 역할 — 눌러서 "누가 아직 안 했나" 목록을 엽니다 */
             <div className="profile-block">
-              <div className="profile-label">행사 진행 현황</div>
+              <div className="profile-label">해커톤 진행 현황</div>
               <div className="profile-stats">
                 {overview.map((o) => (
                   <button

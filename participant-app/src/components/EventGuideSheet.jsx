@@ -46,7 +46,7 @@ export default function EventGuideSheet({ onClose }) {
           </div>
         </div>
         <div className="event-sheet-frame">
-          {/* 행사장 와이파이에서는 몇 초 걸립니다. 빈 흰 칸만 두면 고장으로
+          {/* 현장 와이파이에서는 몇 초 걸립니다. 빈 흰 칸만 두면 고장으로
               보이므로 불러오는 중이라고 말해 둡니다. */}
           {!loaded && (
             <p className="event-sheet-loading" role="status">

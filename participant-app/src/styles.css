@@ -590,6 +590,7 @@ body {
   color: var(--po-text-secondary);
 }
 
+
 /* 리그 선택 — 두 장의 카드. 고른 쪽에 랜턴이 켜집니다. */
 .league-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .league-tab {
@@ -701,6 +702,12 @@ body {
 .diet-meal { font-weight: 700; color: var(--po-accent-ink); white-space: nowrap; }
 .diet-ok { color: var(--po-state-done); font-weight: 600; }
 .diet-partial { color: var(--po-text-secondary); }
+/* 윗줄은 상황("드실 수 있는 메뉴가 없어요"), 아랫줄은 우리가 하는 일.
+   못 먹는다는 말로 끝나지 않게 조치를 늘 한 줄 아래 붙여 두고, 빨강이
+   아니라 강조색으로 씁니다 — 경고가 아니라 약속이라서요. */
+.diet-alt { color: var(--po-text-secondary); }
+.diet-alt-do { display: block; color: var(--po-accent-ink); font-weight: 700; }
+
 
 .setup-submit { width: 100%; }
 
@@ -1299,10 +1306,13 @@ body {
 .team-sheet-allergy-group span { font-size: var(--po-body-size); font-weight: 700; overflow-wrap: anywhere; }
 /* 시트 아래 두 갈래 행동 — 안내 다시 보기(보조) · 팀 정보 편집(주요) */
 .team-sheet-actions { display: flex; flex-direction: column; gap: 8px; }
+/* 점선이던 것을 실선으로. 아래 '팀 정보 편집'(채운 버튼) 옆에서 점선은
+   '아직 없는 자리' 처럼 보여 버튼인 줄 모르고 지나쳤습니다. 주요 행동은
+   아니라 채우지는 않되, 테두리는 또렷하게 둡니다. */
 .team-sheet-guide {
   width: 100%; min-height: var(--po-cta-height); justify-content: center;
-  border-style: dashed; border-color: var(--po-border);
-  color: var(--po-accent-ink); font-size: var(--po-body-size); font-weight: 600;
+  border: 1px solid var(--po-accent); background: var(--po-accent-subtle);
+  color: var(--po-accent-ink); font-size: var(--po-body-size); font-weight: 700;
 }
 .team-sheet-edit { width: 100%; }
 

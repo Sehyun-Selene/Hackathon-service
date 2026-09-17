@@ -5,6 +5,8 @@ import {
   MENU_BY_ID,
   MEAL_BY_ID,
   LEAGUES,
+  CATERING_SWAPS,
+  cateringSwapCounts,
   DELIVERY_TEAM_RANGE_SIZE,
   getAssignedCoachForTeam,
   coachGroupForTeam,
@@ -290,46 +292,209 @@ export default function OrdersTab({
     return { teamsWith }
   }, [scan.teams])
 
-  // 대체식 필요 인원 — 케이터링에 넘길 실제 숫자.
-  // 메뉴 성분이 겹치는 것만으로는 대체식 대상이 아닙니다. 같은 끼니의 다른
-  // 메뉴를 먹을 수 있으면 대체식이 필요 없기 때문입니다.
-  // (예: 쇠고기만 있으면 야식은 페퍼로니로 해결 → 대체식 불필요)
+  // 식음 운영 크루가 찾아갈 명단 — 그 끼니에 드실 수 있는 메뉴가 하나도
+  // 없는 사람입니다. 참가자 등록 화면도 같은 판정으로 "식음 운영 크루가
+  // 찾아갈 거예요" 라고 약속하므로, 두 화면이 같은 personDiet 를 봅니다.
+  //
+  // 성분이 겹치는 것만으로는 대상이 아닙니다. 같은 끼니의 다른 메뉴를 먹을
+  // 수 있으면 찾아갈 일이 없습니다 (예: 쇠고기만 있으면 야식은 페퍼로니로
+  // 해결). 야식과 아침은 따로 주문하니 명단도 끼니별로 나눕니다.
   const altMealInfo = useMemo(() => {
     const byMeal = {}
     MEALS.forEach((meal) => {
-      byMeal[meal.id] = { meal, count: 0, combos: {} }
+      byMeal[meal.id] = { meal, count: 0, groups: new Map() }
     })
-    // 대체식이 한 끼도 필요하지 않은 인원(다른 메뉴로 해결되는 사람)
-    let coveredByOtherMenu = 0
-    Object.values(scan.teams).forEach((team) => {
+    Object.entries(scan.teams).forEach(([teamId, team]) => {
       const people = (team.allergies || []).map((x) => (Array.isArray(x) ? x : [x]))
       people.forEach((personList) => {
         const { needsAlt } = personDiet(personList)
-        if (needsAlt.length === 0) {
-          if (personList.length) coveredByOtherMenu += 1
-          return
-        }
-        // 세부 내역은 "한 사람이 가진 알레르기 조합" 단위로 셉니다.
-        // 성분별로 쪼개면 우유+토마토 1명이 "우유 1 · 토마토 1"이 되어 합이
-        // 총 개수와 어긋나고, 대체식은 그 사람의 성분을 모두 피해야 하므로
-        // 조합 하나가 그대로 대체식 하나입니다.
-        const combo = [...personList].filter(Boolean).sort().join('·')
+        if (needsAlt.length === 0) return
+        // 사람 단위 조합으로 셉니다. 성분별로 쪼개면 우유+토마토 1명이
+        // "우유 1 · 토마토 1"이 되어 합이 인원수와 어긋납니다.
+        const combo = [...personList].filter(Boolean).sort().join(', ')
         needsAlt.forEach((mealId) => {
           const row = byMeal[mealId]
           if (!row) return
           row.count += 1
-          if (combo) row.combos[combo] = (row.combos[combo] || 0) + 1
+          const key = teamId + '|' + combo
+          const cur = row.groups.get(key) || { teamId, label: combo, count: 0 }
+          cur.count += 1
+          row.groups.set(key, cur)
         })
       })
     })
-    return { rows: MEALS.map((m) => byMeal[m.id]), coveredByOtherMenu }
+    return {
+      rows: MEALS.map((meal) => ({
+        meal,
+        count: byMeal[meal.id].count,
+        groups: [...byMeal[meal.id].groups.values()].sort((a, b) =>
+          a.teamId.localeCompare(b.teamId, undefined, { numeric: true }),
+        ),
+      })),
+    }
   }, [scan.teams])
 
+  // 점심·저녁 도시락처럼 재료만 빼면 되는 끼니.
+  //
+  // 위 찾아갈 명단과 성격이 다릅니다. 명단은 크루가 가서 무엇을 드실 수
+  // 있는지 여쭐 대상일 뿐, 몇 인분을 준비하라는 수가 아닙니다 — 알레르기를
+  // 알려주신 것이지 그 끼니를 드시겠다고 하신 것은 아니니까요.
+  //
+  // 도시락은 반대입니다. 주문 없이 인원수대로 나가므로 알레르기만 알면
+  // 준비할 것이 정해집니다. 그래서 여기는 '어느 팀에 몇 개'가 그대로
+  // 호텔에 넘길 수가 됩니다 (CSV·PDF).
+
+  const cateringSwaps = useMemo(
+    () =>
+      CATERING_SWAPS.map((swap) => ({ swap, ...cateringSwapCounts(scan.teams, swap) })),
+    [scan.teams],
+  )
+  const cateringTotal = cateringSwaps.reduce((n, x) => n + x.total, 0)
+
+  // (B-2) 호텔에 넘길 도시락 제외 요청.
+  //
+  // 이건 크루가 화면으로 볼 일이 아닙니다 — 호텔에 "이 종류를 이만큼",
+  // 배부하는 사람에게 "이 테이블에 이것을" 이라고 건네면 끝나는 일이라,
+  // 시트에 띄워두는 대신 파일 두 개로 뽑습니다.
+  //   CSV        : 호텔 전달용 (끼니 · 종류 · 테이블 · 수량 한 줄씩)
+  //   체크리스트 : 배부용 (테이블마다 체크칸)
+  const cateringRows = () => {
+    const out = []
+    cateringSwaps.forEach(({ swap, variants }) => {
+      variants.forEach((variant) => {
+        variant.teams.forEach((team) => {
+          out.push({
+            meal: swap.mealLabel,
+            dish: swap.mealDesc,
+            kind: `${variant.label} 뺀 도시락`,
+            teamId: team.teamId,
+            count: team.count,
+          })
+        })
+      })
+    })
+    return out
+  }
+
+  const downloadCateringCsv = () => {
+    const rows = cateringRows()
+    if (!rows.length) {
+      alert('제외 요청이 아직 없습니다.')
+      return
+    }
+    const head = ['끼니', '도시락', '종류', '테이블 번호', '수량']
+    // 쉼표가 든 값이 있습니다 (예: 도시락 이름). 전부 따옴표로 감쌉니다.
+    const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const body = rows.map((r) => [r.meal, r.dish, r.kind, r.teamId, r.count])
+    // 앞의 BOM 이 없으면 엑셀이 한글을 깨뜨립니다.
+    const csv = '\uFEFF' + [head, ...body].map((r) => r.map(cell).join(',')).join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'G-Order_도시락_제외요청.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // 도시락 배부표를 PDF 파일로. 브라우저의 'PDF로 저장'을 그대로 씁니다 —
+  // 글자가 글자로 남아(복사·검색이 됩니다) 화면을 찍어 만든 그림보다 낫고,
+  // 한글 글꼴을 번들에 싣지 않아도 됩니다. 창이 뜨면 저장 창이 바로 열립니다.
+  const saveCateringPdf = () => {
+    // 끼니가 바깥 묶음, 도시락 종류가 안쪽 묶음입니다. 줄마다 [DAY 1]을 다시
+    // 쓰면 같은 말이 스무 번 반복되고, 정작 눈이 찾는 종류·테이블이 묻힙니다.
+    // 끼니마다 표를 따로 두면 쪽이 갈려 배부 담당끼리 나눠 들기 좋습니다.
+    const meals = cateringSwaps.filter((x) => x.total > 0)
+    if (!meals.length) {
+      alert('제외 요청이 아직 없습니다.')
+      return
+    }
+    const total = meals.reduce((n, x) => n + x.total, 0)
+    const sectionsHtml = meals
+      .map(({ swap, variants }) => {
+        // 제목 줄(완료·테이블·수량)은 두지 않습니다. 칸이 셋뿐이고 ☐ 와
+        // 테이블 번호는 보면 아는 것이라, 제목을 달면 종류 소제목과 줄이
+        // 겹쳐 무엇이 묶음의 머리인지 흐려집니다.
+        const rowsHtml = variants
+          .map(
+            (v) =>
+              `<tr class="g"><td colspan="2"><b>${escapeHtml(v.label)}</b> 뺀 도시락</td><td class="n">${
+                v.count
+              }개</td></tr>` +
+              v.teams
+                .map(
+                  (t) =>
+                    `<tr><td class="c">☐</td><td class="t">${escapeHtml(
+                      t.teamId,
+                    )}</td><td class="n">${t.count}개</td></tr>`,
+                )
+                .join(''),
+          )
+          .join('')
+        return `<section>
+<h2>${escapeHtml(swap.mealLabel)} <span class="sub">${escapeHtml(swap.mealDesc)}</span></h2>
+<table><tbody>${rowsHtml}</tbody></table>
+</section>`
+      })
+      .join('')
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>G-Order 도시락 제외 배부표</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: 'Malgun Gothic', system-ui, sans-serif; padding: 16px; color:#111; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 6px; }
+  .sub { color:#666; font-size:12px; font-weight:400; }
+  /* 끼니를 나란히. 표가 좁아 한 칸을 다 쓰면 가운데가 크게 비고, 두 끼니를
+     보려면 종이를 넘겨야 합니다. */
+  .sheets { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; margin-top: 18px; }
+  section { break-inside: avoid; }
+  table { width:100%; border-collapse: collapse; font-size: 13px; }
+  td { border:1px solid #999; padding:6px 8px; text-align:left; }
+  tr.g td { background:#f1f1f1; font-size:14px; }
+  /* 이 표에서 눈이 찾는 유일한 숫자 — 종류별로 몇 개를 만드는가.
+     아래 팀별 줄의 개수는 거의 1개라 배경처럼 두고, 이것만 키웁니다. */
+  tr.g td.n { font-size:19px; color:#b45309; }
+  td.c { width:26px; text-align:center; font-size:15px; }
+  /* 테이블 번호는 E-105 가 최대라 이만큼이면 넉넉합니다 */
+  td.t { width:58px; white-space:nowrap; font-weight:700; text-align:center; }
+  td.n { width:48px; white-space:nowrap; text-align:center; font-weight:700; }
+  tbody tr:not(.g) td.n { color:#777; font-weight:400; }
+  .pbtn { padding:10px 16px; font-size:14px; font-weight:700; margin-top:12px; cursor:pointer; }
+  @media screen and (max-width: 640px) {
+    body { padding: 12px; }
+    .sheets { grid-template-columns: 1fr; }
+    table { font-size: 14px; }
+    td { padding: 8px 6px; }
+    td.c { width: 32px; font-size: 17px; }
+    .pbtn { width:100%; min-height:48px; font-size:16px; font-weight:700; }
+  }
+  @page { size: A4; margin: 14mm; }
+  @media print { .noprint { display:none; } }
+</style></head><body>
+<h1>도시락 제외 배부표</h1>
+<div class="sub">총 ${total}개 · 배부 시 왼쪽 칸에 체크</div>
+<div class="noprint">
+<button class="pbtn" onclick="window.print()">📄 PDF로 저장</button>
+<span class="sub"> 저장 창의 <b>대상</b>에서 'PDF로 저장'을 고르세요.</span>
+</div>
+<script>window.addEventListener('load', function () { setTimeout(function () { window.print() }, 400) })</script>
+<div class="sheets">${sectionsHtml}</div>
+</body></html>`
+    const w = window.open('', '_blank')
+    if (!w) {
+      alert(
+        'PDF 창이 차단되었습니다.\n브라우저의 팝업 차단을 허용한 뒤 다시 눌러주세요.',
+      )
+      return
+    }
+    w.document.write(html)
+    w.document.close()
+  }
   // (C) 인쇄용 배부 체크리스트 — 현재 끼니 필터 기준, 팀번호순, 종이 체크칸 포함
   const printChecklist = () => {
     const label = mealFilter === 'all' ? '전체' : MEAL_BY_ID[mealFilter].label
     const rangeLabel = selectedRange ? `${selectedRange.label}번` : '전체 팀'
-    // 배부 현장에서 대체식이 필요한 팀을 종이만 보고 알 수 있어야 합니다.
+    // 배부 현장에서 크루가 찾아갈 팀을 종이만 보고 알 수 있어야 합니다.
     // 화면의 알레르기 시트를 따로 열어봐야 하면 놓치게 됩니다.
     const altInfoOf = (teamId) => {
       const people = (scan.teams[teamId]?.allergies || []).map((x) => (Array.isArray(x) ? x : [x]))
@@ -360,7 +525,7 @@ export default function OrdersTab({
         const { need, combos } = altInfoOf(r.teamId)
         altTotal += need
         const alt = need
-          ? `<b>대체식 ${need}</b><span class="cmb"> ${combos.map(escapeHtml).join(' / ')}</span>`
+          ? `<b>방문 ${need}</b><span class="cmb"> ${combos.map(escapeHtml).join(' / ')}</span>`
           : ''
         return `<tr><td class="c">☐</td><td class="t">팀 ${escapeHtml(r.teamId)}${coach}</td><td>${items}</td><td class="a">${alt}</td></tr>`
       })
@@ -397,10 +562,10 @@ export default function OrdersTab({
 </style></head><body>
 <h1>배부 체크리스트 — ${escapeHtml(label)} · ${escapeHtml(rangeLabel)}</h1>
 <div class="sub">총 ${rangedRows.length}팀 · 배부 시 왼쪽 칸에 체크${
-      altTotal ? ` · <b>대체식 ${altTotal}개 필요</b>` : ''
+      altTotal ? ` · <b>크루 방문 ${altTotal}명</b>` : ''
     }</div>
 <button class="noprint pbtn" onclick="window.print()">🖨 인쇄</button>
-<table><thead><tr><th>완료</th><th>팀</th><th>주문 내역</th><th>대체식</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+<table><thead><tr><th>완료</th><th>팀</th><th>주문 내역</th><th>크루 방문</th></tr></thead><tbody>${rowsHtml}</tbody></table>
 </body></html>`
     const w = window.open('', '_blank')
     if (!w) {
@@ -522,6 +687,26 @@ export default function OrdersTab({
                   >
                     🚫 품절 관리
                   </button>
+                  {/* 도시락 제외는 크루가 화면으로 볼 일이 아니라 넘길 파일입니다 */}
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      downloadCateringCsv()
+                      setMoreOpen(false)
+                    }}
+                  >
+                    🍱 도시락 제외 CSV
+                    <b>{cateringTotal}</b>
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      saveCateringPdf()
+                      setMoreOpen(false)
+                    }}
+                  >
+                    🍱 도시락 PDF 저장
+                  </button>
                 </div>
               </>
             )}
@@ -549,6 +734,17 @@ export default function OrdersTab({
           <button className="btn-ghost toolbar-tool checklist-tool" onClick={printChecklist}>
             체크리스트
           </button>
+          {/* 도시락 제외는 화면으로 볼 일이 아니라 호텔·배부에 넘길 파일입니다.
+              좁은 화면에서는 위 ⋯ 메뉴에 같은 항목이 있습니다. */}
+          <button className="btn-ghost toolbar-tool" onClick={downloadCateringCsv}>
+            도시락 CSV {cateringTotal}
+          </button>
+          <button
+            className="btn-ghost toolbar-tool checklist-tool"
+            onClick={saveCateringPdf}
+          >
+            도시락 PDF
+          </button>
         </div>
       </div>
 
@@ -570,65 +766,67 @@ export default function OrdersTab({
               <h3 id="allergy-sheet-title">알레르기 현황</h3>
               <button className="sheet-close" onClick={closeUtilityPanels}>닫기</button>
             </div>
-            <p className="sheet-description">팀별 대체 메뉴 준비에 참고하세요.</p>
+            <p className="sheet-description">크루가 찾아갈 팀과 도시락 준비에 참고하세요.</p>
             <div className="sheet-body">
-              {/* 대체식이 반드시 필요한 인원 — 준비 수량의 기준이 되는 숫자 */}
-              <div className="alt-meal-summary">
-                <div className="alt-meal-title">🍱 대체 메뉴 필요 개수</div>
-                {/* 필요한 건 "몇 개를 준비하는가" 하나. 조합별 내역은 접어둡니다. */}
-                {altMealInfo.rows.map(({ meal, count }) => (
-                  <div key={meal.id} className="alt-meal-row">
-                    <span className="alt-meal-name">{meal.label}</span>
-                    <b className={count ? 'alt-meal-count on' : 'alt-meal-count'}>{count}개</b>
-                  </div>
-                ))}
-                {altMealInfo.rows.some((r) => r.count > 0) && (
-                  <details className="alt-meal-detail">
-                    <summary>상세 보기</summary>
-                    {altMealInfo.rows
-                      .filter((r) => r.count > 0)
-                      .map(({ meal, count, combos }) => (
-                        <p key={meal.id}>
-                          <b>
-                            {meal.label} {count}개
-                          </b>
-                          {' — '}
-                          {Object.entries(combos)
-                            .sort(([, a], [, b]) => b - a)
-                            .map(([combo, n]) => `${combo} ${n}`)
-                            .join(' · ')}
-                        </p>
-                      ))}
-                    {altMealInfo.coveredByOtherMenu > 0 && (
-                      <p className="alt-meal-note">
-                        알레르기가 있지만 같은 끼니의 다른 메뉴로 해결되는{' '}
-                        <b>{altMealInfo.coveredByOtherMenu}명</b>은 위 개수에서 제외했습니다.
-                      </p>
-                    )}
-                  </details>
-                )}
-              </div>
-              {allergyInfo.teamsWith.length === 0 ? (
-                <p className="empty-text">알레르기를 등록한 인원이 없습니다.</p>
-              ) : (
-                <div className="allergy-teams">
-                {allergyInfo.teamsWith.map((t) => (
-                  <div key={t.teamId} className="allergy-team-row">
-                    <b>
-                      팀 {t.teamId}
-                      {t.assignedName && <span className="count-company"> {t.assignedName}</span>}
-                    </b>
-                    <div className="allergy-person-groups">
-                      {t.groups.map((group) => (
-                        <span key={group.allergies} className="allergy-person-chip">
-                          {group.allergies} <b>{group.count}인</b>
-                        </span>
-                      ))}
+              {/* 찾아갈 명단. 팀 번호와 함께 무엇 때문인지(알레르기)를 적어
+                  둡니다 — 가서 다시 물어야 하면 한 번에 안 끝납니다.
+                  칩을 늘어놓으면 줄바꿈 자리가 제각각이라 팀 번호가 눈으로
+                  이어지지 않습니다. 팀 순서대로 한 줄씩 내려가는 표로 둡니다.
+                  한 팀에 알레르기가 여럿이면 줄이 여럿 — 찾아가 만날 사람이
+                  여럿이라는 뜻이라, 합치지 않고 그대로 둡니다. */}
+              <div className="alt-request">
+                <div className="alt-meal-title">🙋 식음 운영 크루가 찾아갈 명단</div>
+                {/* 야식·아침을 위아래로 세우면 아래쪽은 스크롤해야 보입니다.
+                    표가 좁아 나란히 두면 두 끼니가 한눈에 들어옵니다 —
+                    좁은 화면에서는 저절로 위아래로 돌아갑니다(styles.css). */}
+                <div className="alt-request-meals">
+                {altMealInfo.rows.map(({ meal, count, groups }) => (
+                  <div className="alt-request-meal" key={meal.id}>
+                    {/* 합계는 적지 않습니다. 크루는 팀을 하나씩 찾아가므로
+                        움직이는 단위가 줄이지 총 인원이 아니고, 줄이 곧
+                        찾아갈 횟수라 세어 둘 필요가 없습니다. */}
+                    <div className="alt-meal-row">
+                      <span className="alt-meal-name">{meal.label}</span>
                     </div>
+                    {count === 0 ? (
+                      <p className="alt-meal-note">찾아갈 팀이 없습니다.</p>
+                    ) : (
+                      <table className="alt-request-table">
+                        <thead>
+                          <tr>
+                            <th>팀</th>
+                            <th>알레르기</th>
+                            <th>인원</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* 팀 칸은 합쳐 한 번만 씁니다 — 팀 순서로 정렬돼 있어
+                              같은 팀 줄은 붙어 있습니다. 번호가 두 번 찍히면
+                              두 팀처럼 보입니다. */}
+                          {groups.map((group, index) => {
+                            const 첫줄 = index === 0 || groups[index - 1].teamId !== group.teamId
+                            const 줄수 = 첫줄
+                              ? groups.filter((g) => g.teamId === group.teamId).length
+                              : 0
+                            return (
+                              <tr key={`${group.teamId}-${group.label}`}>
+                                {첫줄 && (
+                                  <td className="alt-request-team" rowSpan={줄수}>
+                                    {group.teamId}
+                                  </td>
+                                )}
+                                <td>{group.label}</td>
+                                <td className="alt-request-count">{group.count}명</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 ))}
                 </div>
-              )}
+              </div>
             </div>
           </section>
         </div>

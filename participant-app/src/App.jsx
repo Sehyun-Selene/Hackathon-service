@@ -37,8 +37,8 @@ import OnboardingGuide from './components/OnboardingGuide.jsx'
 import LinksSection from './components/LinksSection.jsx'
 import EventGuideSheet from './components/EventGuideSheet.jsx'
 
-// 이 기기가 어느 팀인지 기억합니다. 행사 중 창을 닫거나 새로고침해도 다시
-// 등록하지 않도록 — 팀 등록은 행사 시작 때 한 번만 하면 됩니다.
+// 이 기기가 어느 팀인지 기억합니다. 해커톤 중 창을 닫거나 새로고침해도 다시
+// 등록하지 않도록 — 팀 등록은 해커톤 시작 때 한 번만 하면 됩니다.
 const MY_TEAM_KEY = 'torder-my-team'
 // 이용 안내를 읽었다는 표시. 값으로 그때의 리그를 담습니다 — 팀 번호를
 // 고쳐 다른 리그로 옮기면 안내 내용도 달라지므로 한 번 더 보여줍니다.
@@ -50,7 +50,7 @@ export default function App() {
   const [team, setTeam] = useState(null)
   const [editingTeam, setEditingTeam] = useState(false)
   const [showTeamInfo, setShowTeamInfo] = useState(false)
-  // 이용 안내 다시 보기 시트 (첫 화면의 안내를 행사 중에 꺼내 봅니다)
+  // 이용 안내 다시 보기 시트 (첫 화면의 안내를 해커톤 중에 꺼내 봅니다)
   const [showGuide, setShowGuide] = useState(false)
   // 이벤트 안내 전체 보기 시트 (바로가기 탭에서 노션을 화면 꽉 채워 봅니다)
   const [showEventGuide, setShowEventGuide] = useState(false)
@@ -158,7 +158,7 @@ export default function App() {
         setTeam(server || stored)
         setTab(getOpenMeals(now().getTime()).length > 0 ? 'order' : 'call')
       } else {
-        // 서버에 기록이 없음(행사 전 초기화 등) → 저장값을 채운 등록 화면
+        // 서버에 기록이 없음(해커톤 전 초기화 등) → 저장값을 채운 등록 화면
         setPrefill(stored)
       }
       setRestoring(false)

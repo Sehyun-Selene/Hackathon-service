@@ -272,10 +272,10 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
       <div className="call-guide call-guide-detail">
         <b className="call-guide-title">📌 호출 전에 꼭 읽어보세요!</b>
         <ul className="call-guide-list">
-          <li>간단한 문제는 우리 팀의 플레이 메이트의 도움을 먼저 받아보세요!</li>
-          <li>마스터 메이트가 머무는 시간은 팀당 15분입니다!</li>
+          <li>간단한 문제는 우리 팀의 플레이 메이트의 도움을 먼저 받아보세요.</li>
+          <li>마스터 메이트가 머무는 시간은 팀당 15분입니다.</li>
           <li>
-            시간 내 효과적인 멘토링을 위해 아래 문장을 작성하시고, 불러주세요!
+            시간 내 효과적인 멘토링을 위해 아래 문장을 작성하시고, 불러주세요.
             <span className="call-guide-quote">
               “문제가 A라고 봐서 B를 했고, 결과가 C일줄 알았는데 D가 됐어요.”
             </span>

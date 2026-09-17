@@ -329,10 +329,13 @@ body {
   background: var(--primary); color: var(--on-accent); font-size: 12px; font-weight: 800;
 }
 .workflow-heading { display: inline-flex; align-items: center; gap: 8px; }
+/* 검색칸이 남는 폭을 먹고 버튼들은 제 글자 너비만 씁니다. 칸 수를 못박아
+   두면 버튼을 하나 더할 때마다 마지막 하나가 다음 줄로 떨어집니다. */
 .toolbar-actions {
-  width: 100%; display: grid; grid-template-columns: minmax(76px, 1fr) auto auto auto auto;
-  gap: 6px; flex-wrap: nowrap;
+  width: 100%; display: flex; gap: 6px; flex-wrap: nowrap; align-items: stretch;
 }
+.toolbar-actions .table-search-wrap { flex: 1 1 76px; min-width: 76px; }
+.toolbar-actions .toolbar-tool { flex: 0 0 auto; }
 .toolbar-actions .table-search { width: 100%; min-width: 0; }
 .toolbar-actions .table-search-wrap { width: 100%; min-width: 0; }
 .toolbar-tool { min-height: 40px; padding: 8px 10px; white-space: nowrap; font-size: 12px; }
@@ -427,7 +430,10 @@ body {
     display: grid;
     grid-auto-flow: column;
     grid-template-rows: repeat(var(--rows, 1), auto);
-    grid-auto-columns: minmax(0, 1fr);
+    /* 칼럼을 둘로 못박습니다. grid-auto-columns 로 두면 팀이 하나뿐일 때
+       칼럼도 하나만 생겨 그 한 줄이 화면 끝까지 늘어납니다 — 다른 때와
+       글자 자리가 달라져 같은 목록으로 보이지 않습니다. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 30px;
   }
 }
@@ -521,17 +527,6 @@ body {
 /* =====================================================================
    알레르기 현황
    ===================================================================== */
-.allergy-teams { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-.allergy-team-row {
-  display: flex; justify-content: space-between; gap: 12px; padding: 9px 11px;
-  border: 1px solid var(--line); border-radius: 8px; font-size: 14px;
-}
-.allergy-person-groups { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
-.allergy-person-chip {
-  border-radius: 999px; padding: 4px 8px; background: var(--tint-warn);
-  color: var(--amber); font-size: 12px; font-weight: 600; white-space: nowrap;
-}
-.allergy-person-chip b { color: var(--po-accent-ink); }
 
 /* =====================================================================
    통계
@@ -553,7 +548,7 @@ body {
      한 줄에 밀어넣으려 글자를 11px까지 줄였더니 iOS가 탭할 때마다 확대됐음 */
   /* 폰: 도구가 알레르기·품절 관리 둘뿐이라 버튼 줄을 따로 두지 않고
      검색칸 오른쪽의 더보기(⋯)로 묶습니다 */
-  .toolbar-actions { grid-template-columns: 1fr auto; gap: 6px; }
+  .toolbar-actions { gap: 6px; }
   .toolbar-tool { display: none; }
   .search-more-wrap { display: block; position: relative; }
   .search-more {
@@ -596,27 +591,79 @@ body {
   .bar-name { min-width: 84px; font-size: 13px; }
 }
 
-/* 대체 메뉴 필요 인원 — 케이터링에 넘길 실제 숫자.
-   "메뉴 성분과 겹치는 인원"과 다릅니다. 겹쳐도 같은 끼니의 다른 메뉴를
-   먹을 수 있으면 대체식이 필요 없기 때문입니다. */
-.alt-meal-summary {
-  border: 1px solid var(--edge-error); background: var(--tint-error); border-radius: 10px;
-  padding: 12px 14px; margin-bottom: 12px;
-  display: flex; flex-direction: column; gap: 6px;
-}
+/* 찾아갈 명단 칸의 부품들 — 끼니 이름 + 인원 수 + 팀 칩.
+   도시락 제외는 화면에서 빠지고 CSV·체크리스트 파일로 나가므로,
+   여기 남은 규칙은 모두 .alt-request 안에서 쓰입니다. */
 .alt-meal-title { font-size: 14px; font-weight: 800; }
 .alt-meal-row { display: flex; align-items: baseline; gap: 10px; font-size: 14px; }
 .alt-meal-name { font-weight: 700; min-width: 92px; }
 .alt-meal-count { font-variant-numeric: tabular-nums; color: var(--sub); }
-.alt-meal-count.on { color: var(--red); font-size: 20px; font-weight: 800; }
-/* 세부 조합은 접어둠 — 평소엔 총 개수만 보이게 */
-.alt-meal-detail { margin-top: 4px; }
-.alt-meal-detail summary {
-  cursor: pointer; font-size: 12.5px; color: var(--sub); font-weight: 600;
-  padding: 2px 0; width: fit-content;
-}
-.alt-meal-detail p { font-size: 12.5px; color: var(--text); line-height: 1.6; margin-top: 4px; }
 .alt-meal-note { font-size: 12px; color: var(--sub); line-height: 1.5; margin-top: 6px; }
+
+/* 식음 운영 크루가 찾아갈 명단. 이 시트에 남는 유일한 칸입니다 */
+.alt-request {
+  border: 1px solid var(--edge-accent); background: var(--violet-soft); border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.alt-request-total {
+  color: var(--primary-dark); font-size: 22px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+/* 두 끼니를 나란히. 좁아지면 저절로 위아래로 돌아갑니다 */
+.alt-request-meals {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+  gap: 14px 24px; margin-top: 4px;
+}
+.alt-request-meal { min-width: 0; }
+/* 두 끼니를 가르는 선. 나란히 설 만큼 넓을 때만 긋습니다 — 위아래로
+   돌아간 뒤에도 왼쪽에 선이 남으면 표가 들여쓰기된 것처럼 보입니다.
+   (258 × 2 + 사이 24 + 카드 안쪽 여백) 을 넘을 때부터입니다. */
+@media (min-width: 600px) {
+  .alt-request-meal + .alt-request-meal {
+    padding-left: 24px; border-left: 1px solid var(--edge-accent);
+  }
+}
+/* 팀 순서대로 한 줄씩. 세 칸뿐이라 테두리를 다 그으면 시끄러워서,
+   줄 사이에만 선을 넣고 제목 줄만 조용한 글씨로 둡니다. */
+/* 표가 두 개 나란히 서면서 한 칸 폭이 절반으로 줄어, 알레르기 칸의 빈
+   공간도 함께 사라집니다. 칸마다 세로선을 그어 세 칸이 끊어 읽히게 합니다. */
+.alt-request-table {
+  width: 100%; margin-top: 8px;
+  border-collapse: collapse; font-size: 13px;
+  table-layout: fixed;
+  border: 1px solid var(--edge-accent); border-radius: 8px; overflow: hidden;
+}
+.alt-request-table th {
+  text-align: left; font-size: 11.5px; font-weight: 700; color: var(--sub);
+  padding: 5px 9px; background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+/* 칸 사이 세로선. td + td 로 그으면 팀 칸을 합친 묶음의 둘째 줄에서
+   왼쪽 선이 빠집니다 — 그 줄의 첫 칸이 알레르기라 + 선택자에 안 걸립니다.
+   붙는 쪽이 아니라 열에 직접 그어 어느 줄에서든 같게 보이게 합니다.
+   (합친 팀 칸의 오른쪽 선이 묶음 전체의 세로선 노릇을 합니다) */
+.alt-request-table th:first-child,
+.alt-request-team { border-right: 1px solid var(--edge-accent); }
+.alt-request-table th:last-child,
+.alt-request-count { border-left: 1px solid var(--edge-accent); }
+/* 줄 사이 선은 아래가 아니라 위에 긋습니다. 아래에 그으면 팀 칸을 합친
+   묶음의 마지막 줄에서, 합친 칸의 선만 팀 칸 너비로 짧게 남아 삐져나옵니다
+   (rowSpan 이 걸린 칸은 tr:last-child 에 잡히지 않습니다). */
+.alt-request-table td {
+  padding: 6px 9px; border-top: 1px solid var(--edge-accent); vertical-align: middle;
+}
+/* 팀 번호는 눈으로 훑는 칸이라 자릿수를 맞추고 폭을 고정합니다.
+   인원은 거의 1명이라 좁게 — 남는 폭은 알레르기 이름에 줍니다
+   ('돼지고기' 같은 네 글자가 접히지 않을 만큼만). */
+/* 팀 번호와 인원은 칸 가운데로. 둘 다 짧고 폭이 고정이라 가운데가
+   세로로 줄을 이뤄 눈이 바로 따라갑니다. 알레르기만 길이가 제각각이라
+   왼쪽에 붙여 첫 글자를 맞춥니다. */
+.alt-request-table th:first-child,
+.alt-request-team { width: 68px; text-align: center; }
+.alt-request-table th:last-child,
+.alt-request-count { width: 56px; text-align: center; }
+.alt-request-team { font-weight: 700; font-variant-numeric: tabular-nums; }
+.alt-request-count { font-variant-numeric: tabular-nums; color: var(--sub); }
 
 /* =====================================================================
    내 프로필 (담당 팀 확인 · 알림 연결 점검)

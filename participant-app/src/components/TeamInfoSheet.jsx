@@ -13,7 +13,7 @@ import { useDialogFocus } from '../lib/useDialogFocus.js'
 
 // 클립보드에 넣습니다.
 //
-// navigator.clipboard 는 https(와 localhost)에서만 있습니다. 행사장에서
+// navigator.clipboard 는 https(와 localhost)에서만 있습니다. 현장에서
 // 참가자가 여는 주소는 https라 괜찮지만, 같은 와이파이로 띄운 개발 서버
 // (http://172.16.x.x)에서는 아예 없습니다. 그 경우 옛 방식으로 넘어갑니다.
 async function copyText(text) {
@@ -148,14 +148,14 @@ export default function TeamInfoSheet({ team, onClose, onEdit, onGuide }) {
           </div>
         </div>
 
-        {/* 행사장 Wi-Fi.
+        {/* 해커톤 Wi-Fi.
             구역마다 비밀번호가 달라서, 포스터를 보고 "내 자리가 어느 구역인지"를
             스스로 찾아야 했습니다. 팀 번호는 앱이 이미 아니까 우리 구역만
             바로 띄웁니다. 자리 구역을 모르는 팀에는 같은 홀의 구역 목록을
             보여줍니다 — 틀린 비밀번호를 자신 있게 띄우는 것보다 낫습니다. */}
         <div className="wifi-block">
           <div className="wifi-head">
-            <span className="wifi-title">행사장 Wi-Fi</span>
+            <span className="wifi-title">해커톤 Wi-Fi</span>
             {myWifi && <span className="wifi-badge">우리 자리</span>}
           </div>
           {myWifi ? (

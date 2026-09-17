@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MEALS, MENUS, MENU_BY_ID, MEAL_BY_ID, teamDiet } from '../config.js'
 import { now, fmtClock, fmtCountdown, fmtHM, mealTimes } from '../lib/time.js'
+import { 을를, 이가 } from '../lib/josa.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 import LanternIcon from './LanternIcon.jsx'
@@ -16,15 +17,9 @@ import OrderNotice from './OrderNotice.jsx'
 // 인원수만큼 담게 두면 확실히 버려지는 몫이 생기므로,
 //   - 메뉴별 상한 = 그 메뉴를 먹을 수 있는 팀원 수
 //   - 끼니별 상한 = 그 끼니에서 하나라도 먹을 수 있는 팀원 수
-// 로 자동 조정합니다 (판정은 config.teamDiet). 줄어든 몫은 운영진이
-// 대체 메뉴로 준비하므로, 문구도 "못 받는다"가 아니라 그렇게 안내합니다.
-// '아침을' / '피자를' — 받침에 따라 조사를 고릅니다. 끼니 이름이 바뀌어도
-// 문장이 어색해지지 않게, 글자로 박아두지 않고 그때그때 붙입니다.
-function 을를(말) {
-  const 끝 = 말.charCodeAt(말.length - 1)
-  if (끝 < 0xac00 || 끝 > 0xd7a3) return 말 + '를'
-  return 말 + ((끝 - 0xac00) % 28 ? '을' : '를')
-}
+// 로 자동 조정합니다 (판정은 config.teamDiet). 줄어든 몫을 두고 "못 받는다"
+// 고 하지 않습니다 — 식음 운영 크루가 찾아가 무엇을 드실 수 있는지 여쭙고,
+// 거기서 정해집니다.
 
 export default function MenuBoard({
   openMeals,
@@ -257,8 +252,8 @@ export default function MenuBoard({
         setSaving(false)
         alert(
           남음 > 0
-            ? `${이름}이(가) ${남음}개만 남았습니다.\n수량을 줄여 다시 주문해주세요.`
-            : `${이름}이(가) 방금 마감되었습니다.\n다른 메뉴로 담아주세요.`,
+            ? `${이가(이름)} ${남음}개만 남았습니다.\n수량을 줄여 다시 주문해주세요.`
+            : `${이가(이름)} 방금 마감되었습니다.\n다른 메뉴로 담아주세요.`,
         )
         // 남은 수량을 다시 읽어 화면에서도 닫히게 합니다
         await refreshBoard()
@@ -382,8 +377,7 @@ export default function MenuBoard({
       {/* 주문한 메뉴가 뒤늦게 품절된 경우 */}
       {soldoutOrdered.length > 0 && (
         <div className="soldout-warn">
-          🚫 주문하신 <b>{[...new Set(soldoutOrdered)].join(', ')}</b>이(가) 품절되었습니다. 운영진이
-          대체 메뉴로 안내드립니다.
+          🚫 주문하신 <b>{이가([...new Set(soldoutOrdered)].join(', '))}</b> 품절되었습니다.
         </div>
       )}
 
@@ -423,15 +417,18 @@ export default function MenuBoard({
       )}
 
       {/* 알레르기로 상한이 줄어든 경우 그 이유를 밝혀줌 — 그냥 버튼이 막히면
-          품절이나 오류로 오해하기 때문. 줄어든 몫은 대체 메뉴로 준비됨을 명시 */}
+          품절이나 오류로 오해하기 때문.
+          줄어든 몫을 두고 무엇을 준비한다고 하지는 않습니다. 알레르기를
+          알려주신 것이지 그 끼니를 드시겠다고 하신 것은 아니라, 무엇을
+          드실지는 크루가 찾아가 여쭌 뒤에 정해집니다. */}
       {(mealCap(activeMeal.id) < memberCount ||
         menus.some((m) => menuCap(m.id) < memberCount)) && (
         <div className="diet-cap-hint">
           <b>🥗 알레르기 반영 안내</b>
           {mealCap(activeMeal.id) < memberCount && (
             <p>
-              {activeMeal.label}은 <b>{mealCap(activeMeal.id)}개</b>까지 담을 수 있어요. 남은{' '}
-              {memberCount - mealCap(activeMeal.id)}명분은 <b>대체 메뉴로 따로 준비</b>됩니다.
+              {activeMeal.label}은 <b>{mealCap(activeMeal.id)}개</b>까지 담을 수 있어요.{' '}
+              알레르기가 있는 인원에게는 <b>식음 운영 크루가 찾아갈 거예요.</b>
             </p>
           )}
           {menus
