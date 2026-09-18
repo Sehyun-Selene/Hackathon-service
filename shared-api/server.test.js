@@ -18,17 +18,32 @@ async function post(path, body) {
   return { status: response.status, body: await response.json() }
 }
 
-async function waitUntilReady() {
-  for (let i = 0; i < 50; i += 1) {
+// 서버가 포트를 열 때까지 기다립니다. 될 때까지 눌러보는 방식이라 빠른
+// 기계에서는 첫 번째 시도에 끝납니다.
+//
+// 한도를 넉넉히(10초) 둡니다. 예전에는 2.5초였는데, 빌드를 함께 돌리는
+// 등으로 기계가 바쁠 때 그 안에 못 떠서 테스트가 실패하는 일이 있었습니다
+// — 코드가 틀린 것이 아니라 기다림이 짧았던 것뿐입니다.
+const READY_TRIES = 100
+const READY_GAP_MS = 100
+
+async function waitForHealth(base, label) {
+  for (let i = 0; i < READY_TRIES; i += 1) {
     try {
-      const response = await fetch(BASE + '/health')
+      const response = await fetch(base + '/health')
       if (response.ok) return
     } catch {
-      // 프로세스가 포트를 열 때까지 잠시 기다립니다.
+      // 아직 포트가 안 열렸습니다.
     }
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, READY_GAP_MS))
   }
-  throw new Error('test server did not become ready')
+  throw new Error(
+    `${label} 서버가 ${(READY_TRIES * READY_GAP_MS) / 1000}초 안에 뜨지 않았습니다`,
+  )
+}
+
+async function waitUntilReady() {
+  await waitForHealth(BASE, '테스트')
 }
 
 before(async () => {
@@ -190,15 +205,9 @@ test('Redis 쓰기 배치가 동시 팀 등록의 최신 104팀 목록을 보존
 
   const serviceBase = `http://127.0.0.1:${servicePort}`
   try {
-    for (let index = 0; index < 50; index += 1) {
-      try {
-        const response = await fetch(serviceBase + '/health')
-        if (response.ok) break
-      } catch {
-        // 포트가 열릴 때까지 재시도합니다.
-      }
-      await new Promise((resolve) => setTimeout(resolve, 50))
-    }
+    // 안 떴는데 그냥 진행하면, 뜨지 못한 것이 '배치가 어긋났다' 는 엉뚱한
+    // 실패로 둔갑합니다. 못 뜨면 못 떴다고 말하고 멈춥니다.
+    await waitForHealth(serviceBase, '가짜 Redis')
 
     const responses = await Promise.all(
       Array.from({ length: 104 }, (_, index) =>

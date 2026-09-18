@@ -48,9 +48,13 @@ const num = (name, fallback) => {
   const n = parseInt(raw, 10)
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
-// 켤 때 권하는 값: 미처리 20~25분 (메이트가 한 팀에 머무는 시간이 15분이라,
-// 그보다 짧게 잡으면 정상적으로 멘토링 중인 담당자를 계속 재촉하게 됩니다),
-// 총괄 알림 25분, 처리중 장기 20분.
+// 켤 때 권하는 값: 미처리 30분, 총괄 알림 25분, 처리중 장기 20분.
+//
+// 미처리를 30분으로 둔 이유: 메이트가 한 팀에 머무는 시간이 15분이라 그보다
+// 짧게 잡으면 정상적으로 멘토링 중인 담당자를 계속 재촉하게 됩니다. 한편
+// 리테일 조는 알림을 받는 사람이 조장 둘뿐이라(config.groupLead) 놓쳤을 때
+// 메울 곳이 없습니다. 최대한 조용하되 놓친 것은 반드시 드러나는 선으로
+// 30분을 잡았습니다.
 const UNCLAIMED_MIN = num('ALERT_UNCLAIMED_MIN', 0)
 const LEAD_MIN = num('ALERT_LEAD_MIN', 0)
 const LEAD_REPEAT_MIN = num('ALERT_LEAD_REPEAT_MIN', 10)
