@@ -17,16 +17,14 @@ const fmtMD = (iso) => {
 // soloRule: '팀에서 한 명만 대표로 주문해주세요'를 이 목록에 넣을지.
 // 주문 가능한 화면에서는 이 줄만 목록 위로 따로 올려 두므로(담기 전에
 // 읽어야 효과가 있어서), 목록에서는 빼서 같은 화면에 두 번 나오지 않게 합니다.
-export default function OrderNotice({ className = '', soloRule = true }) {
+// bare: 접이식 틀(NoticeToggle) 안에 들어갈 때. 제목과 상자는 틀이 이미
+// 그리고 있어, 목록만 내놓습니다 — 두 번 겹치면 제목이 두 줄로 보입니다.
+export default function OrderNotice({ className = '', soloRule = true, bare = false }) {
   // 모든 식사가 같은 주문 구간을 공유하면 한 문장으로 묶어 안내
   const windows = [...new Set(MEALS.map((m) => `${m.orderStart}~${m.orderEnd}`))]
   const shared = windows.length === 1 ? MEALS[0] : null
-  return (
-    <div className={`notice-panel order-notice${className ? ` ${className}` : ''}`}>
-      {/* 제목은 호출 화면의 '📌 호출 전에 꼭 읽어보세요!'와 같은 형태 —
-          이모지를 별도 요소로 두면 글자보다 커져 두 탭이 달라 보입니다 */}
-      <b className="notice-panel-title">📢 공지사항</b>
-      <ul className="notice-panel-list">
+  const 목록 = (
+    <ul className="notice-panel-list">
         {shared ? (
           <li>
             {MEALS.map((m) => m.shortLabel || m.label).join('과 ')}은{' '}
@@ -54,7 +52,15 @@ export default function OrderNotice({ className = '', soloRule = true }) {
             <b>팀에서 한 명만 대표로 주문해주세요.</b>
           </li>
         )}
-      </ul>
+    </ul>
+  )
+  if (bare) return 목록
+  return (
+    <div className={`notice-panel order-notice${className ? ` ${className}` : ''}`}>
+      {/* 제목은 호출 화면의 '📌 호출 전에 꼭 읽어보세요!'와 같은 형태 —
+          이모지를 별도 요소로 두면 글자보다 커져 두 탭이 달라 보입니다 */}
+      <b className="notice-panel-title">📢 공지사항</b>
+      {목록}
     </div>
   )
 }

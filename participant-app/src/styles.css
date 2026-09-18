@@ -207,6 +207,7 @@ body {
 /* 면(surface) — 화면 위에 얹히는 모든 상자의 기본형 */
 .card,
 .notice-panel,
+.notice-toggle,
 .guide-block,
 .allergy-person-block,
 .served-meal,
@@ -260,6 +261,27 @@ body {
    (예전에는 공지 15px / 호출 13.5px 로 갈려 두 탭이 달라 보였습니다) */
 .notice-panel,
 .call-guide { padding: 13px 15px; }
+/* 접이식 안내 — 여백은 제목 줄(summary)과 본문이 나눠 가집니다. 상자에
+   한꺼번에 주면 접었을 때 빈 아래쪽이 남아 눌러도 안 닫힌 것처럼 보입니다. */
+.notice-toggle { padding: 0; margin: 0 0 12px; }
+.notice-toggle-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 15px; cursor: pointer; list-style: none;
+}
+.notice-toggle-head::-webkit-details-marker { display: none; }
+.notice-toggle-head .notice-panel-title { margin: 0; flex: 1; min-width: 0; }
+/* 펴면 뒤집힙니다 — 접힌 상태에서 아래를 가리켜 '더 있다'를 알립니다 */
+.notice-toggle-mark {
+  flex: none; width: 22px; height: 22px; border-radius: 999px;
+  display: grid; place-items: center;
+  background: var(--po-bg-sunken); color: var(--po-text-secondary);
+  transition: transform var(--po-dur-lit) var(--po-ease-lit);
+}
+.notice-toggle-mark svg { display: block; }
+.notice-toggle[open] .notice-toggle-mark { transform: rotate(180deg); }
+.notice-toggle > :not(summary) { padding: 0 15px 13px; }
+/* 호출 화면 안내도 같은 틀을 씁니다 — 두 탭이 같은 화면처럼 보여야 합니다 */
+.notice-toggle.call-guide { padding: 0; }
 .notice-panel-title,
 .call-guide-title {
   display: block; margin-bottom: 8px;
@@ -754,8 +776,8 @@ body {
    카드 없이 배경 위에 바로 얹습니다. 메뉴 카드가 이미 흰 카드라서 그 위에
    또 흰 카드를 두면 무엇이 목록이고 무엇이 안내인지 구분이 안 됩니다. */
 .notice-panel.order-notice {
-  /* 여백(padding)은 공통 규칙을 그대로 씁니다 — 호출 화면 안내와 왼쪽
-     시작점이 같아야 두 탭이 같은 화면처럼 보입니다. 상자만 벗깁니다. */
+  /* 주문 불가 화면(지금은 주문 시간이 아닙니다)에서만 쓰입니다 — 그 화면은
+     안내가 본문이라 접지 않고 상자도 벗깁니다. */
   margin: 10px 0 0;
   border: 0; border-radius: 0; background: transparent; box-shadow: none;
 }
@@ -1172,7 +1194,6 @@ body {
    한 화면에 다 들어오도록 본문보다 한 단계 작게 둡니다. 다섯 항목을
    15px/24로 두면 마지막 두 줄이 화면 밖으로 밀립니다. */
 /* 크기·간격은 위 안내 패널 공통 규칙을 그대로 씁니다 — 여기서는 위치만 */
-.call-guide-detail { margin: 10px 0 0; }
 
 /* 지난 호출 내역 — 남은 호출 알약을 눌러 여는 시트 */
 .call-log-sheet-sub {
@@ -1621,13 +1642,13 @@ body {
 .links-guide-btn {
   display: flex; align-items: center; gap: 12px; width: 100%;
   margin-top: 18px; padding: 14px 15px;
-  border: 1px solid var(--po-border); border-radius: var(--po-radius-card);
+  border: 1px solid var(--edge-accent); border-radius: var(--po-radius-card);
   background: var(--po-bg-surface); color: var(--po-text-primary);
   box-shadow: var(--po-card-shadow);
   font: inherit; text-align: left; cursor: pointer;
   transition: transform 120ms, border-color 120ms;
 }
-.links-guide-btn:active { transform: translateY(1px); border-color: var(--edge-accent); }
+.links-guide-btn:active { transform: translateY(1px); border-color: var(--po-accent); }
 .links-guide-icon {
   flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px;
   display: flex; align-items: center; justify-content: center;

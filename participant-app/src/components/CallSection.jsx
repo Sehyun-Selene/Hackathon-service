@@ -3,6 +3,7 @@ import { CALL_LIMIT_PER_TEAM, TEAM_DASHBOARD } from '../config.js'
 import { now, fmtAgo, fmtHM } from '../lib/time.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 import LanternIcon from './LanternIcon.jsx'
+import NoticeToggle from './NoticeToggle.jsx'
 import CallLogSheet from './CallLogSheet.jsx'
 
 const STATUS_LABEL = { waiting: '대기중', in_progress: '처리중', done: '완료' }
@@ -130,6 +131,31 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
         {/* 팀 버튼은 제목 옆에 붙입니다 — 탭 줄에는 자리가 없습니다 */}
         {teamButton}
       </div>
+      {/* 호출하기 전에 읽어야 하는 내용이라 맨 위에 둡니다. 전에는 화면
+          아래에 있어서 끝까지 내려야 나왔습니다 — 읽고 나서 부르라고
+          해놓고 정작 부른 뒤에야 보이는 자리였습니다.
+          한 번 접으면 그 상태를 기억합니다(NoticeToggle). */}
+      <NoticeToggle
+        storageKey="torder-call-guide"
+        title="📌 호출 전에 꼭 읽어보세요!"
+        className="call-guide"
+      >
+        <ul className="call-guide-list">
+          <li>간단한 문제는 우리 팀의 플레이 메이트의 도움을 먼저 받아보세요.</li>
+          <li>마스터 메이트가 머무는 시간은 팀당 15분입니다.</li>
+          <li>
+            시간 내 효과적인 멘토링을 위해 아래 문장을 작성하시고, 불러주세요.
+            <span className="call-guide-quote">
+              “문제가 A라고 봐서 B를 했고, 결과가 C일줄 알았는데 D가 됐어요.”
+            </span>
+          </li>
+          <li>다른 팀 멘토링을 하고 있는 경우, 대기시간이 발생할 수 있습니다.</li>
+          <li>
+            호출은 팀당 <b>{CALL_LIMIT_PER_TEAM}회</b>까지 가능하며, 모두 사용하면 호출
+            버튼이 비활성화됩니다.
+          </li>
+        </ul>
+      </NoticeToggle>
       <div className="call-quota-row">
         <span className={`call-quota${limitReached ? ' quota-over' : ''}`}>
           사용 {callCount}회 / 남은 횟수 {remaining}회
@@ -268,25 +294,6 @@ export default function CallSection({ callData, callCount, onCall, teamButton = 
         </div>
       )}
 
-      {/* 핵심 상태와 호출 버튼을 먼저 보여준 뒤, 상세 규칙을 이어서 읽게 합니다. */}
-      <div className="call-guide call-guide-detail">
-        <b className="call-guide-title">📌 호출 전에 꼭 읽어보세요!</b>
-        <ul className="call-guide-list">
-          <li>간단한 문제는 우리 팀의 플레이 메이트의 도움을 먼저 받아보세요.</li>
-          <li>마스터 메이트가 머무는 시간은 팀당 15분입니다.</li>
-          <li>
-            시간 내 효과적인 멘토링을 위해 아래 문장을 작성하시고, 불러주세요.
-            <span className="call-guide-quote">
-              “문제가 A라고 봐서 B를 했고, 결과가 C일줄 알았는데 D가 됐어요.”
-            </span>
-          </li>
-          <li>다른 팀 멘토링을 하고 있는 경우, 대기시간이 발생할 수 있습니다.</li>
-          <li>
-            호출은 팀당 <b>{CALL_LIMIT_PER_TEAM}회</b>까지 가능하며, 모두 사용하면 호출
-            버튼이 비활성화됩니다.
-          </li>
-        </ul>
-      </div>
 
       {/* 첫 호출 전 확인 — 보드를 쓰지 않으면 호출 자체가 안 되는 규칙이라,
           호출 사유를 다 적고 나서 되돌리는 것보다 먼저 묻는 편이 낫습니다 */}

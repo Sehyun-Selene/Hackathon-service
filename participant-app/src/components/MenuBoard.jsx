@@ -6,6 +6,7 @@ import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
 import LanternIcon from './LanternIcon.jsx'
 import OrderNotice from './OrderNotice.jsx'
+import NoticeToggle from './NoticeToggle.jsx'
 
 // 현재 시각이 주문 가능 시간대면 메뉴판, 아니면 "다음 주문 가능 시간" 안내.
 // 여러 식사가 같은 주문 구간을 공유하면(저녁·야식·아침) 식사 탭으로 전환하며
@@ -128,8 +129,11 @@ export default function MenuBoard({
             <p className="closed-hint">마스터 메이트 호출은 언제든 가능합니다</p>
           )}
         </div>
-        {/* 상태를 먼저 알리고, 규칙은 그 아래에서 읽게 합니다 */}
-        <OrderNotice />
+        {/* 주문 화면과 같은 모양의 접이식입니다 — 두 화면을 오갈 때 같은
+            자리에 같은 것이 있어야 합니다. 접힘 여부도 함께 기억합니다. */}
+        <NoticeToggle storageKey="torder-order-notice" title="📢 공지사항">
+          <OrderNotice bare />
+        </NoticeToggle>
       </section>
     )
   }
@@ -390,6 +394,14 @@ export default function MenuBoard({
         팀에서 한 명만 대표로 주문해주세요.
       </p>
 
+      {/* 담기 전에 읽어야 하는 내용이라 메뉴 위에 둡니다. 전에는 목록
+          아래에 있어서 주문을 마친 사람만 보게 되는 자리였습니다.
+          펼친 채로 두면 메뉴가 한 화면 아래로 밀리므로, 한 번 읽고
+          접으면 그 상태를 기억합니다(NoticeToggle). */}
+      <NoticeToggle storageKey="torder-order-notice" title="📢 공지사항">
+        <OrderNotice soloRule={false} bare />
+      </NoticeToggle>
+
       {/* 식사 탭 (저녁/야식/아침처럼 여러 식사를 함께 주문할 때) */}
       {multiMeal && (
         <div className="cat-tabs">
@@ -527,10 +539,6 @@ export default function MenuBoard({
         </p>
       )}
 
-      {/* 공지사항은 메뉴 목록 아래에 둡니다 — 호출 화면의 '호출 전에 꼭
-          읽어보세요'와 같은 자리·같은 결입니다. 위에 카드로 두면 메뉴가
-          한 화면 아래로 밀려, 주문하러 온 사람이 매번 지나쳐야 합니다. */}
-      <OrderNotice soloRule={false} />
 
       {/* 하단 고정 바 — 누르면 장바구니 시트 열림 (티오더식) */}
       <button
