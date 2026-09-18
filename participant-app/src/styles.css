@@ -1668,7 +1668,24 @@ body {
   display: flex; flex-direction: column;
 }
 .event-sheet .team-sheet-head { margin: 0 16px 12px; }
+/* 제목 + 버튼 셋이 한 줄입니다. 그냥 두면 좁은 폰에서 제목이 먼저 눌려
+   '이벤트 / 안내' 로 접힙니다 — 버튼은 글자 폭 그대로라 제목만 줄어듭니다.
+   제목을 안 접히게 두고, 대신 버튼 사이·안쪽 여백을 좁혀 자리를 냅니다. */
+.event-sheet .team-sheet-head h2 { white-space: nowrap; }
 .event-sheet-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+/* 안쪽 페이지에서 첫 화면으로. 셋이 한 줄에 서야 해서 셋 다 같은 높이·
+   같은 모양으로 두고, 이것만 테두리를 옅게 해 '새 창' 보다 한 단 뒤로
+   물립니다 — 자주 쓰는 건 새 창이 아니라 이쪽이지만, 화면을 떠나는
+   버튼(새 창)이 더 또렷해야 잘못 누르지 않습니다. */
+.event-sheet-home {
+  min-height: 40px; padding: 6px 11px;
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--po-border); border-radius: var(--po-radius-pill);
+  background: transparent; color: var(--po-text-secondary);
+  font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap;
+  cursor: pointer;
+}
+.event-sheet-home:active { background: var(--po-bg-sunken); }
 .event-sheet-out {
   min-height: 40px; padding: 6px 12px;
   display: inline-flex; align-items: center;
@@ -1689,6 +1706,13 @@ body {
   background: var(--po-bg-surface);
   color: var(--po-text-secondary);
   font-size: var(--po-body-size); line-height: var(--po-body-line);
+}
+@media (max-width: 400px) {
+  .event-sheet .team-sheet-head { margin: 0 12px 12px; gap: 8px; }
+  .event-sheet-actions { gap: 5px; }
+  .event-sheet-home { padding: 6px 8px; gap: 3px; }
+  .event-sheet-out { padding: 6px 9px; }
+  .event-sheet .team-sheet-close { min-width: 40px; padding: 6px 9px; }
 }
 
 /* ============================================================
