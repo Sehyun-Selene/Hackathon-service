@@ -787,7 +787,8 @@ const server = http.createServer(async (req, res) => {
   // 같은 순간에 참가자가 새 호출을 추가해도 서로를 지우지 않습니다.
   if (req.method === 'POST' && url.pathname === '/api/call-status') {
     try {
-      const { teamId, callId, status, handledBy, handledById, expectedStatus } = await readBody(req)
+      const { teamId, callId, status, handledBy, handledById, expectedStatus, solveNote } =
+        await readBody(req)
       const allowed = ['waiting', 'in_progress', 'done']
       if (!validTeamId(teamId) || !callId || !allowed.includes(status)) {
         sendJson(res, 400, { error: 'teamId, callId, status required' })
@@ -825,6 +826,10 @@ const server = http.createServer(async (req, res) => {
         call.handledBy = call.handledBy || handledBy || ''
         call.handledById = call.handledById || handledById || ''
         call.doneAt = stamp
+        // 메이트가 남긴 메모. 안 적고 완료해도 되므로, 비어 있으면 칸을
+        // 만들지 않습니다 — 빈 값이 시트의 옛 메모를 지우지 않게.
+        const note = String(solveNote || '').trim().slice(0, 500)
+        if (note) call.solveNote = note
       }
       const nextCalls = [...calls]
       nextCalls[index] = call

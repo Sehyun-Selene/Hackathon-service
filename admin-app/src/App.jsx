@@ -316,11 +316,11 @@ export default function App() {
 
   // 호출 상태 변경: 대기중 → 처리중(담당 마스터 메이트 기록) → 완료
   const updateCallStatus = useCallback(
-    async (teamId, callId, nextStatus, previousCall) => {
+    async (teamId, callId, nextStatus, previousCall, note) => {
       try {
         // 그 호출 하나만 서버에서 고칩니다. 목록 전체를 덮어쓰면 같은 순간에
         // 참가자가 넣은 새 호출이 사라질 수 있습니다.
-        await callStatusSet(teamId, callId, nextStatus, coach)
+        await callStatusSet(teamId, callId, nextStatus, coach, note)
       } catch (err) {
         if (err?.code === 'status conflict') {
           alert('다른 마스터 메이트가 먼저 상태를 변경했습니다.\n최신 상태를 다시 불러옵니다.')

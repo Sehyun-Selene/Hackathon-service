@@ -1,6 +1,7 @@
 import { teamLabel } from '../config.js'
 import { fmtTimeOnly } from '../lib/time.js'
 import Icon from './Icon.jsx'
+import SolveNote from './SolveNote.jsx'
 
 // 노트북에서만 쓰는 오른쪽 상세 칸.
 //
@@ -11,7 +12,7 @@ import Icon from './Icon.jsx'
 //
 // 걷다가 오탭하는 문제는 노트북에 없으므로, 폰에서 목록 카드에서 버튼을
 // 걷어냈던 이유도 여기서는 적용되지 않습니다.
-export default function CallDetail({ call, coach, canControl, onUpdateStatus, agoText, nowMs }) {
+export default function CallDetail({ call, coach, canControl, onUpdateStatus, agoText, nowMs, note, onNoteChange }) {
   if (!call) {
     return (
       <aside className="detail detail-empty">
@@ -62,6 +63,12 @@ export default function CallDetail({ call, coach, canControl, onUpdateStatus, ag
         {call.reason || '사유가 작성되지 않았습니다'}
       </div>
 
+      {/* 완료를 누르기 전에 적는 자리 — 누른 뒤에는 이 호출이 목록에서
+          사라져 적을 곳이 없어집니다. */}
+      {call.status !== 'waiting' && canControl && (
+        <SolveNote id={`detail-note-${call.id}`} value={note} onChange={onNoteChange} />
+      )}
+
       <div className="detail-actions">
         {call.status === 'waiting' ? (
           <button
@@ -89,7 +96,7 @@ export default function CallDetail({ call, coach, canControl, onUpdateStatus, ag
             <button
               type="button"
               className="dock-btn done"
-              onClick={() => onUpdateStatus(call.team, call.id, 'done')}
+              onClick={() => onUpdateStatus(call.team, call.id, 'done', null, note)}
             >
               <Icon name="check" size={19} />
               완료 처리

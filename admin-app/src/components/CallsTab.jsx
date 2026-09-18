@@ -13,6 +13,7 @@ import {
 import { fmtTimeOnly, fmtElapsed as agoText } from '../lib/time.js'
 import { isHandledByMe } from '../lib/storage.js'
 import Icon from './Icon.jsx'
+import SolveNote from './SolveNote.jsx'
 import AdminDock, { DockHint } from './AdminDock.jsx'
 import CallDetail from './CallDetail.jsx'
 import { useMediaQuery } from '../lib/useMediaQuery.js'
@@ -51,6 +52,9 @@ export default function CallsTab({
   // undefined = 아직 아무것도 고르지 않음(내가 잡은 호출이 자동으로 잡힘)
   // null      = 사용자가 직접 접었음
   const [selectedId, setSelectedId] = useState(undefined)
+  // 완료할 때 남기는 메모. 고른 호출이 바뀌면 비웁니다 — 앞 호출에 적던
+  // 글이 따라가면 엉뚱한 줄에 저장됩니다.
+  const [note, setNote] = useState('')
 
   // "내 담당"은 이름이 아니라 배정으로 가립니다. 이름이 겹치는 분들이
   // 있고(이상윤 두 분), 리테일 조처럼 한 구간을 여럿이 함께 맡으면
@@ -116,6 +120,11 @@ export default function CallsTab({
     // 호출이 있어도 아래 바가 비어 있습니다.
     if (selectedId && !active.some((c) => c.id === selectedId)) setSelectedId(undefined)
   }, [selectedId, active])
+
+  // 고른 호출이 바뀌면(또는 완료돼 목록에서 빠지면) 메모를 비웁니다.
+  useEffect(() => {
+    setNote('')
+  }, [selected?.id])
 
   const nowMs = Date.now()
   const canControl = (c) => isHandledByMe(c, coach) || !!myAssignment?.callManager
@@ -352,6 +361,8 @@ export default function CallsTab({
           onUpdateStatus={onUpdateStatus}
           agoText={agoText}
           nowMs={nowMs}
+          note={note}
+          onNoteChange={setNote}
         />
       )}
       </div>
@@ -380,6 +391,12 @@ export default function CallsTab({
         {!selected ? (
           <DockHint>호출을 선택하면 여기서 처리합니다</DockHint>
         ) : (
+          <>
+            {/* 완료를 누르기 전에 적는 자리 — 누른 뒤에는 이 호출이 목록에서
+                사라져 적을 곳이 없어집니다. */}
+            {selected.status !== 'waiting' && canControl(selected) && (
+              <SolveNote id={`dock-note-${selected.id}`} value={note} onChange={setNote} />
+            )}
             <div className="dock-buttons">
               {selected.status === 'waiting' ? (
                 <button
@@ -407,7 +424,7 @@ export default function CallsTab({
                   <button
                     type="button"
                     className="dock-btn done"
-                    onClick={() => onUpdateStatus(selected.team, selected.id, 'done')}
+                    onClick={() => onUpdateStatus(selected.team, selected.id, 'done', null, note)}
                   >
                     <Icon name="check" size={19} />
                     완료 처리
@@ -419,6 +436,7 @@ export default function CallsTab({
                 </DockHint>
               )}
             </div>
+          </>
         )}
       </AdminDock>
       )}

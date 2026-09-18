@@ -62,6 +62,10 @@ function kst(ms) {
 // 소속(affiliation)은 계열사 이름입니다. 개인 지원자끼리 꾸린 팀은 회사가
 // 여럿이라 '계열사 혼합', 계열사가 아닌 곳은 '외부사/관계사' 로 들어옵니다.
 //
+// solveNote 는 완료할 때 메이트가 남기는 메모입니다. 사유가 "무엇이 막혔나"
+// 라면 이건 "무엇을 어떻게 풀었나" 라서, 둘이 한 줄에 나란히 있어야 회고에서
+// 쓸 수 있습니다.
+//
 // 처리 시작·완료 시각과 상태는 보내지 않습니다. 메이트가 그 자리에서 처리하고
 // 끝나는 일이라 기록으로 남길 값이 아니고, 회고에 쓰는 건 "무엇을 물었나"
 // (사유)와 "누가 갔나"(처리자)입니다. 리그도 뺐습니다 — 호출은 필드리그만
@@ -79,6 +83,7 @@ function toRow(call) {
     reason: String(call.reason || ''),
     assignedName: String(call.assignedName || ''),
     handledBy: String(call.handledBy || ''),
+    solveNote: String(call.solveNote || ''),
   }
 }
 

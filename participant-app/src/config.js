@@ -1502,33 +1502,24 @@ export function guideMustItems(teamId) {
 //   orderWindowLabel()  '9/21(월) 13:30부터 16:00까지'  이용 안내의 문장용
 //   orderWindowShort()  '9/21(월) 13:30–16:00'          좁은 자리(메뉴판 태그 옆)용
 //
-// 창이 하루를 넘기면 끝나는 날짜도 함께 적습니다 —
-//   '9/18(금) 16:00부터 9/19(토) 23:59까지'
-// 날짜를 앞에만 적으면 '9/18 16:00부터 23:59까지' 로 읽혀 같은 날 마감하는
-// 것처럼 보입니다. 하루 안에 열고 닫는 창(해커톤 당일)에서는 예전처럼
-// 한 번만 적습니다.
-//
 // 시간을 글자로 박아두지 않는 이유: 주문 창이 바뀌면 화면에만 옛 시간이
 // 남습니다. MEALS 를 고치면 두 곳이 함께 따라옵니다.
 function orderWindowParts() {
   const start = new Date(MEALS[0].orderStart)
   const end = new Date(MEALS[0].orderEnd)
   const days = ['일', '월', '화', '수', '목', '금', '토']
-  const md = (d) => `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`
   const hm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   return {
-    day: md(start),
+    day: `${start.getMonth() + 1}/${start.getDate()}(${days[start.getDay()]})`,
     from: hm(start),
     to: hm(end),
-    // 같은 날이면 빈 문자열 — 붙여 써도 문장이 그대로입니다
-    endDay: md(start) === md(end) ? '' : md(end),
   }
 }
 function orderWindowLabel() {
-  const { day, from, to, endDay } = orderWindowParts()
-  return `${day} ${from}부터 ${endDay ? `${endDay} ` : ''}${to}까지`
+  const { day, from, to } = orderWindowParts()
+  return `${day} ${from}부터 ${to}까지`
 }
 export function orderWindowShort() {
-  const { day, from, to, endDay } = orderWindowParts()
-  return `${day} ${from}–${endDay ? `${endDay} ` : ''}${to}`
+  const { day, from, to } = orderWindowParts()
+  return `${day} ${from}–${to}`
 }

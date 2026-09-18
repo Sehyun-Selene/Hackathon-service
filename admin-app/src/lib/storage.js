@@ -163,8 +163,11 @@ export async function coachUpsert(id, name, crewId) {
 // 호출 상태 변경 — 그 호출 하나만 서버에서 고칩니다. 목록 전체를 덮어쓰지
 // 않으므로 같은 순간에 참가자가 새 호출을 넣어도 서로 지워지지 않습니다.
 // 이미 사라진 호출이면 err.code === 'call not found'.
-export async function callStatusSet(teamId, callId, status, coach) {
+// solveNote: 완료할 때 메이트가 남기는 메모. 완료가 아닌 상태 변경에는
+// 실어 보내지 않습니다 — 처리 시작·되돌리기에는 적을 자리가 없습니다.
+export async function callStatusSet(teamId, callId, status, coach, solveNote) {
   const expectedStatus = status === 'in_progress' ? 'waiting' : 'in_progress'
+  const note = status === 'done' ? String(solveNote || '').trim() : ''
   const payload = {
     teamId,
     callId,
@@ -172,6 +175,7 @@ export async function callStatusSet(teamId, callId, status, coach) {
     expectedStatus,
     handledBy: coach?.name || '',
     handledById: coach?.id || '',
+    solveNote: note,
   }
   if (!API_BASE_URL) {
     const data = (await storageGet(callKey(teamId))) || { team: teamId, calls: [] }
@@ -187,6 +191,7 @@ export async function callStatusSet(teamId, callId, status, coach) {
       call.handledBy = call.handledBy || payload.handledBy
       call.handledById = call.handledById || payload.handledById
       call.doneAt = Date.now()
+      if (note) call.solveNote = note
     }
     await storageSet(callKey(teamId), data)
     return { ok: true }
@@ -208,6 +213,7 @@ export async function callStatusSet(teamId, callId, status, coach) {
       call.handledBy = call.handledBy || payload.handledBy
       call.handledById = call.handledById || payload.handledById
       call.doneAt = Date.now()
+      if (note) call.solveNote = note
     }
     await storageSet(callKey(teamId), data)
     return { ok: true, legacy: true }

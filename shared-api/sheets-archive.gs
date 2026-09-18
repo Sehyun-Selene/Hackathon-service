@@ -32,6 +32,11 @@
  *  배포 → 배포 관리 → 연필(수정) → 버전 '새 버전' → 배포.
  *  '새 배포'를 누르면 주소가 바뀌어 서버가 옛 주소로 계속 보냅니다.
  *
+ *  ── 칸을 더하거나 뺄 때 ───────────────────────────────────────────
+ *  HEADERS 만 고치면 됩니다. 제목 줄이 지금 구성과 다르면 스크립트가 다시
+ *  씁니다. 이미 쌓인 줄은 건드리지 않으니, 칸 순서를 바꿨다면 옛 줄은
+ *  지우고 새로 쌓는 편이 맞습니다.
+ *
  *  ── 동작 ──────────────────────────────────────────────────────────
  *  같은 호출 ID가 이미 있으면 그 줄을 갱신하고, 없으면 새 줄을 답니다.
  *  덕분에 서버가 재시도해도 줄이 겹치지 않고, 완료 처리가 같은 줄의
@@ -64,11 +69,20 @@ var HEADERS = [
   '호출 사유',
   '담당 마스터 메이트',
   '처리자',
+  '해결 메모',
   '호출 ID',
 ]
 
+// 칸 번호는 이름으로 찾습니다. 번호를 글자로 박아두면 칸을 하나 더할 때마다
+// 엉뚱한 칸에 값이 들어갑니다 — 실제로 '처리자'를 HEADERS.length - 1 로
+// 잡아두었다가 이 칸을 더하면서 어긋날 뻔했습니다.
+function colOf(name) {
+  return HEADERS.indexOf(name) + 1
+}
+
 // 호출 ID 열(마지막)은 같은 줄을 다시 찾을 때만 씁니다 — 완료 처리 때
-// '처리자'를 채우는 열쇠입니다. 사람이 읽을 일이 없어 맨 끝이자 숨김입니다.
+// 그 줄을 찾아 '처리자'와 '해결 메모'를 채우는 열쇠입니다. 사람이 읽을
+// 일이 없어 맨 끝이자 숨김입니다.
 var ID_COL = HEADERS.length
 
 function doPost(e) {
@@ -98,13 +112,16 @@ function doPost(e) {
         row.reason || '',
         row.assignedName || '',
         row.handledBy || '',
+        row.solveNote || '',
         row.id,
       ]
       var at = findRowById(sheet, row.id)
       if (at > 0) {
-        // 이미 있는 줄이면 '처리자'만 채웁니다. 나머지는 호출될 때 적힌
-        // 그대로 두어야 합니다 — 뒤늦게 온 값이 빈칸이면 지워버립니다.
-        if (row.handledBy) sheet.getRange(at, HEADERS.length - 1).setValue(row.handledBy)
+        // 이미 있는 줄이면 완료 처리로 들어온 값만 채웁니다. 나머지는 호출될
+        // 때 적힌 그대로 두어야 합니다 — 뒤늦게 온 값이 빈칸이면 지워버립니다.
+        // 그래서 빈 값은 건너뜁니다 (메모를 안 적고 완료해도 됩니다).
+        if (row.handledBy) sheet.getRange(at, colOf('처리자')).setValue(row.handledBy)
+        if (row.solveNote) sheet.getRange(at, colOf('해결 메모')).setValue(row.solveNote)
         return json({ ok: true, updated: at })
       }
       sheet.appendRow(values)
@@ -188,9 +205,12 @@ function setUpSheet(sheet) {
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
     sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold')
     sheet.setFrozenRows(1)
-    // 호출 사유는 길어서 기본 폭으로는 읽을 수 없습니다.
-    sheet.setColumnWidth(5, 420)
-    sheet.getRange(1, 5, sheet.getMaxRows(), 1).setWrap(true)
+    // 호출 사유와 해결 메모는 길어서 기본 폭으로는 읽을 수 없습니다.
+    var 넓게 = [colOf('호출 사유'), colOf('해결 메모')]
+    for (var w = 0; w < 넓게.length; w++) {
+      sheet.setColumnWidth(넓게[w], 420)
+      sheet.getRange(1, 넓게[w], sheet.getMaxRows(), 1).setWrap(true)
+    }
   }
   return sheet
 }
