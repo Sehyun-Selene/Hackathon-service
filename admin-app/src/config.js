@@ -639,6 +639,9 @@ export function teamSortKey(teamId) {
 //                   ※ 슬랙 프로필 → 더보기 → '멤버 ID 복사'
 //    - callManager: true면 전체 팀의 호출 횟수와 미등록·미주문 재촉 권한을
 //                   가집니다. 담당 구간 없이 전체를 보는 운영 총괄 한 명에게만.
+//    - groupLead  : 그룹 배정에서 슬랙 알림을 받는 사람. 조 안에서 누가
+//                   갈지 정합니다. 표시하지 않으면 그룹 전원이 받습니다
+//                   (아무도 못 받는 것보다 낫기 때문입니다).
 //    - groupId    : 여러 명이 한 구간을 함께 맡을 때의 그룹 (COACH_GROUPS).
 //                   그룹 구성원은 teamNumbers가 모두 같습니다.
 
@@ -646,8 +649,16 @@ export function teamSortKey(teamId) {
 //
 //   기본 배정은 "한 팀에 한 사람"입니다. 누가 갈지 정해져 있어야 서로
 //   미루지 않기 때문입니다. 리테일 조는 반대로 하기로 했습니다 — 팀을
-//   쪼개지 않고 30팀을 13명이 함께 봅니다. 호출 알림이 구성원 전원에게
-//   가고, 그중 손이 빈 사람이 갑니다.
+//   쪼개지 않고 30팀을 13명이 함께 봅니다.
+//
+//   슬랙 알림은 조장(groupLead) 두 분에게만 갑니다. 열세 명을 모두
+//   멘션하면 한 줄이 칩으로 가득 차 정작 읽어야 할 호출 사유가 아래로
+//   밀리고, 30팀의 호출이 열세 대의 폰을 계속 울립니다. 두 분이 보고
+//   조 안에서 누가 갈지 정합니다.
+//
+//   ⚠️ 알림을 받는 사람이 둘뿐이라 놓치면 메울 곳이 없습니다. 미처리
+//     재촉(ALERT_UNCLAIMED_MIN)을 20분쯤으로 켜 두는 것을 권합니다 —
+//     그 시간이 지나면 채널 전체로 올라갑니다.
 //
 //   구현은 단순합니다: 구성원 모두가 같은 teamNumbers를 가집니다. 그래서
 //   관리자 앱의 '내 담당 팀만', 호출 횟수 격자, 완료 이력이 별도 분기 없이
@@ -696,7 +707,7 @@ export const COACH_ASSIGNMENTS = [
   { id: 'mate-19', name: '박일락', nickname: 'Ryan', company: 'GS 엔텍', teamNumbers: ['E-94'], slackUserId: 'U0A70RJ3H6X' },
   { id: 'mate-20', name: '이상윤', nickname: 'Yunie', company: 'GS 엔텍', teamNumbers: ['E-88', 'E-89', 'E-90'], slackUserId: 'U0A73Q3RY8M' },
   { id: 'mate-21', name: '김경미', nickname: 'May', company: 'GS글로벌', teamNumbers: ['E-85', 'E-86', 'E-87'], slackUserId: 'U0A7AQNM476' },
-  { id: 'mate-22', name: '김승철', nickname: 'Ciso', company: 'GS리테일', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0A7565GHGW' },
+  { id: 'mate-22', name: '김승철', nickname: 'Ciso', company: 'GS리테일', groupId: 'retail', groupLead: true, teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0A7565GHGW' },
   { id: 'mate-23', name: '박지훈', nickname: 'Ready', company: 'GS리테일', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0A7L551CNM' },
   { id: 'mate-24', name: '안효진', nickname: 'Mario', company: 'GS리테일', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0A7AQS8F0U' },
   { id: 'mate-25', name: '이재현', nickname: 'L', company: 'GS스포츠', teamNumbers: [], slackUserId: 'U0A6RPQTWUF' },
@@ -731,10 +742,10 @@ export const COACH_ASSIGNMENTS = [
   { id: 'mate-50', name: '한정민', nickname: 'Peter', company: '', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0BUX4U0HG8' },
   { id: 'mate-51', name: '하지희', nickname: 'Lia', company: 'GS스포츠', teamNumbers: ['E-95', 'E-96'], slackUserId: 'U0AHW7U9A57' },
   { id: 'mate-52', name: '장수연', nickname: 'Jen', company: '삼양인터내셔날', teamNumbers: ['E-207'], slackUserId: 'U0A6RPQSR8X' },
-  // 리테일 조 전체를 보는 두 분(Ciso · HONG)입니다. 담당 구간을 따로 나눠
-  // 받지는 않지만 조에 들어오는 호출을 전부 봐야 하는 역할이라, 리테일
-  // 그룹에 함께 넣습니다. HONG은 플레이 메이트 명단에도 있습니다.
-  { id: 'mate-53', name: '권태홍', nickname: 'HONG', company: 'GS리테일', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0A769LAGRY' },
+  // 리테일 조를 이끄는 두 분(Ciso · HONG)입니다. 조에 들어오는 호출을
+  // 전부 보고 누가 갈지 정합니다 — 슬랙 알림은 이 둘에게만 갑니다
+  // (groupLead). HONG은 플레이 메이트 명단에도 있습니다.
+  { id: 'mate-53', name: '권태홍', nickname: 'HONG', company: 'GS리테일', groupId: 'retail', groupLead: true, teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0A769LAGRY' },
 ]
 
 // 3-2. 플레이 메이트 — 팀 곁에서 아이디어를 함께 보는 사람들.
@@ -1263,13 +1274,26 @@ export function getAssignedCoachForTeam(teamId) {
 
 // 그 팀을 맡은 사람 전부. 보통은 한 명이고, 그룹으로 묶인 구간
 // (COACH_GROUPS — 리테일 조)에서는 여럿입니다.
-// 호출 알림은 이 목록 전원에게 갑니다. 한 명만 부르면 그 사람이 자리를
-// 비웠을 때 아무도 모르고, 애초에 "누가 갈지 정하지 않는" 것이 그룹 배정의
-// 취지이기도 합니다.
+// 관리자 화면의 담당 표시·내 담당 팀 보기가 이 목록을 씁니다.
 export function getAssignedCoachesForTeam(teamId) {
   const id = String(teamId || '')
   if (!id) return []
   return COACH_ASSIGNMENTS.filter((c) => c.teamNumbers.includes(id))
+}
+
+// 그중 슬랙 알림을 받을 사람.
+//
+// 한 명이 맡은 구간은 그 사람이 받습니다. 그룹 구간(리테일 조)은 조장만
+// 받습니다 — 열세 명을 모두 멘션하면 멘션 줄이 호출 사유를 밀어내고,
+// 30팀의 호출이 열세 대의 폰을 계속 울립니다. 조장이 보고 조 안에서
+// 누가 갈지 정합니다.
+//
+// 조장을 한 명도 표시하지 않았다면 그룹 전원에게 보냅니다. 설정을 잘못
+// 적어 아무에게도 안 가는 것이 가장 나쁩니다.
+export function getNotifyCoachesForTeam(teamId) {
+  const assigned = getAssignedCoachesForTeam(teamId)
+  const leads = assigned.filter((c) => c.groupLead)
+  return leads.length ? leads : assigned
 }
 
 // 그 팀이 그룹 배정 구간인지 (아니면 null)

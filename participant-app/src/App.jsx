@@ -3,6 +3,7 @@ import {
   PARTICIPANT_POLL_MS,
   DARK_MODE_HOURS,
   getAssignedCoachesForTeam,
+  getNotifyCoachesForTeam,
   coachGroupForTeam,
   leagueAllowsCall,
   imageBoardsFor,
@@ -326,9 +327,10 @@ export default function App() {
   const sendCall = useCallback(
     async (reason, attempt) => {
       // 담당은 한 명일 수도, 그룹(리테일 조)일 수도 있습니다.
-      // 그룹이면 구성원 전원을 실어보내 전원이 알림을 받습니다 —
-      // 누가 갈지 정해두지 않는 것이 그룹 배정의 취지입니다.
+      // 알림은 담당 전원이 아니라 알림 대상에게만 갑니다 — 그룹이면
+      // 조장 두 분입니다 (config.getNotifyCoachesForTeam).
       const assigned = getAssignedCoachesForTeam(teamId)
+      const notify = getNotifyCoachesForTeam(teamId)
       const group = coachGroupForTeam(teamId)
       // 호출 추가 + 횟수 증가 + 제한 검사를 서버가 한 번에 처리합니다.
       // 예전에는 두 번 나눠 써서, 둘째가 실패하면 "전송 실패"라고 안내하면서
@@ -348,8 +350,8 @@ export default function App() {
         affiliation: TEAMS[teamId]?.affiliation || '',
         assignedName: group ? group.label + ' 마스터 메이트' : assigned[0]?.name || '',
         // 예전 서버는 하나만 읽습니다 — 둘 다 실어 보내 어느 쪽이든 동작하게
-        assignedSlackId: assigned[0]?.slackUserId || '',
-        assignedSlackIds: assigned.map((c) => c.slackUserId).filter(Boolean),
+        assignedSlackId: notify[0]?.slackUserId || '',
+        assignedSlackIds: notify.map((c) => c.slackUserId).filter(Boolean),
       })
       await refresh().catch(() => {})
     },

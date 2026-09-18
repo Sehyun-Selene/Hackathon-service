@@ -109,6 +109,23 @@ async function main() {
     errors.push(`호출 총관리자는 정확히 1명이어야 합니다. 현재 ${managers.length}명입니다.`)
   }
 
+  // 그룹 구간의 슬랙 알림은 조장(groupLead)에게만 갑니다. 조장을 한 명도
+  // 표시하지 않으면 코드가 그룹 전원에게 보내도록 되돌리는데(아무에게도 안
+  // 가는 것보다 낫기 때문), 그건 의도한 설정이 아닐 가능성이 큽니다.
+  for (const group of config.COACH_GROUPS || []) {
+    const members = active.filter((coach) => coach.groupId === group.id)
+    const leads = members.filter((coach) => coach.groupLead)
+    if (!members.length) continue
+    if (!leads.length) {
+      warnings.push(
+        `${group.label} 조: 조장(groupLead)이 없어 ${members.length}명 전원이 알림을 받습니다.`,
+      )
+    } else {
+      const 이름 = leads.map((c) => c.nickname || c.name).join(' · ')
+      warnings.push(`${group.label} 조 ${members.length}명 중 알림은 ${이름} 에게만 갑니다.`)
+    }
+  }
+
   if (warnings.length) {
     console.log(`알아두면 되는 것 (${warnings.length}건)\n- ${warnings.join('\n- ')}\n`)
   }
