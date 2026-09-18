@@ -9,6 +9,11 @@ const fmtMD = (iso) => {
   return `[${d.getMonth() + 1}/${d.getDate()}]`
 }
 
+// 주문 창이 하루를 넘기면 끝나는 날짜도 적습니다. 앞에만 적으면
+// '[9/18] 16시부터 23시 59분까지' 가 되어 같은 날 마감하는 것처럼 읽힙니다.
+// 하루 안에 열고 닫으면(해커톤 당일) 빈 문자열이라 문장이 예전 그대로입니다.
+const 마감날 = (start, end) => (fmtMD(start) === fmtMD(end) ? '' : fmtMD(end) + ' ')
+
 // 주문 시간 공지 — 주문 화면과 첫 입장 안내 화면에서 같은 내용을 씁니다.
 // 두 곳이 서로 다른 말을 하지 않도록 한 컴포넌트에서 뽑아 씁니다.
 //
@@ -28,14 +33,16 @@ export default function OrderNotice({ className = '', soloRule = true, bare = fa
         {shared ? (
           <li>
             {MEALS.map((m) => m.shortLabel || m.label).join('과 ')}은{' '}
-            {fmtMD(shared.orderStart)} {fmtHM(shared.orderStart)}부터 {fmtHM(shared.orderEnd)}까지
-            주문합니다.
+            {fmtMD(shared.orderStart)} {fmtHM(shared.orderStart)}부터{' '}
+            {마감날(shared.orderStart, shared.orderEnd)}
+            {fmtHM(shared.orderEnd)}까지 주문합니다.
           </li>
         ) : (
           MEALS.map((m) => (
             <li key={m.id}>
-              {m.label}은 {fmtMD(m.orderStart)} {fmtHM(m.orderStart)}부터 {fmtHM(m.orderEnd)}까지
-              주문합니다.
+              {m.label}은 {fmtMD(m.orderStart)} {fmtHM(m.orderStart)}부터{' '}
+              {마감날(m.orderStart, m.orderEnd)}
+              {fmtHM(m.orderEnd)}까지 주문합니다.
             </li>
           ))
         )}
