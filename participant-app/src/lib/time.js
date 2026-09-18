@@ -3,7 +3,7 @@
 //  - URL에 ?now=2026-09-21T14:30 파라미터를 주면 그 시각 기준으로 동작
 //    (개발/시연용 시간 시뮬레이션 — 오프셋 방식이라 카운트다운도 흐름)
 // =====================================================================
-import { MEALS } from '../config.js'
+import { MEALS, ORDER_PREVIEW_FROM } from '../config.js'
 
 let offsetMs = 0
 // 배포판에서는 무시합니다. 살려두면 참가자가 URL에 ?now=... 를 붙여
@@ -62,9 +62,14 @@ export function fmtAgo(ms) {
 }
 
 // ---- 식사 시간대 판단 (PRD 4.2) ----
+//
+// 여는 시각만 ORDER_PREVIEW_FROM 으로 당길 수 있습니다(테스트용). 안내
+// 문구는 config 의 orderStart 를 그대로 읽으므로 영향을 받지 않습니다 —
+// 참가자에게 공지된 시각과 화면에 적히는 시각이 어긋나면 안 됩니다.
 export function mealTimes(meal) {
+  const 열림 = ORDER_PREVIEW_FROM || meal.orderStart
   return {
-    start: new Date(meal.orderStart).getTime(),
+    start: new Date(열림).getTime(),
     end: new Date(meal.orderEnd).getTime(),
     eat: new Date(meal.eatAt).getTime(),
   }
