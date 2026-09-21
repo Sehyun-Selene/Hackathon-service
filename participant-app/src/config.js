@@ -700,10 +700,10 @@ export const COACH_ASSIGNMENTS = [
   // 들어올 수 없게 되고, 담당이 없어도 다른 팀 호출은 대신 처리할 수 있습니다.
   // 호출 총관리자 — 담당 구간 없이 전체를 봅니다
   { id: 'call-manager', name: '김세현', nickname: 'Selene', company: '(주)GS', teamNumbers: [], slackUserId: 'U0BED7LG02D', callManager: true },
-  { id: 'mate-01', name: '고병현', nickname: 'Joseph', company: '(주)GS', teamNumbers: ['E-97', 'E-98', 'E-99'], slackUserId: 'U095U417XLG' },
+  { id: 'mate-01', name: '고병현', nickname: 'Joseph', company: '(주)GS', teamNumbers: [], slackUserId: 'U095U417XLG' },
   { id: 'mate-02', name: '한만호', nickname: 'Ryan', company: '(주)GS', teamNumbers: ['E-80', 'E-81'], slackUserId: 'U088AHTLTNJ' },
   { id: 'mate-03', name: '이진수', nickname: 'Jin', company: '(주)GS', teamNumbers: ['E-82', 'E-83', 'E-84'], slackUserId: 'U05R86E8HEZ' },
-  { id: 'mate-04', name: '장희원', nickname: 'Eric', company: '(주)GS', teamNumbers: ['E-200', 'E-201', 'E-202', 'G-47'], slackUserId: 'U0AQZ6EHNL8' },
+  { id: 'mate-04', name: '장희원', nickname: 'Eric', company: '(주)GS', teamNumbers: ['E-01', 'E-43', 'E-44', 'E-97', 'E-98', 'E-99', 'G-47'], slackUserId: 'U0AQZ6EHNL8' },
   { id: 'mate-05', name: '김민규', nickname: 'Tomi', company: '(주)GS', teamNumbers: ['E-41', 'E-106', 'E-42'], slackUserId: 'U0BDVTQBSRM' },
   { id: 'mate-06', name: '김진호', nickname: 'Hugo', company: '(주)GS', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0BED7JHMKK' },
   { id: 'mate-07', name: '정승현', nickname: 'Josh', company: '보령LNG터미널', teamNumbers: ['E-03'], slackUserId: 'U0A6RPS2CCX' },
@@ -750,7 +750,7 @@ export const COACH_ASSIGNMENTS = [
   // 최종 배정표에서 새로 마스터 메이트가 된 분들입니다. 김현민·하지희·장수연
   // 님은 플레이 메이트 명단에도 있습니다 — 이번 배정에서 마스터 메이트로
   // 팀을 맡았습니다.
-  { id: 'mate-47', name: '김원희', nickname: 'Ian', company: '', teamNumbers: ['E-01', 'E-43', 'E-44'], slackUserId: 'U08DB572AF4' },
+  { id: 'mate-47', name: '김원희', nickname: 'Ian', company: '', teamNumbers: ['E-200', 'E-201', 'E-202'], slackUserId: 'U08DB572AF4' },
   { id: 'mate-48', name: '김현민', nickname: 'Charlie', company: 'GS에너지', teamNumbers: ['E-02'], slackUserId: 'U0A749Q7TD4' },
   { id: 'mate-49', name: '김헌기', nickname: 'darion', company: '', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0BUW1YCKNC' },
   { id: 'mate-50', name: '한정민', nickname: 'Peter', company: '', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0BUX4U0HG8' },
