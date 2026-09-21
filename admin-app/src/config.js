@@ -1073,7 +1073,7 @@ export const MENUS = {
   midnight: [
     {
       id: 'md-a',
-      stock: 300,
+      stock: 150,
       name: '페퍼로니 딜라이트 (1인)',
       shortLabel: '페퍼로니',
       badges: [],
@@ -1083,7 +1083,7 @@ export const MENUS = {
     },
     {
       id: 'md-b',
-      stock: 300,
+      stock: 150,
       name: '수퍼잭슨 (1인)',
       shortLabel: '수퍼잭슨',
       badges: [],
