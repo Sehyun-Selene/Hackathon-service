@@ -244,8 +244,7 @@ export const WIFI_MAP = {
 export const WIFI_ZONES = [
   { id: 'HoL_01', area: 'Act Site 필드리그', pw: 'hack1131', teams: [
       'E-81', 'E-80', 'E-84', 'E-83', 'E-82', 'E-208', 'E-104', 'E-79',
-      'E-14', 'E-19', 'E-207', 'E-103', 'E-15', 'E-12', 'E-18', 'E-206',
-      'E-102',
+      'E-14', 'E-19', 'E-207', 'E-103', 'E-15', 'E-12', 'E-18', 'E-102',
     ] },
   { id: 'HoL_02', area: 'Act Site 필드리그', pw: 'hack2252', teams: [
       'E-13', 'E-10', 'E-17', 'E-205', 'E-101', 'E-11', 'E-09', 'E-16',
@@ -490,7 +489,6 @@ export const TEAMS = {
   'E-203': { name: "", affiliation: "외부사/관계사", company: "한국전력공사", size: 3 },
   'E-204': { name: "", affiliation: "외부사/관계사", company: "한국표준과학연구원", size: 2 },
   'E-205': { name: "", affiliation: "외부사/관계사", company: "한국경제신문", size: 4 },
-  'E-206': { name: "", affiliation: "외부사/관계사", company: "한국동서발전", size: 4 },
   'E-207': { name: "", affiliation: "외부사/관계사", company: "삼양인터내셔날", size: 3 },
   'E-208': { name: "", affiliation: "외부사/관계사", company: "삼양통상", size: 3 },
 
@@ -745,7 +743,7 @@ export const COACH_ASSIGNMENTS = [
   { id: 'mate-44', name: '이상욱', nickname: 'Lodi', company: 'GS차지비', teamNumbers: ['E-07', 'E-08'], slackUserId: 'U0A82DA597S' },
   // 배정표에서 뒤늦게 나온 두 분입니다 (김민수/Liam은 플레이 메이트 명단에도
   // 있습니다 — 이번 배정에서는 마스터 메이트로 팀을 맡았습니다)
-  { id: 'mate-45', name: '심재혁', nickname: 'Simpson', company: '(주)GS', teamNumbers: ['E-203', 'E-204', 'E-205', 'E-206'], slackUserId: 'U08Q1RBGWP7' },
+  { id: 'mate-45', name: '심재혁', nickname: 'Simpson', company: '(주)GS', teamNumbers: ['E-203', 'E-204', 'E-205'], slackUserId: 'U08Q1RBGWP7' },
   { id: 'mate-46', name: '김민수', nickname: 'Liam', company: '삼양통상', teamNumbers: ['E-208'], slackUserId: 'U0A7M79J606' },
   // 최종 배정표에서 새로 마스터 메이트가 된 분들입니다. 김현민·하지희·장수연
   // 님은 플레이 메이트 명단에도 있습니다 — 이번 배정에서 마스터 메이트로
