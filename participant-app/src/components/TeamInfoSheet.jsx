@@ -4,9 +4,9 @@ import {
   assignedCoachLabel,
   leagueAllowsCall,
   wifiForTeam,
-  wifiZonesForSeat,
   WIFI_LOUNGES,
   WIFI_MAP,
+  WIFI_ZONES,
 } from '../config.js'
 import { useSheetDrag } from '../lib/useSheetDrag.js'
 import { useDialogFocus } from '../lib/useDialogFocus.js'
@@ -75,6 +75,39 @@ function WifiRow({ zone, primary = false }) {
   )
 }
 
+// 구역별 비밀번호 한 칸. 위의 WifiRow 보다 작게 두는 자리라, 이름표 없이
+// 구역 이름과 비밀번호만 둡니다 — 여덟 칸이 한 화면에 들어와야 배치도에서
+// 찾은 구역을 눈으로 바로 잇습니다. 여기서도 눌러서 복사됩니다.
+function WifiMini({ zone, mine = false }) {
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    const ok = await copyText(zone.pw)
+    setCopied(ok ? 'ok' : 'fail')
+    setTimeout(() => setCopied(false), 1600)
+  }
+  const state = copied === 'ok' ? ' copied' : copied === 'fail' ? ' failed' : ''
+  return (
+    <button
+      type="button"
+      className={`wifi-mini${mine ? ' mine' : ''}${state}`}
+      onClick={copy}
+      aria-label={`${zone.id} 비밀번호 ${zone.pw} 복사`}
+    >
+      <b>{zone.id}</b>
+      <span>{copied === 'ok' ? '복사됨' : copied === 'fail' ? '직접 입력' : zone.pw}</span>
+    </button>
+  )
+}
+
+// 자리 구역을 포스터와 같은 차례(Act Site → Build Site)로 묶어둡니다.
+// 라운지는 위에 '공용 구역'으로 따로 있어 여기서 뺍니다.
+const SEAT_AREAS = WIFI_ZONES.filter((z) => !z.lounge).reduce((groups, zone) => {
+  const found = groups.find(([area]) => area === zone.area)
+  if (found) found[1].push(zone)
+  else groups.push([zone.area, [zone]])
+  return groups
+}, [])
+
 export default function TeamInfoSheet({ team, onClose, onEdit, onGuide }) {
   const allergyGroups = (team.allergies || []).filter(
     (group) => Array.isArray(group) && group.length > 0,
@@ -85,7 +118,6 @@ export default function TeamInfoSheet({ team, onClose, onEdit, onGuide }) {
   // 호출을 쓰지 않는 리그(개발자리그)에는 담당 자체가 없습니다.
   const coach = leagueAllowsCall(team.teamId) ? assignedCoachLabel(team.teamId) : null
   const myWifi = wifiForTeam(team.teamId)
-  const seatZones = wifiZonesForSeat(team.teamId)
   const drag = useSheetDrag(onClose)
   const dialogRef = useDialogFocus(true, onClose)
 
@@ -161,15 +193,10 @@ export default function TeamInfoSheet({ team, onClose, onEdit, onGuide }) {
           {myWifi ? (
             <WifiRow zone={myWifi} primary />
           ) : (
-            <>
-              <p className="wifi-note">
-                자리 구역이 확인되지 않았습니다. 테이블에 붙은 안내에서 우리 구역을
-                확인하고 아래에서 고르세요.
-              </p>
-              {seatZones.map((z) => (
-                <WifiRow key={z.id} zone={z} />
-              ))}
-            </>
+            <p className="wifi-note">
+              자리 구역이 확인되지 않았습니다. 아래 배치도에서 우리 구역을 찾아
+              '구역별 비밀번호'에서 고르세요.
+            </p>
           )}
           <div className="wifi-lounges">
             <span className="wifi-sub">공용 구역</span>
@@ -181,13 +208,33 @@ export default function TeamInfoSheet({ team, onClose, onEdit, onGuide }) {
           {/* 배치도는 접어두지 않고 그대로 펼쳐 둡니다. 버튼 뒤에 숨기면
               "어느 구역인지 모르겠다"는 사람이 그 버튼을 찾아낼 이유가
               없습니다 — 그림이 보여야 비교가 시작됩니다.
-              누르면 포스터 전체(구역별 비밀번호 포함)가 새 탭에서 열립니다. */}
+
+              안내 띠는 그림 위에 겹치지 않고 아래에 답니다. 겹쳐 두었더니
+              하필 'Build Site 개발자리그' 라벨을 덮어, 개발자리그 팀이
+              배치도에서 자기 구역 이름을 읽지 못했습니다. */}
           <div className="wifi-map-block">
             <span className="wifi-sub">자리 배치도</span>
             <a className="wifi-map" href={WIFI_MAP.full} target="_blank" rel="noreferrer">
               <img src={WIFI_MAP.src} alt={WIFI_MAP.alt} loading="lazy" />
-              <span className="image-board-zoom">🔍 크게 보기 · 구역별 비밀번호</span>
+              <span className="wifi-map-zoom">🔍 배치도 크게 보기</span>
             </a>
+          </div>
+
+          {/* 구역별 비밀번호. 포스터 아래쪽에만 있던 표를 글자로 옮겼습니다 —
+              그림으로 넣으면 폰 폭에서 글씨가 4px이 되어, 확대하지 않고는
+              읽을 수 없습니다. 글자로 두면 그대로 읽히고 복사도 됩니다. */}
+          <div className="wifi-all">
+            <span className="wifi-sub">구역별 비밀번호</span>
+            {SEAT_AREAS.map(([area, zones]) => (
+              <div className="wifi-all-group" key={area}>
+                <i className="wifi-all-area">{area}</i>
+                <div className="wifi-mini-grid">
+                  {zones.map((z) => (
+                    <WifiMini key={z.id} zone={z} mine={myWifi?.id === z.id} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
