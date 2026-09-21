@@ -271,27 +271,6 @@ export default function OrdersTab({
         ? completedRows
         : pendingRows
 
-  // 알레르기 현황: 같은 알레르기 조합을 가진 사람끼리 팀 안에서 묶어 표시
-  const allergyInfo = useMemo(() => {
-    const teamsWith = []
-    Object.entries(scan.teams).forEach(([teamId, team]) => {
-      const people = (team.allergies || []).map((p) => (Array.isArray(p) ? p : [p]))
-      if (!people.length) return
-      const groupCounts = {}
-      people.forEach((personList) => {
-        const allergies = [...personList].filter(Boolean).sort().join('·')
-        if (allergies) groupCounts[allergies] = (groupCounts[allergies] || 0) + 1
-      })
-      teamsWith.push({
-        teamId,
-        assignedName: assignedShortName(teamId),
-        groups: Object.entries(groupCounts).map(([allergies, count]) => ({ allergies, count })),
-      })
-    })
-    teamsWith.sort((a, b) => a.teamId.localeCompare(b.teamId, undefined, { numeric: true }))
-    return { teamsWith }
-  }, [scan.teams])
-
   // 식음 운영 크루가 찾아갈 명단 — 그 끼니에 드실 수 있는 메뉴가 하나도
   // 없는 사람입니다. 참가자 등록 화면도 같은 판정으로 "식음 운영 크루가
   // 찾아갈 거예요" 라고 약속하므로, 두 화면이 같은 personDiet 를 봅니다.
@@ -323,7 +302,12 @@ export default function OrdersTab({
         })
       })
     })
+    const 찾아갈팀 = new Set()
+    MEALS.forEach((meal) => {
+      byMeal[meal.id].groups.forEach((g) => 찾아갈팀.add(g.teamId))
+    })
     return {
+      teamCount: 찾아갈팀.size,
       rows: MEALS.map((meal) => ({
         meal,
         count: byMeal[meal.id].count,
@@ -674,8 +658,8 @@ export default function OrdersTab({
                       setMoreOpen(false)
                     }}
                   >
-                    🥗 알레르기 현황
-                    <b>{allergyInfo.teamsWith.length}</b>
+                    🙋 찾아갈 팀
+                    <b>{altMealInfo.teamCount}</b>
                   </button>
                   <button
                     role="menuitem"
@@ -718,7 +702,7 @@ export default function OrdersTab({
               setShowSoldoutPanel(false)
             }}
           >
-            알레르기 {allergyInfo.teamsWith.length}
+            찾아갈 팀 {altMealInfo.teamCount}
           </button>
           <button
             className={`btn-ghost toolbar-tool${showSoldoutPanel ? ' active' : ''}`}
@@ -763,10 +747,13 @@ export default function OrdersTab({
           >
             <div className="sheet-handle" aria-hidden="true" {...allergyDrag.handleHandlers} />
             <div className="sheet-head">
-              <h3 id="allergy-sheet-title">알레르기 현황</h3>
+              <h3 id="allergy-sheet-title">🙋 식음 운영 크루가 찾아갈 팀</h3>
               <button className="sheet-close" onClick={closeUtilityPanels}>닫기</button>
             </div>
-            <p className="sheet-description">크루가 찾아갈 팀과 도시락 준비에 참고하세요.</p>
+            <p className="sheet-description">
+              알레르기 때문에 그 끼니에 드실 수 있는 메뉴가 하나도 없는 분들입니다.
+              찾아가서 무엇을 드실 수 있는지 여쭤봐 주세요.
+            </p>
             <div className="sheet-body">
               {/* 찾아갈 명단. 팀 번호와 함께 무엇 때문인지(알레르기)를 적어
                   둡니다 — 가서 다시 물어야 하면 한 번에 안 끝납니다.
@@ -775,7 +762,6 @@ export default function OrdersTab({
                   한 팀에 알레르기가 여럿이면 줄이 여럿 — 찾아가 만날 사람이
                   여럿이라는 뜻이라, 합치지 않고 그대로 둡니다. */}
               <div className="alt-request">
-                <div className="alt-meal-title">🙋 식음 운영 크루가 찾아갈 명단</div>
                 {/* 야식·아침을 위아래로 세우면 아래쪽은 스크롤해야 보입니다.
                     표가 좁아 나란히 두면 두 끼니가 한눈에 들어옵니다 —
                     좁은 화면에서는 저절로 위아래로 돌아갑니다(styles.css). */}
