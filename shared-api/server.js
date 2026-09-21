@@ -81,9 +81,9 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || ''
 // 앱 config의 MENUS[].stock과 같은 값이어야 합니다 — 앱은 화면을 닫는 쪽,
 // 서버는 실제로 초과 저장을 막는 쪽입니다. 두 폰이 같은 순간에 마지막 한
 // 판을 담아도 서버에서 하나만 통과합니다(단일 스레드).
-//   예) MENU_STOCK="md-a:150,md-b:150,bf-a:200,bf-b:200"
+//   예) MENU_STOCK="md-a:200,md-b:200,bf-a:200,bf-b:200"
 const MENU_STOCK = Object.fromEntries(
-  (process.env.MENU_STOCK || 'md-a:150,md-b:150,bf-a:200,bf-b:200')
+  (process.env.MENU_STOCK || 'md-a:200,md-b:200,bf-a:200,bf-b:200')
     .split(',')
     .map((part) => part.trim())
     .filter(Boolean)
