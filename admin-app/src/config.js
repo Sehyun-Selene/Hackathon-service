@@ -245,10 +245,7 @@ export const WIFI_ZONES = [
   { id: 'HoL_01', area: 'Act Site 필드리그', pw: 'hack1131', teams: [
       'E-81', 'E-80', 'E-84', 'E-83', 'E-82', 'E-208', 'E-104', 'E-79',
       'E-14', 'E-19', 'E-207', 'E-103', 'E-15', 'E-12', 'E-18', 'E-102',
-      // G 번호를 단 필드리그 팀입니다. 개발자리그 구역에 앉아 있었는데,
-      // E-206(불참)이 비면서 이 자리로 옮겨 왔습니다. Wi-Fi는 소속이 아니라
-      // 어느 AP 아래 앉았느냐를 따르므로 구역도 함께 옮깁니다.
-      'G-47',
+      'E-206',
     ] },
   { id: 'HoL_02', area: 'Act Site 필드리그', pw: 'hack2252', teams: [
       'E-13', 'E-10', 'E-17', 'E-205', 'E-101', 'E-11', 'E-09', 'E-16',
@@ -336,25 +333,20 @@ export const TEAM_DASHBOARD = { start: '2026-09-21T14:00:00', end: '2026-09-21T1
 // 관리자 호출 횟수 격자에도 들어가지 않습니다.
 export const LEAGUES = [
   { id: 'field', prefix: 'E', label: '필드리그', count: 208, calls: true },
-  // G는 47까지 갑니다 — G 번호를 단 필드리그 팀(G-47)이 있어서입니다.
-  // 아래 TEAM_LEAGUE_OVERRIDES 참고.
-  { id: 'dev', prefix: 'G', label: '개발자리그', count: 47, calls: false },
+  { id: 'dev', prefix: 'G', label: '개발자리그', count: 46, calls: false },
 ]
 
 // 테이블 번호의 접두어와 소속 리그가 다른 팀.
 //
-//   지금까지는 자리가 곧 리그였습니다 — E 자리에 앉으면 필드리그,
-//   G 자리에 앉으면 개발자리그. G-47(현대위아)에서 처음 갈라집니다.
-//   필드 구역에 자리가 없어 개발자리그 구역에 앉았다가, E-206이 빠지면서
-//   그 자리로 옮겼습니다. 테이블에 붙은 번호는 G-47 그대로입니다.
+//   자리가 곧 리그입니다 — E 자리에 앉으면 필드리그, G 자리에 앉으면
+//   개발자리그. 한때 G-47(현대위아)이 예외였습니다. 필드 구역에 자리가
+//   없어 개발자리그 구역에 앉았던 것인데, E-206(불참)이 비면서 그 자리로
+//   옮겼고 테이블 번호도 E-206으로 바꿨습니다. 지금은 예외가 없습니다.
 //
-//   테이블에 붙은 번호가 참가자가 보는 유일한 단서이므로, 번호를 바꾸지
-//   않고 여기서 리그만 따로 적어 둡니다. 등록 화면에서 '개발자리그 · 47'을
-//   고르면 leagueOf가 필드리그로 돌려주어, 호출 탭과 타임테이블 탭이
-//   그대로 열립니다. 참가자는 아무것도 신경 쓸 게 없습니다.
-export const TEAM_LEAGUE_OVERRIDES = {
-  'G-47': 'field',
-}
+//   장치는 남겨 둡니다. 여기에 한 줄 적으면 번호를 그대로 두고 소속만
+//   따로 지정됩니다 — 테이블에 붙은 번호가 참가자가 보는 유일한 단서라,
+//   번호를 바꾸는 쪽이 늘 가능한 것은 아닙니다.
+export const TEAM_LEAGUE_OVERRIDES = {}
 
 export const TEAMS = {
   'E-01': { name: "어벤처스", affiliation: "GS벤처스", size: 2 },
@@ -482,6 +474,9 @@ export const TEAMS = {
   'E-203': { name: "", affiliation: "외부사/관계사", company: "한국전력공사", size: 3 },
   'E-204': { name: "", affiliation: "외부사/관계사", company: "한국표준과학연구원", size: 2 },
   'E-205': { name: "", affiliation: "외부사/관계사", company: "한국경제신문", size: 4 },
+  // 개발자리그 구역에 앉아 G-47 을 달고 있던 팀입니다. 한국동서발전이
+  // 불참하면서 그 자리로 옮겼고, 테이블 번호도 E-206 으로 바꿨습니다.
+  'E-206': { name: "WIATHON", affiliation: "외부사/관계사", company: "현대위아", size: 3 },
   'E-207': { name: "", affiliation: "외부사/관계사", company: "삼양인터내셔날", size: 3 },
   'E-208': { name: "", affiliation: "외부사/관계사", company: "삼양통상", size: 3 },
 
@@ -524,15 +519,13 @@ export const TEAMS = {
   'G-44': { name: "정구봉팀3", size: 2 },
   'G-45': { name: "정구봉팀4", size: 2 },
   'G-46': { name: "정구봉팀5", size: 2 },
-  // 필드리그 팀입니다 — 자리만 개발자리그 구역입니다 (TEAM_LEAGUE_OVERRIDES)
-  'G-47': { name: "WIATHON", affiliation: "외부사/관계사", company: "현대위아", size: 3 },
 }
 
 export const LEAGUE_BY_PREFIX = Object.fromEntries(LEAGUES.map((l) => [l.prefix, l]))
 // 리그별 팀 번호 목록 — 번호를 1부터 만들어 쓰지 않고 TEAMS에 실제로 있는
 // 것만 모읍니다. G-05처럼 중간이 빈 리그에서 없는 팀이 격자에 생기기 때문입니다.
-// 접두어가 아니라 실제 소속 리그로 나눕니다 — G-47은 G 자리에 앉은
-// 필드리그 팀이라 필드리그 쪽에 들어가야 호출 격자·집계에 잡힙니다.
+// 접두어가 아니라 실제 소속 리그로 나눕니다 — 접두어와 소속이 다른 팀도
+// 소속 쪽에 들어가야 호출 격자·집계에 잡힙니다 (TEAM_LEAGUE_OVERRIDES).
 export const TEAM_IDS_BY_LEAGUE = Object.fromEntries(
   LEAGUES.map((l) => [
     l.id,
@@ -543,7 +536,7 @@ export const TEAM_IDS_BY_LEAGUE = Object.fromEntries(
 )
 export const ALL_TEAM_IDS = LEAGUES.flatMap((l) => TEAM_IDS_BY_LEAGUE[l.id])
 // 팀 번호에서 리그 찾기 ('E-45' → 필드리그).
-// 접두어가 소속과 다른 팀(G-47)은 TEAM_LEAGUE_OVERRIDES가 이깁니다.
+// 접두어가 소속과 다른 팀은 TEAM_LEAGUE_OVERRIDES가 이깁니다.
 export function leagueOf(teamId) {
   const id = String(teamId || '')
   const override = TEAM_LEAGUE_OVERRIDES[id]
@@ -694,7 +687,7 @@ export const COACH_ASSIGNMENTS = [
   { id: 'mate-01', name: '고병현', nickname: 'Joseph', company: '(주)GS', teamNumbers: [], slackUserId: 'U095U417XLG' },
   { id: 'mate-02', name: '한만호', nickname: 'Ryan', company: '(주)GS', teamNumbers: ['E-80', 'E-81'], slackUserId: 'U088AHTLTNJ' },
   { id: 'mate-03', name: '이진수', nickname: 'Jin', company: '(주)GS', teamNumbers: ['E-82', 'E-83', 'E-84'], slackUserId: 'U05R86E8HEZ' },
-  { id: 'mate-04', name: '장희원', nickname: 'Eric', company: '(주)GS', teamNumbers: ['E-01', 'E-43', 'E-44', 'E-97', 'E-98', 'E-99', 'G-47'], slackUserId: 'U0AQZ6EHNL8' },
+  { id: 'mate-04', name: '장희원', nickname: 'Eric', company: '(주)GS', teamNumbers: ['E-01', 'E-43', 'E-44', 'E-97', 'E-98', 'E-99', 'E-206'], slackUserId: 'U0AQZ6EHNL8' },
   { id: 'mate-05', name: '김민규', nickname: 'Tomi', company: '(주)GS', teamNumbers: ['E-41', 'E-106', 'E-42'], slackUserId: 'U0BDVTQBSRM' },
   { id: 'mate-06', name: '김진호', nickname: 'Hugo', company: '(주)GS', groupId: 'retail', teamNumbers: GROUP_TEAMS.retail, slackUserId: 'U0BED7JHMKK' },
   { id: 'mate-07', name: '정승현', nickname: 'Josh', company: '보령LNG터미널', teamNumbers: ['E-03'], slackUserId: 'U0A6RPS2CCX' },
@@ -1323,8 +1316,9 @@ export function groupByLeague(teamIds) {
   return LEAGUES.map((league) => ({
     league,
     ids: (teamIds || [])
-      // 접두어가 아니라 소속으로 나눕니다 — G-47을 '개발자리그' 칸에 넣으면
-      // 담당 메이트가 자기 팀을 엉뚱한 제목 아래에서 찾게 됩니다.
+      // 접두어가 아니라 소속으로 나눕니다 — 접두어만 개발자리그인 팀을
+      // '개발자리그' 칸에 넣으면 담당 메이트가 자기 팀을 엉뚱한 제목
+      // 아래에서 찾게 됩니다.
       .filter((id) => leagueOf(id)?.id === league.id)
       .sort((a, b) => teamSortKey(a) - teamSortKey(b)),
   })).filter((g) => g.ids.length > 0)
@@ -1333,8 +1327,8 @@ export function groupByLeague(teamIds) {
 // 번호 격자용 — 소속이 아니라 '번호판'(접두어)으로 나눕니다.
 //
 // 격자는 사람이 자기 테이블 번호를 눈으로 찾는 자리입니다. 소속으로
-// 나누면 G-47(=G 자리에 앉은 필드리그 팀)이 필드리그 칸에 들어가고,
-// 칸에는 숫자만 찍히므로 E-47 과 나란히 '47'이 두 개 놓입니다.
+// 나누면 G 자리에 앉은 필드리그 팀이 필드리그 칸에 들어가고, 칸에는
+// 숫자만 찍히므로 E-47 과 나란히 '47'이 두 개 놓입니다.
 // 어느 쪽이 우리 팀인지 격자만 보고는 알 수 없습니다.
 export function groupBySeat(teamIds) {
   return LEAGUES.map((league) => ({
@@ -1351,8 +1345,8 @@ export function formatTeamRange(teamIds) {
   const groups = groupByLeague(teamIds)
   if (!groups.length) return null
   // 접두어는 리그가 아니라 팀 번호에서 그대로 가져옵니다. 한 리그 안에
-  // 두 접두어가 섞일 수 있기 때문입니다 (필드리그의 G-47). 리그 접두어로
-  // 다시 만들면 'G-47'이 'E-47' — 실제로 있는 다른 팀 — 로 바뀝니다.
+  // 두 접두어가 섞일 수 있기 때문입니다. 리그 접두어로 다시 만들면
+  // 'G-47' 같은 번호가 'E-47' — 실제로 있는 다른 팀 — 로 바뀝니다.
   const 조각 = groups.map(({ ids }) => {
     const 항목 = ids.map((id) => ({
       prefix: String(id).charAt(0),
