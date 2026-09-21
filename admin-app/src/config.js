@@ -57,7 +57,7 @@ export const MEALS = [
     label: '[DAY 1] 야식',
     shortLabel: '야식',
     orderStart: '2026-09-21T13:30:00',
-    orderEnd: '2026-09-21T17:00:00',
+    orderEnd: '2026-09-21T18:00:00',
     eatAt: '2026-09-21T21:00:00',
   },
   {
@@ -65,7 +65,7 @@ export const MEALS = [
     label: '[DAY 2] 아침',
     shortLabel: '아침',
     orderStart: '2026-09-21T13:30:00',
-    orderEnd: '2026-09-21T17:00:00',
+    orderEnd: '2026-09-21T18:00:00',
     eatAt: '2026-09-22T09:00:00',
   },
 ]
