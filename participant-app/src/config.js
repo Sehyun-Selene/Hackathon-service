@@ -44,12 +44,11 @@ export const API_BASE_URL =
 // 해커톤 전에 실제 화면을 눌러 보게 하려던 장치입니다. 쓰고 나면 반드시
 // null 로 되돌리세요 — 남겨 두면 공지한 시각보다 먼저 주문이 열립니다.
 //
-// 안내 문구는 건드리지 않습니다. 참가자에게 공지된 시각은 아래 MEALS 의
-// orderStart 이고, 화면에는 그 값만 나옵니다 — '9/21(월) 13:30부터
-// 16:00까지'. 여는 시각과 안내하는 시각을 한 값으로 묶어 두면, 미리
-// 열어보려다 참가자에게 잘못된 시각을 공지하게 됩니다.
+// 안내 문구는 건드리지 않습니다. 화면에 나오는 시각은 아래 MEALS 의
+// orderStart ~ orderEnd 뿐입니다. 여는 시각과 안내하는 시각을 한 값으로
+// 묶어 두면, 미리 열어보려다 참가자에게 잘못된 시각을 공지하게 됩니다.
 //
-// 닫히는 시각은 그대로 orderEnd(9/21 16:00)입니다.
+// 닫히는 시각은 이 값과 무관하게 언제나 orderEnd 입니다.
 export const ORDER_PREVIEW_FROM = null
 
 export const MEALS = [
@@ -58,7 +57,7 @@ export const MEALS = [
     label: '[DAY 1] 야식',
     shortLabel: '야식',
     orderStart: '2026-09-21T13:30:00',
-    orderEnd: '2026-09-21T16:00:00',
+    orderEnd: '2026-09-21T17:00:00',
     eatAt: '2026-09-21T21:00:00',
   },
   {
@@ -66,7 +65,7 @@ export const MEALS = [
     label: '[DAY 2] 아침',
     shortLabel: '아침',
     orderStart: '2026-09-21T13:30:00',
-    orderEnd: '2026-09-21T16:00:00',
+    orderEnd: '2026-09-21T17:00:00',
     eatAt: '2026-09-22T09:00:00',
   },
 ]
